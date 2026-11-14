@@ -190,7 +190,8 @@ function spot0(ev,g){ // [x, y, (walk-graph node, filled in by spot), distance a
    for(let i=0;i<4;i++){const d=PR.L*(.08+.88*R()**.75);if(d<head)continue;const[x,y,a]=PR.at(d),dd=(x-g.x)**2+(y-g.y)**2;if(dd<bd){bd=dd;best=[d,x,y,a]}}
    if(!best)return null;const[d,x,y,a]=best,o=(R()<.5?-1:1)*(6.5+rr(0,1.2+4.8*f));return near(x-Math.sin(a)*o,y+Math.cos(a)*o,d)}
   case'castle':case'welcome':return near(P_.stage[0]+rr(-34,34),P_.stage[1]+rr(14,22+26*f));
-  case'band':case'flag':{const k=.4+.6*f;return near(P_.townsq[0]+rr(-22,22)*k,P_.townsq[1]+rr(-14,14)*k)}
+  case'flag':{const fp=P_.flagpole||P_.townsq,k=.4+.6*f;return near(fp[0]+rr(-20,20)*k,fp[1]+rr(-8,18)*k)}
+  case'band':{const k=.4+.6*f;return near(P_.townsq[0]+rr(-22,22)*k,P_.townsq[1]+rr(-14,14)*k)}
   default:{const k=.35+.65*f;if(R()<.55)return near(P_.hub[0]+rr(-55,55)*k,P_.hub[1]+rr(-40,45)*k);const d=rr(0,1)*Math.min(1,.25+f);return near(P_.hub[0]+rr(-11,11),P_.hub[1]+50+d*(P_.townsq[1]-P_.hub[1]-60))}}}
 // a guest's moment to head for the show has come
 function joinEv(g){const ev=EV.find(e=>e.id===g.evId);if(!ev||ev.key!==g.evK||(ev.ph!=='gather'&&ev.ph!=='live')||g.intent==='exit'){g.evT=0;return}

@@ -332,6 +332,9 @@ for key,name in {'wl':"Disney's Wilderness Lodge",'pioneer':'Pioneer Hall','disc
     b_=place(name)
     if b_: PLACES[key]=R1(b_[1])
 wd=next((ND[i] for i,t in NT.items() if t.get('name')=='Wilderness Lodge Dock'),None)
+# the Town Square flagpole (the US flagpole nearest Town Square), for the Flag Retreat
+fps=[ND[i] for i,t in NT.items() if t.get('man_made')=='flagpole']
+if fps and 'townsq' in PLACES: PLACES['flagpole']=R1(min(fps,key=lambda q:math.dist(q,PLACES['townsq'])))
 gz=next((ND[i] for i,t in NT.items() if t.get('name')=='Fire Rock Geyser'),None)  # the geyser itself (a point), not the rock field around it
 if gz: PLACES['geyser']=R1(gz)
 if wd: PLACES['wldock']=R1(wd)

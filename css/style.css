@@ -13,7 +13,7 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 #layerMenu{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#fff;border-radius:14px;box-shadow:0 8px 28px rgba(20,32,70,.2);padding:6px;min-width:210px;z-index:9}
 #layerMenu button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 12px;border-radius:10px;font-weight:600}#layerMenu button:hover{background:#eef6fd}
 /* map stage */
-#stage{position:relative;overflow:hidden;min-height:0;background:#9fc46e}#cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab}#cv.grab{cursor:grabbing}
+#stage{position:relative;overflow:hidden;min-height:0;background:#9fc46e}#cv{width:100%;height:100%;display:block;position:absolute;left:0;top:0;touch-action:none;cursor:grab}#cv.grab{cursor:grabbing}
 #views{position:absolute;top:12px;left:12px;display:flex;background:rgba(255,255,255,.95);border-radius:999px;padding:3px;box-shadow:var(--sh)}
 #views button{border:0;background:none;padding:6px 14px;border-radius:999px;font-weight:700;font-size:13px;color:var(--mu)}#views button.on{background:var(--tx);color:#fff}
 #svb{position:absolute;left:50%;transform:translateX(-50%);top:14px;display:none;background:rgba(20,30,70,.8);color:#fff;padding:7px 16px;border-radius:999px;font-weight:700;font-size:13px;white-space:nowrap}

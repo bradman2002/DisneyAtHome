@@ -7,3 +7,7 @@ All .m4a files here are real recordings, trimmed and re-encoded for this site.
 - bell1, bell2: Nigel K, Ship's Bells, CC0
 - applause, applause_big: built from Owlish pack hand-clap recordings, CC0
 happily-ever-after.mp3 is not included — add your own copy (see README.md).
+
+"The Star-Spangled Banner" (audio/anthem.mp3, played at the Flag Retreat): performed by the United States Navy Band,
+public domain as a work of the US government. Source: Wikimedia Commons,
+https://commons.wikimedia.org/wiki/File:%22The_Star-Spangled_Banner%22_performed_by_the_United_States_Navy_Band.mp3

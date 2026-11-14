@@ -244,6 +244,20 @@ const WELC={file:'audio/let-the-magic-begin.mp3',a:{audio:new Audio(),ready:fals
  a.addEventListener('loadedmetadata',()=>{const d=a.duration,e=ev();if(!d||!isFinite(d)||!e)return;if(!e.userDur)e.dur=d/60;if(e.rel)e.rel[1]=-Math.round(d);relTimes()}); /* the show ends as the park opens */
  a.addEventListener('error',async()=>{if(A.src!=='folder')return;A.src='none';try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('welcome');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob){A.src='picked';a.src=URL.createObjectURL(v.blob);a.load()}}catch(e){}});
  loadTrack(a,WELC.file)}
+/* ---------- the Flag Retreat: the national anthem ----------
+   "The Star-Spangled Banner" played by the United States Navy Band (public domain, a US government recording;
+   audio/anthem.mp3, credited in the app). Three minutes into the Flag Retreat the anthem plays and the flag comes down
+   the Town Square pole as it does; the flag flies from an hour before opening until then. */
+const ANTHEM={file:'audio/anthem.mp3',at:180,len:77.6,a:{audio:new Audio(),ready:false,src:'folder'}};
+{const A=ANTHEM.a,a=A.audio;a.preload='auto';a.addEventListener('canplay',()=>{A.ready=true});a.addEventListener('loadedmetadata',()=>{if(isFinite(a.duration))ANTHEM.len=a.duration});loadTrack(a,ANTHEM.file)}
+const anthemPos=()=>{const e=EV.find(x=>x.id==='flag');return e&&e.on!==false&&e.ph==='live'?T-e.key-ANTHEM.at:null};
+const anthemPlaying=()=>ANTHEM.a.ready&&!ANTHEM.a.audio.paused;
+/* how far up the pole the flag is, 0 to 1 */
+function flagUp(){const e=EV.find(x=>x.id==='flag'),k=e&&e.t&&e.t[0]!=null?e.t[0]+ANTHEM.at:17*3600+ANTHEM.at;if(T<OPEN*3600-3600)return 0;if(T<k)return 1;return Math.max(0,1-(T-k)/ANTHEM.len)}
+function anthemSync(){const pos=anthemPos(),A=ANTHEM.a,a=A.audio;
+ if(pos!==null&&pos>=0&&pos<ANTHEM.len-.3&&A.ready&&playing&&speed<=1&&!FF){const fp=P_.flagpole||P_.townsq;setVol(a,(AU.mute?0:AU.v.master)*(SV.on?.4:.25+.75*prox(fp[0],fp[1],300)));
+  if(a.paused){a.currentTime=Math.max(0,pos);a.play().catch(()=>{})}else if(Math.abs(a.currentTime-pos)>.8)a.currentTime=Math.max(0,pos)}
+ else if(!a.paused)a.pause()}
 const welcPlaying=()=>WELC.a.ready&&!WELC.a.audio.paused;
 function welcomeSync(){const e=EV.find(x=>x.id==='welcome'),A=WELC.a,a=A.audio;if(!e)return;const live=e.on!==false&&e.ph==='live',pos=live?T-e.key:0,dur=a.duration||0;
  if(live&&A.liveKey!==e.key){A.liveKey=e.key;if(A.ready&&speed!==1&&!FF){speed=1;sync();toast('Let the Magic Begin is starting — speed set to 1× so the music stays in sync')}}

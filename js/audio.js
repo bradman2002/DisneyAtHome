@@ -6,7 +6,8 @@ const SOUND_CREDITS=[
  ['Daytime birdsong; night crickets','felix.blume on Freesound (#414098, #476672), CC0'],
  ['Fireworks bursts and show bed','rubberduck, “25 CC0 bang/firework SFX”, OpenGameArt, CC0'],
  ['Ship’s bell (ferry departures/arrivals)','Nigel K, Ship’s Bells, CC0'],
- ['Applause (built by layering real hand-clap recordings)','Owlish sound pack, CC0']];
+ ['Applause (built by layering real hand-clap recordings)','Owlish sound pack, CC0'],
+ ['“The Star-Spangled Banner” (Flag Retreat)','United States Navy Band, public domain (US government work), via Wikimedia Commons']];
 const AU={ctx:null,mute:false,ready:false,loading:false,v:{master:.8,music:.55,crowd:.7,amb:.1,trans:.7,show:.8},buf:{},L:{},lt:0,last:{}};
 const LOOPDEF={crowd:'crowd',crowdEv:'crowd',birds:'amb',crickets:'amb',falls:'amb',jungle:'amb',river:'amb',lap:'amb',flag:'amb',chimes:'amb',creek:'amb',hum:'amb',lake:'amb',engine:'trans',fwbed:'show'};
 const LOOPSRC={crowdEv:'crowd'};
@@ -40,7 +41,7 @@ function applyVol(){if(!AU.ctx)return;AU.m.gain.value=AU.mute?0:AU.v.master;for(
 function play(n,v,dst,at,rate){const b=AU.buf[n];if(!b||!AU.ready||v<.004)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;
  s.playbackRate.value=rate||1;g.gain.value=v;s.connect(g).connect(dst);s.start(c.currentTime+(at||0))}
 const prox=(x,y,s)=>Math.exp(-Math.hypot(cam.x-x,cam.y-y)/(s||260));
-const EVPOS={parade:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2],xmas:[(P_.hub[0]+P_.townsq[0])/2+26,(P_.hub[1]+P_.townsq[1])/2+30],boo:[(P_.hub[0]+P_.townsq[0])/2-26,(P_.hub[1]+P_.townsq[1])/2+30],caval:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2-34],welcome:[P_.stage[0]-30,P_.stage[1]+8],flag:[P_.townsq[0]+24,P_.townsq[1]],kiss:[P_.castle[0]+34,P_.castle[1]-40],castle:P_.stage,band:P_.townsq,fire:[P_.castle[0],P_.castle[1]-60]};
+const EVPOS={parade:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2],xmas:[(P_.hub[0]+P_.townsq[0])/2+26,(P_.hub[1]+P_.townsq[1])/2+30],boo:[(P_.hub[0]+P_.townsq[0])/2-26,(P_.hub[1]+P_.townsq[1])/2+30],caval:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2-34],welcome:[P_.stage[0]-30,P_.stage[1]+8],flag:P_.flagpole||[P_.townsq[0]+24,P_.townsq[1]],kiss:[P_.castle[0]+34,P_.castle[1]-40],castle:P_.stage,band:P_.townsq,fire:[P_.castle[0],P_.castle[1]-60]};
 const busXY=b=>BUSP.at((1010-b.x)/370*BUSP.L);
 const evP=(ev,s)=>{const q=EVPOS[ev.id]||P_.hub;return .25+.75*prox(q[0],q[1],s||380)};
 function cue(ev){if(!AU.ready||speed>30)return;const d=AU.g.show,p=evP(ev);
@@ -74,7 +75,7 @@ function auTick(){if(!AU.ready||FF)return;
  // entertainment: cadence during parades/band sets, applause when a show ends
  const now=performance.now();
  for(const ev of EV){const was=ev._aps;ev._aps=ev.ph;if(!q)continue;const p=evP(ev);
-  if((isParade(ev.id)&&!parPlaying(ev.id)||ev.id==='band'||ev.id==='flag')&&ev.ph==='live'&&playing&&now-(AU.last['snare'+ev.id]||0)>4200){play('snare',.45*p,SH,0,.97+Math.random()*.06);AU.last['snare'+ev.id]=now}
+  if((isParade(ev.id)&&!parPlaying(ev.id)||ev.id==='band'||(ev.id==='flag'&&!anthemPlaying()))&&ev.ph==='live'&&playing&&now-(AU.last['snare'+ev.id]||0)>4200){play('snare',.45*p,SH,0,.97+Math.random()*.06);AU.last['snare'+ev.id]=now}
   if(was==='live'&&ev.ph!=='live')play(ev.id==='fire'?'applause_big':'applause',.8*p,SH)}}
 function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(now-(AU.last.fw||0)<110)return;AU.last.fw=now;
  const F=EV.find(e=>e.id==='fire');play('fw'+(1+(Math.random()*6|0)),(.35+.4*Math.random())*evP(F,500),AU.g.show,0,.85+Math.random()*.3)}
@@ -97,7 +98,7 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  /* the nearest land dominates sharply (fifth power), so the hub hears mostly one land, not a muddle of six */
  if(sum>0)for(const k in w)t[k]=w[k]/sum*Math.min(1,top*2.2)*zoom;
  return t}
-function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying())||(typeof welcPlaying==='function'&&welcPlaying()),
+function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying())||(typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying()),
   duck=show?.12:1,base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
  for(const k in AREA){if(AM.bad[k])continue;const want=t[k]*duck*base,v=AM.vol[k]=(AM.vol[k]||0)+(want-(AM.vol[k]||0))*.12;let a=AM.el[k];
   if(v>.006){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}

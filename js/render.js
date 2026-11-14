@@ -8,7 +8,13 @@ const GB=[[],[],[],[],[],[]]; // this frame's guest dots, by shirt colour
 // the Crowds layer: a soft glow wherever people are gathered, green where it is easy going through to red where it is packed
 function crowdHeat(){for(let j=0;j<DH;j++)for(let i=0;i<DW;i++){const n=DENS[j*DW+i];if(n<7)continue;const u=Math.min(1,n/75),x=(i+.5)*DCELL,y=(j+.5)*DCELL,r=DCELL*1.3,g=cx.createRadialGradient(x,y,0,x,y,r),h=120-120*u;
   g.addColorStop(0,`hsla(${h},95%,50%,${.22+.4*u})`);g.addColorStop(1,`hsla(${h},95%,50%,0)`);cx.fillStyle=g;cx.fillRect(x-r,y-r,r*2,r*2)}}
-function resize(){const r=cv.parentElement.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);cv.width=Math.max(1,r.width*dpr);cv.height=Math.max(1,r.height*dpr);cw=r.width;ch=r.height;svLayout()}
+/* On phones the visible height changes whenever the browser's address bar slides in or out. Re-sizing the whole scene
+   each time made the view (and the castle) jump, so when only the height changes by a bar's worth, the canvas keeps
+   its taller size and the bottom edge is simply tucked under the bar. Real changes (rotating, resizing) still apply. */
+let stableW=0,stableH=0;
+function resize(){const r=cv.parentElement.getBoundingClientRect(),touch=matchMedia('(pointer:coarse)').matches;
+ if(touch&&Math.abs(r.width-stableW)<1&&r.height<=stableH&&stableH-r.height<170)return;
+ stableW=r.width;stableH=r.height;dpr=Math.min(devicePixelRatio||1,2);cv.width=Math.max(1,r.width*dpr);cv.height=Math.max(1,r.height*dpr);cv.style.height=r.height+'px';cw=r.width;ch=r.height;svLayout()}
 // zoom 1 = the whole park (a VW×VH window); the map is bigger than that now, so zoom runs below 1 to take in the lagoon and resorts.
 // Portrait screens start closer in, like a phone map.
 const VW=1000,VH=940;
@@ -24,7 +30,7 @@ const GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=64;co
 function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
- paradeSync();pageantSync();welcomeSync();
+ paradeSync();pageantSync();welcomeSync();anthemSync();
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k} // TV mode glides between shots
  if(follow){const o=vehPos(follow);if(o){cam.tx=o[0];cam.ty=o[1]}}clampCam();
@@ -118,10 +124,10 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
  {const w=EV.find(e=>e.id==='welcome'),fl=EV.find(e=>e.id==='flag');
   if(w&&w.ph==='live'){const s=OSM.S*2.1;WELCOME_CAST.forEach((who,i)=>drawChar(cx,s,(P_.stage[0]+(i-(WELCOME_CAST.length-1)/2)*7)/s,(P_.stage[1]+2)/s,who,t)); // the welcome show: the characters on the castle stage,
    if(w.p>.9&&w._pop!==w.key){w._pop=w.key;for(let i=0;i<7;i++)launch([0,i%2?'peony':'chrys',(i-3)/3.4,.35+Math.random()*.4,[45,200,330,120][i%4],.8])}} // and a burst of daytime fireworks as the park opens
-  if(fl&&(fl.ph==='live'||fl.ph==='gather')){const x=P_.townsq[0],y=P_.townsq[1]-6,up=fl.ph==='live'?1-fl.p:1; // Flag Retreat: the flag comes down the Town Square pole as the band plays
+  {const fp=P_.flagpole||[P_.townsq[0],P_.townsq[1]-6],x=fp[0],y=fp[1],up=flagUp(); /* the Town Square flagpole: the flag flies all day and comes down during the anthem at the Flag Retreat */
    cx.fillStyle='rgba(30,40,30,.25)';cx.fillRect(x+.4,y,5,.8);cx.fillStyle='#e9e9ee';cx.fillRect(x-.3,y-26,.6,26);cx.fillStyle='#f2c444';cx.beginPath();cx.arc(x,y-26.4,.8,0,7);cx.fill();
-   const fy=y-26+(1-up)*20,wv=Math.sin(now/260)*.6;cx.fillStyle='#c8323a';cx.beginPath();cx.moveTo(x+.3,fy);cx.lineTo(x+8,fy+.6+wv);cx.lineTo(x+8,fy+4.6+wv);cx.lineTo(x+.3,fy+4);cx.fill();cx.fillStyle='#fff';cx.fillRect(x+.3,fy+1.2,7.4,.8);cx.fillRect(x+.3,fy+2.8,7.4,.8);cx.fillStyle='#2f4f9a';cx.fillRect(x+.3,fy,3.2,2)}
-  if(fl&&fl.ph==='live')for(let i=0;i<6;i++){cx.fillStyle=i%2?'#c0392b':'#f4f0e6';cx.fillRect(P_.townsq[0]-13+i*4.4,P_.townsq[1]+6+Math.sin(now/180+i)*.8,2.4,3)}}
+   if(up>0){const fy=y-26+(1-up)*20,wv=Math.sin(now/260)*.6;cx.fillStyle='#c8323a';cx.beginPath();cx.moveTo(x+.3,fy);cx.lineTo(x+8,fy+.6+wv);cx.lineTo(x+8,fy+4.6+wv);cx.lineTo(x+.3,fy+4);cx.fill();cx.fillStyle='#fff';cx.fillRect(x+.3,fy+1.2,7.4,.8);cx.fillRect(x+.3,fy+2.8,7.4,.8);cx.fillStyle='#2f4f9a';cx.fillRect(x+.3,fy,3.2,2)}}
+  if(fl&&fl.ph==='live'){const fp=P_.flagpole||P_.townsq;for(let i=0;i<6;i++){cx.fillStyle=i%2?'#c0392b':'#f4f0e6';cx.fillRect(fp[0]-13+i*4.4,fp[1]+9+Math.sin(now/180+i)*.8,2.4,3)}}} /* the band, in front of the flagpole */
  if(EV[2].ph==='live')for(let i=0;i<6;i++){cx.fillStyle=i%2?'#c0392b':'#f4f0e6';cx.fillRect(P_.townsq[0]-13+i*4.4,P_.townsq[1]+Math.sin(now/180+i)*.8,2.4,3)}
  // guests
  const CF=MAP.castleFoot||[0,0,0,0],inCastle=g=>g.x>CF[0]&&g.x<CF[2]&&g.y>CF[1]&&g.y<CF[3]; // walking through the castle passage: hidden inside it

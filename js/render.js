@@ -63,6 +63,10 @@ function mapShell(q){const[t,kind,c0,alt]=q,z=zf(),[ux,uy]=MAP.castleAt,mx=ux+c0
 const SPIN=AT.filter(a=>a.k==='spin');
 const LAGOON=FER.at(FER.L*.5).slice(0,2).map((v,i)=>v+(i?0:-170)); // label spot on open water, west of the ferry lane
 const BAYLAKE=P_.disc?[P_.disc[0]-10,P_.disc[1]+190]:null; // label spot on open water, south of Discovery Island
+/* the line the TRON lightcycles follow: down the middle of the canopy's outline, end to end */
+const TRONP=(()=>{const{cv}=tronParts();if(!cv)return null;
+ const b=bbox(cv.p),pts=[];for(let X=b[0]+5;X<=b[2]-5;X+=4){const ys=[];const p=cv.p;for(let i=0;i<p.length;i++){const a=p[i],c2=p[(i+1)%p.length];if((a[0]-X)*(c2[0]-X)<=0&&a[0]!==c2[0])ys.push(a[1]+(c2[1]-a[1])*(X-a[0])/(c2[0]-a[0]))}if(ys.length>=2)pts.push([X,(Math.min(...ys)+Math.max(...ys))/2])}
+ return pts.length>3?mkPath(pts):null})();
 const PMP=mkPath(OSM.routes.pm),RACEP=mkPath(OSM.routes.race),TRAMP=mkPath(OSM.routes.tram);
 // Jungle Cruise: boats follow the river, a little inside its outer bank
 const JCP=(()=>{const a=OSM.areas.find(q=>q.k==='water'&&q.n==='Jungle Cruise');if(!a)return null;const[cx0,cy0]=polyC(a.o);return mkPath([...a.o,a.o[0]].map(([x,y])=>[x+(cx0-x)*.14,y+(cy0-y)*.14]))})();
@@ -84,6 +88,9 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
  if(open&&JCP)for(let i=0;i<3;i++){const[x,y,an]=JCP.at(((t*4+i*JCP.L/3)%JCP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e9dcc0';cx.fillRect(-4,-1.8,8,3.6);cx.fillStyle='#3f7a4f';cx.fillRect(-4,-2.6,8,1.2);cx.restore()}
  // horse-drawn streetcar on Main Street (daytime)
  if(h>9&&h<14.5&&TRAMP.L>10&&!paradeBusy()){const u=(T%480)/480,d=(u<.5?u*2:(1-u)*2)*TRAMP.L,[x,y,an]=TRAMP.at(d);cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#8a4b2a';cx.fillRect(-4,-1.6,6,3.2);cx.fillStyle='#e8d7a8';cx.fillRect(-4,-1.9,6,.6);cx.fillStyle='#d9c3a0';cx.fillRect(2.5,-.8,3.2,1.6);cx.restore()}
+ // TRON's lightcycles: a train of blue and orange cycles launches under the canopy every minute or so
+ {const a=AT.find(x=>x.k==='tron');if(TRONP&&a&&aStat(a)==='Operating'&&a.ri.length){const u=(t%70)/6;if(u<1){const e2=u*u*(3-2*u);cx.save();cx.globalCompositeOperation=nf>.3?'lighter':'source-over';
+   for(let i=0;i<7;i++){const d=e2*(TRONP.L+40)-i*4.2;if(d<0||d>TRONP.L)continue;const[x,y,an]=TRONP.at(d);cx.save();cx.translate(x,y-1);cx.rotate(an);cx.fillStyle=i%2?'#ff9a3c':'#4fd2ff';cx.fillRect(-1.6,-.7,3.2,1.4);cx.fillStyle=i%2?'rgba(255,154,60,.35)':'rgba(79,210,255,.35)';cx.fillRect(-7,-.35,5.4,.7);cx.restore()}cx.restore()}}}
  // queues outside attractions
  for(const a of AT){const n=Math.min(90,a.q.length);if(!n)continue;const L=QLINE[a.i];cx.fillStyle='#ffffff';for(let i=0;i<n;i++){const[x,y,an]=L.at(Math.min(L.L-.01,1+(i>>1)*1.7)),o=i%2?.9:-.9;cx.fillRect(x-Math.sin(an)*o-.75,y+Math.cos(an)*o-.75,1.5,1.5)}}
  // Walt Disney World Railroad train

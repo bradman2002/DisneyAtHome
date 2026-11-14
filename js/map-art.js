@@ -193,6 +193,25 @@ function aframe(c,e,bb,hh){const[x0,y0,x1,y1]=bb,ins=(x1-x0)*.3,L=(a,b,t)=>[a[0]
  const A=L(a,ta,.04),B=L(b,tb,.04),TA=L(a,ta,.95),TB=L(b,tb,.95);poly4(c,[A,B,TB,TA],g2);if(e)poly4(e,[A,B,TB,TA],'rgba(255,214,150,.55)');
  c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=.5;for(let i=1;i<10;i++){const p=L(A,TA,i/10),q=L(B,TB,i/10);c.beginPath();c.moveTo(...p);c.lineTo(...q);c.stroke()}for(let i=1;i<6;i++){const p=L(A,B,i/6),q=L(TA,TB,i/6);c.beginPath();c.moveTo(...p);c.lineTo(...q);c.stroke()}
  const mx=(x0+x1)/2;c.fillStyle='#2c3644';c.fillRect(mx-6,y1-13,12,6)} // where the monorail beams pass through
+/* TRON Lightcycle / Run: the show building is a big dark box, and out front the coaster runs under its famous canopy:
+   a long, wavy, translucent shell of panels held up on slim supports, pale silver-blue by day and edged in blue and
+   orange light at night. Both are drawn on their real OpenStreetMap outlines. */
+const TRON_LIFT=7;
+// the TRON show building and its canopy (the largest open roof just in front of it), from the map data
+function tronParts(){const b=OSM.buildings.find(q=>/TRON/.test(q.n)&&q.k!=='roof');if(!b)return{};const T=bbox(b.p);let cv=null,best=0;
+ for(const q of OSM.buildings){if(q.k!=='roof'||q.p.length<3)continue;const r=bbox(q.p),x=(r[0]+r[2])/2,y=(r[1]+r[3])/2,ar=(r[2]-r[0])*(r[3]-r[1]);if(x>T[0]-120&&x<T[2]&&y>T[1]+40&&y<T[3]+50&&ar>best){best=ar;cv=q}}return{b,cv}}
+function tronCanopy(c,e,p,bb){const top=p.map(([x,y])=>[x,y-TRON_LIFT]),path=(ctx,pts)=>{ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath()};
+ poly4(c,p,'rgba(20,30,50,.24)'); /* its shade on the ground */
+ c.strokeStyle='#59616e';c.lineWidth=.55;for(let i=0;i<p.length;i+=7){const[x,y]=p[i];if(y<(bb[1]+bb[3])/2-6)continue;c.beginPath();c.moveTo(x,y);c.lineTo(x,y-TRON_LIFT);c.stroke()} /* supports along the front */
+ const g=c.createLinearGradient(bb[0],bb[1]-TRON_LIFT,bb[2],bb[3]-TRON_LIFT);g.addColorStop(0,'rgba(226,236,246,.93)');g.addColorStop(.45,'rgba(160,184,212,.9)');g.addColorStop(.7,'rgba(214,226,240,.92)');g.addColorStop(1,'rgba(150,172,200,.9)');
+ c.save();path(c,top);c.fillStyle=g;c.fill();c.clip();
+ c.strokeStyle='rgba(55,75,105,.38)';c.lineWidth=.4;for(let x=bb[0]-30;x<bb[2]+10;x+=3.4){c.beginPath();c.moveTo(x,bb[1]-TRON_LIFT-4);c.quadraticCurveTo(x+9,(bb[1]+bb[3])/2-TRON_LIFT,x+16,bb[3]-TRON_LIFT+4);c.stroke()} /* the panel ribs, sweeping across */
+ c.strokeStyle='rgba(255,255,255,.45)';c.lineWidth=2.2;for(const k of[.3,.62]){c.beginPath();for(let x=bb[0];x<=bb[2];x+=4){const y=bb[1]+(bb[3]-bb[1])*k+Math.sin(x/9)*4-TRON_LIFT;x===bb[0]?c.moveTo(x,y):c.lineTo(x,y)}c.stroke()} /* sheen */
+ c.restore();c.strokeStyle='#4e6a8a';c.lineWidth=.7;path(c,top);c.stroke();
+ if(e){e.lineJoin='round';e.strokeStyle='rgba(70,200,255,1)';e.lineWidth=1.3;path(e,top);e.stroke();
+  e.save();path(e,top);e.clip();e.strokeStyle='rgba(70,160,255,.35)';e.lineWidth=.5;for(let x=bb[0]-30;x<bb[2]+10;x+=6.8){e.beginPath();e.moveTo(x,bb[1]-TRON_LIFT-4);e.quadraticCurveTo(x+9,(bb[1]+bb[3])/2-TRON_LIFT,x+16,bb[3]-TRON_LIFT+4);e.stroke()}e.restore();
+  e.strokeStyle='rgba(255,140,50,.95)';e.lineWidth=1;e.beginPath();const n=top.length;for(let i=Math.floor(n*.55);i<Math.floor(n*.8);i++)i===Math.floor(n*.55)?e.moveTo(...top[i]):e.lineTo(...top[i]);e.stroke()}}
+function tronBuilding(c,e,q,hh){extrude(c,e,q.p,hh,'#323a48','#252c38',{noWin:true,noGlow:true,ridge:false});if(e){const top=q.p.map(([x,y])=>[x,y-hh]);e.strokeStyle='rgba(70,200,255,.85)';e.lineWidth=.8;e.beginPath();top.forEach(([x,y],i)=>i?e.lineTo(x,y):e.moveTo(x,y));e.closePath();e.stroke()}}
 function tent(c,x,y,r,h,col){c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.ellipse(x+r*.4,y+1,r*1.1,r*.45,0,0,7);c.fill();const n=10;for(let i=0;i<n;i++)poly4(c,[[x,y-h],[x-r+i*2*r/n,y],[x-r+(i+1)*2*r/n,y]],i%2?col:'#fff');c.fillStyle='#f0c040';c.fillRect(x-.3,y-h-3,.6,3)}
 function spaceDome(c,e,x,y,R){c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.ellipse(x+R*.3,y+R*.25,R*1.05,R*.55,0,0,7);c.fill();c.fillStyle='#d9dee6';c.beginPath();c.ellipse(x,y+R*.15,R,R*.5,0,0,7);c.fill();
  const g=c.createLinearGradient(x-R,0,x+R,0);g.addColorStop(0,'#ffffff');g.addColorStop(.6,'#e8edf3');g.addColorStop(1,'#b3bdcb');c.fillStyle=g;c.beginPath();c.moveTo(x-R,y+R*.15);c.quadraticCurveTo(x-R*.45,y-R*.85,x,y-R*1.05);c.quadraticCurveTo(x+R*.45,y-R*.85,x+R,y+R*.15);c.closePath();c.fill();
@@ -268,6 +287,7 @@ function paintMap(rx,ry,rw,rh,mss){
  for(const[col,w]of[['rgba(30,40,30,.25)',7],['#5d636d',5],['#ffffff',.4]]){c.strokeStyle=col;c.lineWidth=w;if(w<1)c.setLineDash([2,2]);for(const l of race)for(const p of l.p){pathOf(c,p);c.stroke()}c.setLineDash([])}
  for(const l of race)for(const p of l.p){b.lineWidth=9;pathOf(b,p);b.stroke()}
  /* buildings, rockwork and trees, painted north-to-south so nearer things overlap farther ones */
+ const{b:tronB,cv:tronCv}=tronParts();
  const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbox(q.p);b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);
   const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,land=landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
@@ -275,6 +295,8 @@ function paintMap(rx,ry,rw,rh,mss){
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
   if(q.n==='Disney’s Contemporary Resort'||q.n==="Disney's Contemporary Resort"){late.push(()=>aframe(c,e,bb,hh));continue} // painted after the monorail beams, which run behind and through it
   if(q.k==='tent'){B.push({y:bb[3],f:()=>tent(c,cx_,bb[3],(bb[2]-bb[0])/2,hh+4,['#d65a8a','#5a8ad6','#e2a321','#7b4fc0'][hs%4])});continue}
+  if(tronB&&q===tronB){B.push({y:bb[3],f:()=>tronBuilding(c,e,q,hh)});continue}
+  if(tronCv&&q===tronCv){const qq=q;B.push({y:bb[3]+2,f:()=>tronCanopy(c,e,qq.p,bb)});continue} /* the TRON canopy */
   if(q.k==='roof'){roof=tone(roof,.25);hh=Math.min(hh,3.4)}
   if(/Rapunzel/.test(q.n)){B.push({y:bb[3],f:()=>{extrude(c,e,q.p,26,'#e9d8c6','#7b4fc0',{noWin:true});c.fillStyle='#7b4fc0';c.beginPath();c.moveTo(bb[0]-1,bb[1]-26);c.lineTo(cx_,bb[1]-38);c.lineTo(bb[2]+1,bb[1]-26);c.fill()}});continue}
   if(/train_station/.test(q.k||'')){wall='#c9563f';roof='#9e2f2f'}
@@ -298,7 +320,7 @@ function paintMap(rx,ry,rw,rh,mss){
  // Space Mountain on its real footprint
  {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p),rx=(bb[2]-bb[0])/2;B.push({y:bb[3],f:()=>spaceDome(c,e,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,rx)})}}
  // details OpenStreetMap doesn't model: flume mountain, mine mountain, treehouse, TRON canopy
- for(const a of AT){if(!['mtn2','mtn3','tree','tron'].includes(a.k))continue;const f=attractionArt(c,e,a);if(!f)continue;const S=a.k==='tron'?1.6:1.25;
+ for(const a of AT){if(!['mtn2','mtn3','tree'].includes(a.k)&&!(a.k==='tron'&&!tronB))continue; /* TRON has its own art on its real outlines, when the map data has them */const f=attractionArt(c,e,a);if(!f)continue;const S=a.k==='tron'?1.6:1.25;
   B.push({y:a.y+12,f:()=>{for(const ctx of[c,e]){ctx.save();ctx.translate(a.x,a.y);ctx.scale(S,S);ctx.translate(-a.x,-a.y)}f();c.restore();e.restore()}})}
  /* trees: every mapped tree, plus canopy filling the real forests (worked out once, reused by the close-up layers) */
  if(!MAP.crowns){const bd=b.getImageData(0,0,W,H).data,free=(x,y)=>{x|=0;y|=0;return x>1&&y>1&&x<W-1&&y<H-1&&bd[(y*W+x)*4+3]<10};

@@ -99,7 +99,7 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(sum>0)for(const k in w)t[k]=w[k]/sum*Math.min(1,top*2.2)*zoom;
  return t}
 function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying())||(typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying()),
-  duck=show?.12:1,base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
+  duck=(show?.12:1)*(1-.8*(typeof rideLevel==='number'?rideLevel:0)),base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
  for(const k in AREA){if(AM.bad[k])continue;const want=t[k]*duck*base,v=AM.vol[k]=(AM.vol[k]||0)+(want-(AM.vol[k]||0))*.12;let a=AM.el[k];
   if(v>.006){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
    setVol(a,v);if(a.paused)a.play().catch(()=>{})}
@@ -110,7 +110,7 @@ setInterval(areaTick,120);
    "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
    name: happily-ever-after.mp3, let-the-magic-begin.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
-   electrical-water-pageant.mp3 and area-*.mp3. Anything else in the folder is ignored. */
+   electrical-water-pageant.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 function pickAudioFolder(){const i=document.createElement('input');i.type='file';i.multiple=true;i.webkitdirectory=true;i.onchange=()=>loadAudioFiles([...i.files]);i.click()}
@@ -121,6 +121,7 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
   else if(nm==='let-the-magic-begin.mp3'){key='welcome';use=()=>{WELC.a.src='picked';WELC.a.audio.src=URL.createObjectURL(f);WELC.a.audio.load()}}
   else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
   else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.id;use=()=>parUse(P,f,f.name)}
+   else if(/^ride-(\w+)\.mp3$/.test(nm)){const k=/^ride-(\w+)\.mp3$/.exec(nm)[1];key='ride-'+k;use=()=>{const a=RA.el[k];RA.bad[k]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}
    else{const m=/^area-(\w+)\.mp3$/.exec(nm);if(m&&AREA[m[1]]){key='area-'+m[1];use=()=>{const a=AM.el[m[1]];AM.bad[m[1]]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}}}
   if(!key)continue;st(`Saving ${f.name}…`);try{await saveFile(key,f);use();n++}catch(e){miss++;console.warn('Could not keep',f.name,e)}}
  st(n?`${n} file${n>1?'s':''} kept in this browser${miss?` · ${miss} could not be saved (not enough space?)`:''}.`:'No matching audio files in that folder.');toast(n?'Audio saved in this browser':'No matching audio files found')}
@@ -134,3 +135,28 @@ function soundKick(){if(!AU.ctx){auInit();return}AU.ctx.resume().then(soundHint)
 function soundAuto(){auInit();setTimeout(soundHint,1500);
  const once=()=>{soundKick();if(soundRunning()||AU.ctx)setTimeout(()=>{if(soundRunning()){for(const e of['pointerdown','keydown','touchend'])removeEventListener(e,once,true)}soundHint()},300)};
  for(const e of['pointerdown','keydown','touchend'])addEventListener(e,once,true)}
+/* ===== RIDE AUDIO =====
+   A ride's own soundtrack (the owner's copies, audio/ride-<name>.mp3, never committed) fades in when you look closely
+   at that ride, the way you hear it walking up to the entrance: when you tap the ride, when you zoom in on it, or when
+   TV mode's camera visits it. The land music dips underneath, and the ride fades out again as you move away. It only
+   plays while the ride is running. Each track keeps its place, but starts from the top if it hasn't been heard for ten
+   minutes, so a visit begins at the beginning. To add a ride, put its file in audio/ and add a line to RIDEAUD. */
+const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirates'};
+const RA={el:{},vol:{},bad:{},heard:{}};let rideLevel=0;
+const rideAt=a=>a&&RIDEAUD[a.osm];
+async function rideSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('ride-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
+function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;
+ if(SV.on)return t;const z=Math.max(0,Math.min(1,(cam.m-1.9)/1.1));
+ for(const a of AT){const k=rideAt(a);if(!k)continue;const run=aStat(a)==='Operating'||aStat(a)==='Last riders';if(!run)continue;
+  let v=z*Math.exp(-Math.hypot(cam.x-a.x,cam.y-a.y)/55); /* close in on it */
+  if(sel&&sel.k==='a'&&sel.i===a.i&&sheet==='detail')v=Math.max(v,.9); /* you tapped it */
+  t[k]=Math.max(t[k],Math.min(1,v*1.4))}return t}
+function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id)),
+  base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?.25:1);let top=0;
+ for(const k in t){if(RA.bad[k])continue;const want=t[k]*base,v=RA.vol[k]=(RA.vol[k]||0)+(want-(RA.vol[k]||0))*.06;top=Math.max(top,t[k]);let a=RA.el[k];
+  if(v>.006){if(!a){a=RA.el[k]=new Audio('audio/ride-'+k+'.mp3');a.loop=true;a.preload='auto';
+     a.addEventListener('error',()=>{if(a.dataset.saved){RA.bad[k]=1;return}a.dataset.saved=1;rideSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else RA.bad[k]=1})})}
+   if(a.paused){if(Date.now()-(RA.heard[k]||0)>10*60e3&&a.readyState>0)a.currentTime=0;a.play().catch(()=>{})}setVol(a,v);RA.heard[k]=Date.now()}
+  else if(a&&!a.paused){setVol(a,0);a.pause()}}
+ rideLevel+=(top-rideLevel)*.06} /* how much the land music should step aside */
+setInterval(rideTick,120);

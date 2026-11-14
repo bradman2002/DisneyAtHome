@@ -43,6 +43,9 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   land (the hub counts as Main Street), ducked under show music, volume `AU.v.music`.
   Always set a music player's level with `setVol(a,v)`, never `a.volume`: iPhones ignore `volume`, so `setVol`
   routes the player through a Web Audio gain node.
+- Ride audio (`RIDEAUD`, `rideTick` in `audio.js`): `audio/ride-<key>.mp3` fades in when the camera is zoomed in close to
+  that ride (TV mode has shots for them) or its sheet is open, only while it runs; area music steps aside via
+  `rideLevel`. Files are the owner's copies, git-ignored like the other Disney audio.
 - `js/choreo.js` — Happily Ever After fireworks cues derived offline from that soundtrack.
 - `js/map-art.js` — paints the aerial map from OSM data into cached canvases, painterly style. `paintMap()`
   paints any rectangle at any resolution: `MAP.base`/`MAP.glow` cover the whole map at a modest resolution,

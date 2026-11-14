@@ -146,6 +146,6 @@ for(const ev of['pointermove','pointerdown','keydown','wheel'])addEventListener(
 /* ---------- boot ---------- */
 try{const s=+localStorage.getItem('mk-speed');if(SPEEDS.includes(s))speed=s}catch(e){} // starts at 1× (real time) unless you chose another speed before
 for(const e of EV)if(!Array.isArray(e.t))e.t=e.ts.map(hm).filter(x=>x!==null).sort((a,b)=>a-b);relTimes();
-loadCastleImage().then(()=>{buildMap();resize();reset(7*3600);seek(9*3600-900,false);sync();ui(true);liveInit();
+loadCastleImage().then(()=>{buildMap();resize();reset(7*3600);seek(9*3600-900,false);sync();ui(true);liveInit();soundAuto();
  let last=performance.now(),uit=0;
  (function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;frame(dt);uit+=dt;if(uit>.25){uit=0;ui(false)}requestAnimationFrame(loop)})(last)});

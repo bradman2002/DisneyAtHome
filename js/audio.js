@@ -32,6 +32,10 @@ async function auInit(){if(AU.ctx){AU.ctx.resume();return}if(AU.loading)return;A
  AU.ready=true;AU.loading=false;AU.lt=T;auSync();setInterval(auTick,500);
  st(AU.failed.length===SOUND_FILES.length?'Sounds unavailable':'Audio on');
  if(AU.failed.length)toast(AU.failed.length===SOUND_FILES.length?(location.protocol==='file:'?'Sounds can’t load from a file opened directly. Run a local web server (see README).':'Sound files not found in the audio/ folder.'):`${AU.failed.length} sound effect(s) couldn’t load (${AU.failed.join(', ')}). Reload the page to try again.`)}
+/* Set a music player's volume. iPhones and iPads ignore the volume of web audio players (they play at full volume or not
+   at all), so where possible each player is routed through the page's own sound mixer and its level set there instead. */
+function setVol(a,v){v=Math.max(0,Math.min(1,v));if(AU.ctx&&!a._nog){if(!a._g){try{const s=AU.ctx.createMediaElementSource(a);a._g=AU.ctx.createGain();s.connect(a._g).connect(AU.ctx.destination);a.volume=1}catch(e){a._nog=1}}
+  if(a._g){a._g.gain.value=v;return} /* (callers already ease the level over time) */}a.volume=v}
 function applyVol(){if(!AU.ctx)return;AU.m.gain.value=AU.mute?0:AU.v.master;for(const k of['crowd','amb','trans','show'])AU.g[k].gain.value=AU.v[k]}
 function play(n,v,dst,at,rate){const b=AU.buf[n];if(!b||!AU.ready||v<.004)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;
  s.playbackRate.value=rate||1;g.gain.value=v;s.connect(g).connect(dst);s.start(c.currentTime+(at||0))}
@@ -96,9 +100,9 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
 function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()),
   duck=show?.12:1,base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
  for(const k in AREA){if(AM.bad[k])continue;const want=t[k]*duck*base,v=AM.vol[k]=(AM.vol[k]||0)+(want-(AM.vol[k]||0))*.12;let a=AM.el[k];
-  if(v>.004){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
-   a.volume=Math.min(1,v);if(a.paused)a.play().catch(()=>{})}
-  else if(a&&!a.paused){a.volume=0;a.pause()}}}
+  if(v>.006){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
+   setVol(a,v);if(a.paused)a.play().catch(()=>{})}
+  else if(a&&!a.paused){setVol(a,0);a.pause()}}}
 setInterval(areaTick,120);
 /* ===== YOUR AUDIO, KEPT IN THIS BROWSER =====
    The Disney music is never put on the website itself (it is Disney's, and a public site would be giving it away). Instead,
@@ -118,3 +122,13 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
    else{const m=/^area-(\w+)\.mp3$/.exec(nm);if(m&&AREA[m[1]]){key='area-'+m[1];use=()=>{const a=AM.el[m[1]];AM.bad[m[1]]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}}}
   if(!key)continue;st(`Saving ${f.name}…`);try{await saveFile(key,f);use();n++}catch(e){miss++;console.warn('Could not keep',f.name,e)}}
  st(n?`${n} file${n>1?'s':''} kept in this browser${miss?` · ${miss} could not be saved (not enough space?)`:''}.`:'No matching audio files in that folder.');toast(n?'Audio saved in this browser':'No matching audio files found')}
+/* ===== SOUND STARTS BY ITSELF =====
+   Sound starts as the page opens. Browsers only allow that once you have interacted with a site (Chrome remembers sites
+   you use a lot, and the TV launchers allow it outright); otherwise it starts on your first click, tap or key press
+   anywhere, with a small reminder on screen until then. */
+function soundRunning(){return AU.ctx&&AU.ctx.state==='running'}
+function soundHint(){const h=$('#sndHint');if(h)h.hidden=soundRunning()||AU.mute}
+function soundKick(){if(!AU.ctx){auInit();return}AU.ctx.resume().then(soundHint);for(const k in AM.el){const a=AM.el[k];if(a&&a.volume>.004&&a.paused)a.play().catch(()=>{})}}
+function soundAuto(){auInit();setTimeout(soundHint,1500);
+ const once=()=>{soundKick();if(soundRunning()||AU.ctx)setTimeout(()=>{if(soundRunning()){for(const e of['pointerdown','keydown','touchend'])removeEventListener(e,once,true)}soundHint()},300)};
+ for(const e of['pointerdown','keydown','touchend'])addEventListener(e,once,true)}

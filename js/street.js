@@ -284,7 +284,7 @@ const envAt=st=>CHOREO.env[Math.max(0,Math.min(CHOREO.env.length-1,Math.floor(st
 function heaSync(){const ev=fireEv(),st=showClock(),a=HEA.audio,live=ev&&ev.ph==='live';
  if(live&&HEA.liveKey!==ev.key){HEA.liveKey=ev.key;if(HEA.ready&&HEA.auto&&speed!==1&&!FF){speed=1;sync();toast('Happily Ever After is starting — speed set to 1× so the soundtrack stays in sync')}}
  const want=live&&HEA.ready&&playing&&speed===1&&!FF&&st!==null&&st<a.duration-.5;
- if(want){a.volume=Math.min(1,(AU.mute?0:AU.v.master)*1.1*(1-.85*(typeof ewpNear==='function'&&ewpPlaying()?ewpNear():0)));/* quieter when the map is out at the water pageant */if(a.paused){a.currentTime=Math.max(0,st);a.play().catch(()=>{HEA.blocked=true;svBadge()})}
+ if(want){setVol(a,(AU.mute?0:AU.v.master)*1.1*(1-.85*(typeof ewpNear==='function'&&ewpPlaying()?ewpNear():0)));/* quieter when the map is out at the water pageant */if(a.paused){a.currentTime=Math.max(0,st);a.play().catch(()=>{HEA.blocked=true;svBadge()})}
   else syncTrack(HEA,a,a.currentTime-st,()=>{a.currentTime=Math.max(0,st)})} // the soundtrack is the master clock
  else if(!a.paused){a.pause()}}
 function hsl(h,s,l,a){return`hsla(${h},${s}%,${l}%,${a})`}

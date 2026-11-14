@@ -62,6 +62,12 @@ Note: the soundtrack is Disney's copyrighted music. Keeping it on a private or
 password-protected site is the safe choice; hosting it publicly may get the site a
 takedown notice.
 
+## Sound
+
+Sound starts by itself when the page opens, wherever the browser allows it (it does once you've used the site a
+few times, and the TV launchers always allow it). Otherwise a "Click anywhere for sound" reminder shows, and the first
+click, tap or key press starts everything.
+
 ## Area music
 
 Each land's background music plays as you look at it: put your copies at `audio/area-ms.mp3` (Main Street,

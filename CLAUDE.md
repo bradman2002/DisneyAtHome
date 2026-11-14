@@ -41,6 +41,8 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - `js/audio.js` — ambience engine; real recordings loaded from `audio/*.m4a`, loop points in `LOOP_POINTS`. Also the
   area music (`AREA`, `areaTick`): one looping HTML audio element per land, mixed by the camera's distance to each
   land (the hub counts as Main Street), ducked under show music, volume `AU.v.music`.
+  Always set a music player's level with `setVol(a,v)`, never `a.volume`: iPhones ignore `volume`, so `setVol`
+  routes the player through a Web Audio gain node.
 - `js/choreo.js` — Happily Ever After fireworks cues derived offline from that soundtrack.
 - `js/map-art.js` — paints the aerial map from OSM data into cached canvases, painterly style. `paintMap()`
   paints any rectangle at any resolution: `MAP.base`/`MAP.glow` cover the whole map at a modest resolution,

@@ -116,7 +116,7 @@ const ewpPlaying=()=>EWP.ready&&!EWP.audio.paused;
 function pageantSync(){const s=ewpShow(),a=EWP.audio,near=s?ewpNear():0;
  if(s&&EWP.liveKey!==s.t){EWP.liveKey=s.t;if(EWP.ready&&EWP.auto&&near>.3&&speed!==1&&!FF){speed=1;sync();toast('The Electrical Water Pageant is starting — speed set to 1× so the music stays in sync')}}
  const want=s&&EWP.ready&&playing&&speed===1&&!FF&&near>.02;
- if(want){const pos=T-s.t;a.volume=Math.min(1,near*(AU.mute?0:AU.v.master)*1.1);
+ if(want){const pos=T-s.t;setVol(a,near*(AU.mute?0:AU.v.master)*1.1);
   if(a.paused){a.currentTime=Math.max(0,pos);a.play().catch(()=>{EWP.blocked=true;ewpBadge()})}
   else{const d=a.currentTime-pos,other=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id));
    if(other){if(Math.abs(d)>.6)a.currentTime=Math.max(0,pos)}                 // another show's music is keeping time: just follow

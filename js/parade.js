@@ -227,7 +227,7 @@ function paradeNearness(){const us=paradeUnits();if(!us.length)return 0;let best
 function paradeSync(){const L=liveParade();for(const P of PARADES){const ev=paradeEv(P.id),A=P.a,a=A.audio;if(!ev)continue;const live=P===L,st=live?T-ev.key:null;
  if(live&&A.liveKey!==ev.key){A.liveKey=ev.key;if(A.ready&&A.auto&&speed!==1&&!FF){speed=1;sync();toast(P.n+' is stepping off — speed set to 1× so the music stays in sync')}}
  const want=live&&A.ready&&playing&&speed===1&&!FF;
- if(want){const dur=a.duration||0;a.loop=dur>0&&ev.dur*60>dur+30;if(!a.loop&&dur&&st>=dur-.3){if(!a.paused)a.pause();continue}const pos=dur?st%dur:st;a.volume=Math.min(1,(.62+.38*paradeNearness())*(AU.mute?0:AU.v.master)*1.1);/* clearly audible from step-off, fuller as floats come near */
+ if(want){const dur=a.duration||0;a.loop=dur>0&&ev.dur*60>dur+30;if(!a.loop&&dur&&st>=dur-.3){if(!a.paused)a.pause();continue}const pos=dur?st%dur:st;setVol(a,(.62+.38*paradeNearness())*(AU.mute?0:AU.v.master)*1.1);/* clearly audible from step-off, fuller as floats come near */
   if(a.paused){a.currentTime=Math.max(0,pos);a.play().catch(()=>{A.blocked=true;parBadge()})}
   else if(dur){let d=a.currentTime-pos;if(d>dur/2)d-=dur;if(d<-dur/2)d+=dur;syncTrack(A,a,d,()=>{a.currentTime=pos})}}
  else if(!a.paused)a.pause()}}

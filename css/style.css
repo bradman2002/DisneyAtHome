@@ -17,6 +17,8 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 #views{position:absolute;top:12px;left:12px;display:flex;background:rgba(255,255,255,.95);border-radius:999px;padding:3px;box-shadow:var(--sh)}
 #views button{border:0;background:none;padding:6px 14px;border-radius:999px;font-weight:700;font-size:13px;color:var(--mu)}#views button.on{background:var(--tx);color:#fff}
 #svb{position:absolute;left:50%;transform:translateX(-50%);top:14px;display:none;background:rgba(20,30,70,.8);color:#fff;padding:7px 16px;border-radius:999px;font-weight:700;font-size:13px;white-space:nowrap}
+#sndHint{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:rgba(18,24,48,.72);color:#fff;font-weight:700;font-size:13px;padding:7px 14px;border-radius:999px;z-index:6;pointer-events:none;animation:sndp 2.4s ease-in-out infinite}
+@keyframes sndp{50%{opacity:.6}}
 #toast{position:absolute;left:50%;top:60px;transform:translate(-50%,-8px);opacity:0;pointer-events:none;background:#fff;padding:10px 16px;border-radius:14px;box-shadow:0 6px 24px rgba(20,32,70,.22);transition:.25s;max-width:90%;text-align:center;font-weight:600;z-index:8}#toast.on{opacity:1;transform:translate(-50%,0)}
 /* time card */
 #time{position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.97);border-radius:18px;box-shadow:var(--sh);padding:8px 12px 6px;width:min(360px,calc(100% - 24px))}

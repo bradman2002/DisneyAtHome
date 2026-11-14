@@ -34,7 +34,7 @@ async function auInit(){if(AU.ctx){AU.ctx.resume();return}if(AU.loading)return;A
  if(AU.failed.length)toast(AU.failed.length===SOUND_FILES.length?(location.protocol==='file:'?'Sounds can’t load from a file opened directly. Run a local web server (see README).':'Sound files not found in the audio/ folder.'):`${AU.failed.length} sound effect(s) couldn’t load (${AU.failed.join(', ')}). Reload the page to try again.`)}
 /* Set a music player's volume. iPhones and iPads ignore the volume of web audio players (they play at full volume or not
    at all), so where possible each player is routed through the page's own sound mixer and its level set there instead. */
-function setVol(a,v){v=Math.max(0,Math.min(1,v));if(AU.ctx&&!a._nog){if(!a._g){try{const s=AU.ctx.createMediaElementSource(a);a._g=AU.ctx.createGain();s.connect(a._g).connect(AU.ctx.destination);a.volume=1}catch(e){a._nog=1}}
+function setVol(a,v){v=isFinite(v)?Math.max(0,Math.min(1,v)):0;if(AU.ctx&&!a._nog){if(!a._g){try{const s=AU.ctx.createMediaElementSource(a);a._g=AU.ctx.createGain();s.connect(a._g).connect(AU.ctx.destination);a.volume=1}catch(e){a._nog=1}}
   if(a._g){a._g.gain.value=v;return} /* (callers already ease the level over time) */}a.volume=v}
 function applyVol(){if(!AU.ctx)return;AU.m.gain.value=AU.mute?0:AU.v.master;for(const k of['crowd','amb','trans','show'])AU.g[k].gain.value=AU.v[k]}
 function play(n,v,dst,at,rate){const b=AU.buf[n];if(!b||!AU.ready||v<.004)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;
@@ -44,10 +44,10 @@ const EVPOS={parade:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2],xmas
 const busXY=b=>BUSP.at((1010-b.x)/370*BUSP.L);
 const evP=(ev,s)=>{const q=EVPOS[ev.id]||P_.hub;return .25+.75*prox(q[0],q[1],s||380)};
 function cue(ev){if(!AU.ready||speed>30)return;const d=AU.g.show,p=evP(ev);
- if(ev.id==='castle'||ev.id==='welcome')play('fanfare',.7*p,d);else if(ev.id==='flag'){play('snare',.5*p,d);AU.last['snare'+ev.id]=performance.now()}else if(isParade(ev.id)||ev.id==='band'){play('snare',.55*p,d);AU.last['snare'+ev.id]=performance.now()}
+ if(ev.id==='castle'||(ev.id==='welcome'&&!WELC.a.ready))play('fanfare',.7*p,d);else if(ev.id==='flag'){play('snare',.5*p,d);AU.last['snare'+ev.id]=performance.now()}else if(isParade(ev.id)||ev.id==='band'){play('snare',.55*p,d);AU.last['snare'+ev.id]=performance.now()}
  else if(ev.id==='fire')play('fw4',.6*p,d)}
 function auSync(){for(const m of MONO)m._ps=m.st;for(const f of FERRY)f._ps=f.st;for(const b of BUS)b._ps=b.st;for(const ev of EV)ev._aps=ev.ph}
-function lvl(k,v,tc){const l=AU.L[k];if(l)l.g.gain.setTargetAtTime(Math.max(0,v),AU.ctx.currentTime,tc||.6)}
+function lvl(k,v,tc){const l=AU.L[k];if(!isFinite(v))v=0;if(l)l.g.gain.setTargetAtTime(Math.max(0,v),AU.ctx.currentTime,tc||.6)}
 function auTick(){if(!AU.ready||FF)return;
  // a large jump in simulated time means a seek or a fast speed: resync state without firing stale one-shots
  const jump=Math.abs(T-AU.lt)>Math.max(60,speed*3);AU.lt=T;if(jump){auSync();}
@@ -58,7 +58,7 @@ function auTick(){if(!AU.ready||FF)return;
  // nature sits well under the crowd, and drops further while a show's music is playing
  const nat=PARADES.some(P=>parPlaying(P.id))||(HEA.ready&&!HEA.audio.paused)?.35:1;
  lvl('birds',day*(.06+.1*(1-dens*.6))*nat);lvl('crickets',nf*.13*nat,1.5);
- lvl('falls',LP('adv')*.3*nat);lvl('jungle',LP('adv')*.24*(.4+.6*day)*nat);lvl('river',LP('fr')*.3*nat);
+ {const gp=P_.geyser?geyserNow()*prox(P_.geyser[0],P_.geyser[1],200)*zl:0;lvl('falls',Math.max(LP('adv')*.3*nat,gp*.6))} /* the waterfall recording also stands in for the geyser's roar */lvl('jungle',LP('adv')*.24*(.4+.6*day)*nat);lvl('river',LP('fr')*.3*nat);
  lvl('lap',LP('lib')*.24*nat);lvl('flag',(LP('lib')*.22+LP('ms')*.12)*(.5+.5*day));
  lvl('chimes',LP('fan')*.2*nat);lvl('creek',LP('fan')*.15*nat);lvl('hum',LP('tom')*.38);{let lk=0;for(let i=0;i<=8;i++){const q=FER.at(FER.L*i/8);lk=Math.max(lk,prox(q[0],q[1],260))}lvl('lake',lk*.3*nat)} // anywhere along the lagoon crossing
  let bv=0;for(const b of BUS){const p=busXY(b);bv=Math.max(bv,prox(p[0],p[1],240)*(b.st==='dwell'?.55:1))}lvl('engine',bv*.5,.3);
@@ -97,7 +97,7 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  /* the nearest land dominates sharply (fifth power), so the hub hears mostly one land, not a muddle of six */
  if(sum>0)for(const k in w)t[k]=w[k]/sum*Math.min(1,top*2.2)*zoom;
  return t}
-function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()),
+function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying())||(typeof welcPlaying==='function'&&welcPlaying()),
   duck=show?.12:1,base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
  for(const k in AREA){if(AM.bad[k])continue;const want=t[k]*duck*base,v=AM.vol[k]=(AM.vol[k]||0)+(want-(AM.vol[k]||0))*.12;let a=AM.el[k];
   if(v>.006){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
@@ -108,7 +108,7 @@ setInterval(areaTick,120);
    The Disney music is never put on the website itself (it is Disney's, and a public site would be giving it away). Instead,
    "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
-   name: happily-ever-after.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
+   name: happily-ever-after.mp3, let-the-magic-begin.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
    electrical-water-pageant.mp3 and area-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
@@ -117,6 +117,7 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){} /* ask the browser not to clear it to save space */
  for(const f of files){const nm=f.name.toLowerCase();let key=null,use=null;
   if(nm==='happily-ever-after.mp3'){key='hea';use=()=>heaUse(f,f.name)}
+  else if(nm==='let-the-magic-begin.mp3'){key='welcome';use=()=>{WELC.a.src='picked';WELC.a.audio.src=URL.createObjectURL(f);WELC.a.audio.load()}}
   else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
   else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.id;use=()=>parUse(P,f,f.name)}
    else{const m=/^area-(\w+)\.mp3$/.exec(nm);if(m&&AREA[m[1]]){key='area-'+m[1];use=()=>{const a=AM.el[m[1]];AM.bad[m[1]]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}}}

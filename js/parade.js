@@ -234,3 +234,19 @@ function paradeSync(){const L=liveParade();for(const P of PARADES){const ev=para
 function watchParade(id){const P=parOf(id)||PARADES[0],ev=paradeEv(P.id);if(!ev)return;ev.on=true;ev.userOn=true;const s=ev.t.find(x=>x>=T-60)??ev.t[0];if(!AU.ready)auInit();seek(s-20,s-20<T);P.a.liveKey=null;speed=1;playing=true;
  if(!SV.on){follow={k:'parade'};cam.tm=Math.max(cam.tm,2.4)}closeSheet();sync();if(!P.a.ready&&P.file)toast(`Add ${P.file} (or load it in Entertainment) to hear the parade`);
  P.a.audio.play().then(()=>P.a.audio.pause()).catch(()=>{})}
+/* ---------- the welcome show's soundtrack ----------
+   "Let the Magic Begin" (the owner's copy, audio/let-the-magic-begin.mp3, never committed) plays on the castle stage
+   before opening. The show is as long as the track and ends right at opening time, and the music keeps time the same
+   way the parades' does. If the file isn't on the site, the copy kept by Load audio folder is used. */
+const WELC={file:'audio/let-the-magic-begin.mp3',a:{audio:new Audio(),ready:false,name:'audio/let-the-magic-begin.mp3',src:'folder',liveKey:null}};
+{const A=WELC.a,a=A.audio,ev=()=>EV.find(e=>e.id==='welcome');a.preload='auto';
+ a.addEventListener('canplay',()=>{A.ready=true});
+ a.addEventListener('loadedmetadata',()=>{const d=a.duration,e=ev();if(!d||!isFinite(d)||!e)return;if(!e.userDur)e.dur=d/60;if(e.rel)e.rel[1]=-Math.round(d);relTimes()}); /* the show ends as the park opens */
+ a.addEventListener('error',async()=>{if(A.src!=='folder')return;A.src='none';try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('welcome');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob){A.src='picked';a.src=URL.createObjectURL(v.blob);a.load()}}catch(e){}});
+ loadTrack(a,WELC.file)}
+const welcPlaying=()=>WELC.a.ready&&!WELC.a.audio.paused;
+function welcomeSync(){const e=EV.find(x=>x.id==='welcome'),A=WELC.a,a=A.audio;if(!e)return;const live=e.on!==false&&e.ph==='live',pos=live?T-e.key:0,dur=a.duration||0;
+ if(live&&A.liveKey!==e.key){A.liveKey=e.key;if(A.ready&&speed!==1&&!FF){speed=1;sync();toast('Let the Magic Begin is starting — speed set to 1× so the music stays in sync')}}
+ if(live&&A.ready&&playing&&speed===1&&!FF&&(!dur||pos<dur-.3)){setVol(a,(AU.mute?0:AU.v.master)*(SV.on?.55:.3+.7*prox(EVPOS.welcome[0],EVPOS.welcome[1],320)));
+  if(a.paused){a.currentTime=Math.max(0,pos);a.play().catch(()=>{})}else syncTrack(A,a,a.currentTime-pos,()=>{a.currentTime=Math.max(0,pos)})}
+ else if(!a.paused)a.pause()}

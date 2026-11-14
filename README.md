@@ -102,7 +102,8 @@ It behaves like the Festival of Fantasy soundtrack, and it is also Disney's copy
 The map runs east across Bay Lake: Wilderness Lodge, Discovery Island and the Fort Wilderness marina. Boats run
 their real routes: Magic Kingdom to Fort Wilderness, Magic Kingdom to Wilderness Lodge, and the launch that
 circles Fort Wilderness, the Contemporary and Wilderness Lodge. The large bare area on the east shore is a
-construction site in the map data, drawn as it is.
+construction site in the map data, drawn as it is. Fire Rock Geyser, beside Wilderness Lodge, erupts at the top of every hour
+from 7 AM to 10 PM, about 120 feet high, as the real one does.
 
 ## Crowds
 

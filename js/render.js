@@ -24,7 +24,7 @@ const GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=64;co
 function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
- paradeSync();pageantSync();
+ paradeSync();pageantSync();welcomeSync();
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k} // TV mode glides between shots
  if(follow){const o=vehPos(follow);if(o){cam.tx=o[0];cam.ty=o[1]}}clampCam();
@@ -45,6 +45,7 @@ function frame(rdt){
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
  drawPageant(now,1); // the water pageant's lights
+ {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint
  // castle projections during Happily Ever After
  const st=showClock();
@@ -88,6 +89,13 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
  if(open&&JCP)for(let i=0;i<3;i++){const[x,y,an]=JCP.at(((t*4+i*JCP.L/3)%JCP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e9dcc0';cx.fillRect(-4,-1.8,8,3.6);cx.fillStyle='#3f7a4f';cx.fillRect(-4,-2.6,8,1.2);cx.restore()}
  // horse-drawn streetcar on Main Street (daytime)
  if(h>9&&h<14.5&&TRAMP.L>10&&!paradeBusy()){const u=(T%480)/480,d=(u<.5?u*2:(1-u)*2)*TRAMP.L,[x,y,an]=TRAMP.at(d);cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#8a4b2a';cx.fillRect(-4,-1.6,6,3.2);cx.fillStyle='#e8d7a8';cx.fillRect(-4,-1.9,6,.6);cx.fillStyle='#d9c3a0';cx.fillRect(2.5,-.8,3.2,1.6);cx.restore()}
+ // Fire Rock Geyser: a column of white water out of the rocks, drifting off as spray, lit warm at night
+ {const g=geyserNow();if(g>0){const[x0,y0]=P_.geyser,H=29*g,R=seeded(Math.floor(now/40));cx.save();
+   const cg=cx.createLinearGradient(0,y0,0,y0-H);cg.addColorStop(0,'rgba(255,255,255,.95)');cg.addColorStop(.7,'rgba(240,248,255,.75)');cg.addColorStop(1,'rgba(240,248,255,0)');
+   cx.fillStyle=cg;cx.beginPath();cx.moveTo(x0-2.2,y0);cx.quadraticCurveTo(x0-1,y0-H*.5,x0-1.6+Math.sin(now/300)*.6,y0-H);cx.lineTo(x0+1.8+Math.sin(now/300)*.6,y0-H);cx.quadraticCurveTo(x0+1.2,y0-H*.5,x0+2.2,y0);cx.fill();
+   for(let i=0;i<70*g;i++){const u=R(),h=u*H,sp=(R()-.5)*(2.5+u*9),dr=u*u*5;cx.fillStyle=`rgba(255,255,255,${.55*(1-u)+.15})`;cx.beginPath();cx.arc(x0+sp+dr,y0-h+R()*2,.35+u*1.3,0,7);cx.fill()} /* spray, blown a little east */
+   cx.fillStyle='rgba(255,255,255,.35)';cx.beginPath();cx.ellipse(x0+1,y0+.5,4+3*g,1.6+g,0,0,7);cx.fill(); /* splash at the base */
+   cx.restore()}}
  // TRON's lightcycles: a train of blue and orange cycles launches under the canopy every minute or so
  {const a=AT.find(x=>x.k==='tron');if(TRONP&&a&&aStat(a)==='Operating'&&a.ri.length){const u=(t%70)/6;if(u<1){const e2=u*u*(3-2*u);cx.save();cx.globalCompositeOperation=nf>.3?'lighter':'source-over';
    for(let i=0;i<7;i++){const d=e2*(TRONP.L+40)-i*4.2;if(d<0||d>TRONP.L)continue;const[x,y,an]=TRONP.at(d);cx.save();cx.translate(x,y-1);cx.rotate(an);cx.fillStyle=i%2?'#ff9a3c':'#4fd2ff';cx.fillRect(-1.6,-.7,3.2,1.4);cx.fillStyle=i%2?'rgba(255,154,60,.35)':'rgba(79,210,255,.35)';cx.fillRect(-7,-.35,5.4,.7);cx.restore()}cx.restore()}}}

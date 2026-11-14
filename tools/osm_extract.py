@@ -332,6 +332,8 @@ for key,name in {'wl':"Disney's Wilderness Lodge",'pioneer':'Pioneer Hall','disc
     b_=place(name)
     if b_: PLACES[key]=R1(b_[1])
 wd=next((ND[i] for i,t in NT.items() if t.get('name')=='Wilderness Lodge Dock'),None)
+gz=next((ND[i] for i,t in NT.items() if t.get('name')=='Fire Rock Geyser'),None)  # the geyser itself (a point), not the rock field around it
+if gz: PLACES['geyser']=R1(gz)
 if wd: PLACES['wldock']=R1(wd)
 # the boat services on Bay Lake, each as one line starting from its Magic Kingdom (or, for the resort-to-resort boat, Fort Wilderness) end
 def boat(prefix): return [R1(q) for q in simplify(chain([wid for wid,w in WAYS.items() if w['t'].get('route')=='ferry' and w['t'].get('name','').lower().startswith(prefix)]),.5)]

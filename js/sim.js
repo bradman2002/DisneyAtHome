@@ -78,6 +78,13 @@ if(P_.wl)RESORTS.wl={n:'Disney’s Wilderness Lodge',t:'Lodge on the south shore
 if(P_.fw)RESORTS.fw={n:'Disney’s Fort Wilderness Resort',t:'Campground marina on the east shore of Bay Lake, reached by boat',c:P_.fw,boat:P_.fw};
 // boats that call at a place: [route, boat] for every boat whose route has a stop there
 const boatsAt=q=>{const out=[];LAUNCH.forEach(b=>{const R=BOATR[b.r];if(R.st.some(d=>{const p=R.p.at(Math.min(d,R.p.L-.01));return Math.hypot(p[0]-q[0],p[1]-q[1])<70}))out.push([R,b])});return out};
+/* Fire Rock Geyser at Wilderness Lodge erupts at the top of every hour from 7 AM to 10 PM, about 120 feet (37 m) high.
+   geyserNow() is how strong the eruption is right now: 0 when quiet, rising through a short sputtering start to a full
+   column for about two minutes, then dying away. */
+const GEYSER={first:7,last:22,up:20,full:140,down:40};
+function geyserNow(t){if(!P_.geyser)return 0;t=t??T;const h=Math.floor(t/3600),s=t-h*3600;if(h<GEYSER.first||h>GEYSER.last)return 0;const G=GEYSER;
+ if(s<G.up)return .15+.25*(s/G.up)*(.6+.4*Math.sin(s*3));if(s<G.up+G.full)return 1;if(s<G.up+G.full+G.down)return 1-(s-G.up-G.full)/G.down;return 0}
+const geyserNext=()=>{const h=Math.floor(T/3600)+(T%3600>GEYSER.up+GEYSER.full+GEYSER.down?1:0),n=Math.max(h,GEYSER.first);return n<=GEYSER.last?n*3600:null};
 const DWELL=s=>s==='mk'?45:s==='ttc'?60:35;
 // trains heading for a station, soonest first: [{m, t seconds}]
 function monoEta(stop){const out=[];for(const m of MONO){const l=MLINE[m.l],si=l.stops.indexOf(stop),L=l.p.L;if(si<0)continue;if(m.st==='dwell'&&m.at===si){out.push({m,t:0});continue}

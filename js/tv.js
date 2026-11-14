@@ -12,9 +12,10 @@ function tvShots(){const land=k=>({k:'map',n:LANDS[k][0],x:LANDS[k][1],y:LANDS[k
  return[{k:'map',n:'Magic Kingdom',x:P_.hub[0],y:P_.hub[1]-45,m:1.02,dur:42,layer:'wait',zoom:1.06},land('fan'),{k:'mono',n:'Monorail',dur:38},land('tom'),{k:'street',n:'Main Street, U.S.A.',dur:40},land('adv'),
   {k:'map',n:'Seven Seas Lagoon',x:W/2,y:H/2,m:0,dur:36,layer:'transport',zoom:1.05},land('fr'),{k:'ferry',n:'Ferryboat',dur:30},place('cont'),land('lib'),place('poly'),{k:'map',n:'Main Street, U.S.A.',x:P_.mainst[0],y:P_.mainst[1]+10,m:2.7,dur:30,layer:'wait',drift:2},place('gf'),place('ttc'),...(RESORTS.wl?[{k:'map',n:'Bay Lake',x:(P_.cont[0]+P_.fw[0])/2+60,y:P_.disc[1]+120,m:.72,dur:36,layer:'transport',zoom:1.05},place('wl'),place('fw')]:[])]}
 // what, if anything, is on right now that the camera should be watching
-function tvEvent(){const f=fireEv();if(f&&f.ph==='live')return'fire';for(const id of['welcome','flag','kiss']){const e=EV.find(x=>x.id===id);if(e&&e.on!==false&&e.ph==='live')return id}const P=liveParade();if(P&&paradeUnits().length)return'parade:'+P.id;if(ewpShow())return'ewp';return''}
+function tvEvent(){const f=fireEv();if(f&&f.ph==='live')return'fire';for(const id of['welcome','flag','kiss']){const e=EV.find(x=>x.id===id);if(e&&e.on!==false&&e.ph==='live')return id}const P=liveParade();if(P&&paradeUnits().length)return'parade:'+P.id;if(ewpShow())return'ewp';if(geyserNow()>.5&&!TV.replay)return'geyser';return''}
 function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;let s;
  if(key==='fire')s=TV.alt%2?{k:'map',n:'Fireworks over the castle',x:P_.castle[0],y:P_.castle[1]-40,m:1.45,dur:45,layer:'wait'}:{k:'street',n:EV.find(e=>e.id==='fire').n.replace(' (fireworks)',''),dur:75};
+ else if(key==='geyser')s={k:'map',n:'Fire Rock Geyser · Wilderness Lodge',x:P_.geyser[0]+4,y:P_.geyser[1]-14,m:3.6,dur:150,layer:'transport'};
  else if(key==='welcome')s={k:'map',n:'Let the Magic Begin',x:P_.stage[0],y:P_.stage[1]+18,m:3.3,dur:70,layer:'shows'};
  else if(key==='flag')s={k:'map',n:'Flag Retreat · Town Square',x:P_.townsq[0],y:P_.townsq[1]-4,m:3.4,dur:50,layer:'shows'};
  else if(key==='kiss')s=TV.alt%2?{k:'map',n:'Kiss Goodnight',x:P_.castle[0],y:P_.castle[1]-20,m:2.2,dur:40,layer:'shows'}:{k:'street',n:'Kiss Goodnight',dur:50};

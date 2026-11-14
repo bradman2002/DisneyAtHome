@@ -103,7 +103,8 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   music with the site on 14 Nov 2026; declined (redistributing Disney's recordings), this was built instead.
 - Soundtracks are the owner's copies of Disney's music, never committed or bundled:
   `audio/happily-ever-after.mp3`, `audio/festival-of-fantasy.mp3`, `audio/boo-to-you.mp3`,
-  `audio/once-upon-a-christmastime.mp3`, `audio/electrical-water-pageant.mp3` and the area loops `audio/area-*.mp3`.
+  `audio/once-upon-a-christmastime.mp3`, `audio/electrical-water-pageant.mp3`, `audio/let-the-magic-begin.mp3` (the
+  welcome show; `WELC` in `parade.js`, the show is the track's length and ends at opening) and the area loops `audio/area-*.mp3`.
   Keep them out of git and out of any zip. The parade's length auto-matches its soundtrack (18:49).
 - Soundtrack sync: the music is the master clock. `syncTrack()` moves the music only after a deliberate
   time jump (`SEEKGEN` changes); otherwise it fast-forwards the simulation to the music (background tabs

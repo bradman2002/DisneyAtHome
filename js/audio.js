@@ -8,7 +8,7 @@ const SOUND_CREDITS=[
  ['Ship’s bell (ferry departures/arrivals)','Nigel K, Ship’s Bells, CC0'],
  ['Applause (built by layering real hand-clap recordings)','Owlish sound pack, CC0'],
  ['“The Star-Spangled Banner” (Flag Retreat)','United States Navy Band, public domain (US government work), via Wikimedia Commons']];
-const AU={ctx:null,mute:false,ready:false,loading:false,v:{master:.8,music:.55,crowd:.7,amb:.1,trans:.7,show:.8},buf:{},L:{},lt:0,last:{}};
+const AU={ctx:null,mute:false,ready:false,loading:false,v:{master:.8,music:.55,crowd:.49,amb:.1,trans:.7,show:.8},buf:{},L:{},lt:0,last:{}};
 const LOOPDEF={crowd:'crowd',crowdEv:'crowd',birds:'amb',crickets:'amb',falls:'amb',jungle:'amb',river:'amb',lap:'amb',flag:'amb',chimes:'amb',creek:'amb',hum:'amb',lake:'amb',engine:'trans',fwbed:'show'};
 const LOOPSRC={crowdEv:'crowd'};
 /* Sound files live in the audio/ folder next to index.html. Loop points (seconds) mark the seamless part of each bed. */
@@ -140,7 +140,7 @@ function soundAuto(){auInit();setTimeout(soundHint,1500);
    at that ride, the way you hear it walking up to the entrance: when you tap the ride, when you zoom in on it, or when
    TV mode's camera visits it. The land music dips underneath, and the ride fades out again as you move away. It only
    plays while the ride is running. Each track keeps its place, but starts from the top if it hasn't been heard for ten
-   minutes, so a visit begins at the beginning. To add a ride, put its file in audio/ and add a line to RIDEAUD. */
+   minutes, when it jumps to a random spot, so you drop in partway through as if walking up to the ride. To add a ride, put its file in audio/ and add a line to RIDEAUD. */
 const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirates'};
 const RA={el:{},vol:{},bad:{},heard:{}};let rideLevel=0;
 const rideAt=a=>a&&RIDEAUD[a.osm];
@@ -154,9 +154,10 @@ function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;
 function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id)),
   base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?.25:1);let top=0;
  for(const k in t){if(RA.bad[k])continue;const want=t[k]*base,v=RA.vol[k]=(RA.vol[k]||0)+(want-(RA.vol[k]||0))*.06;top=Math.max(top,t[k]);let a=RA.el[k];
-  if(v>.006){if(!a){a=RA.el[k]=new Audio('audio/ride-'+k+'.mp3');a.loop=true;a.preload='auto';
+  if(v>.006){if(!a){a=RA.el[k]=new Audio();a.loop=true;a.preload='auto';loadTrack(a,'audio/ride-'+k+'.mp3'); /* fetched whole, so it can jump to any point even on a simple local server */a.addEventListener('loadedmetadata',()=>{if(isFinite(a.duration)&&!a.dataset.placed){a.dataset.placed=1;a.currentTime=Math.random()*a.duration}}); /* first time: start somewhere random */
+     
      a.addEventListener('error',()=>{if(a.dataset.saved){RA.bad[k]=1;return}a.dataset.saved=1;rideSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else RA.bad[k]=1})})}
-   if(a.paused){if(Date.now()-(RA.heard[k]||0)>10*60e3&&a.readyState>0)a.currentTime=0;a.play().catch(()=>{})}setVol(a,v);RA.heard[k]=Date.now()}
+   if(a.paused){if(RA.heard[k]&&Date.now()-RA.heard[k]>10*60e3&&a.readyState>0&&isFinite(a.duration))a.currentTime=Math.random()*a.duration;a.play().catch(()=>{})} /* back after a while: a fresh random spot */setVol(a,v);RA.heard[k]=Date.now()}
   else if(a&&!a.paused){setVol(a,0);a.pause()}}
  rideLevel+=(top-rideLevel)*.06} /* how much the land music should step aside */
 setInterval(rideTick,120);

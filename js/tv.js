@@ -42,13 +42,13 @@ function tvTick(rdt){const now=performance.now();
 function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
  $('#tvTime').textContent=fmt(T);$('#tvDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
  $('#tvNote').textContent=TV.replay?'Park closed · replaying the day':LIVENOW?'Live from Magic Kingdom':LIVE.follow?'Live time · simulated waits':'Simulated';$('#tv').classList.toggle('live',LIVENOW);
- const run=AT.filter(a=>{const st=aStat(a);return st==='Operating'||st==='Last riders'}).sort((a,b)=>b.wt-a.wt),off=AT.length-run.length,per=7,pages=Math.max(1,Math.ceil(run.length/per));
+ const run=AT.filter(a=>{const st=aStat(a);return st==='Operating'||st==='Last riders'}).sort((a,b)=>b.wt-a.wt),off=AT.length-run.length,per=innerWidth<=760||innerHeight<=500?4:7,pages=Math.max(1,Math.ceil(run.length/per));
  if(now-TV.pageAt>9000){TV.pageAt=now;TV.page=(TV.page+1)%pages}if(TV.page>=pages)TV.page=0;
  $('#tvList').innerHTML=run.length?run.slice(TV.page*per,TV.page*per+per).map(a=>`<div class="tr"><span>${esc(a.n)}</span><b class="${wc(a.wt)}">${a.wt}<small>min</small></b></div>`).join(''):'<div class="tr"><span>The park is closed</span></div>';
  $('#tvFoot').textContent=(run.length?`${run.length} rides running${off?' · '+off+' closed or down':''} · ${TV.page+1}/${pages} · `:'')+`~${(guests.length*K).toLocaleString()} guests in the park`;
  const up=[];for(const e of EV){if(e.on===false)continue;const n=e.ph==='live'?T:e.t.find(t=>t>T);if(n!==undefined)up.push([n,e.n.replace(' (fireworks)','').replace(' (placeholder)',''),e.ph==='live'])}
  if(EWP.legs&&EWP.on){const s=ewpShow(),n=ewpNext();if(s)up.push([T,'Electrical Water Pageant',true]);else if(n)up.push([n.t,'Electrical Water Pageant · '+n.n,false])}
- up.sort((a,b)=>a[0]-b[0]);$('#tvUp').innerHTML=up.slice(0,3).map(([t,n,live])=>`<div class="tr"><span>${esc(n)}</span><b>${live?'Now':fmt(t)}</b></div>`).join('')}
+ up.sort((a,b)=>a[0]-b[0]);$('#tvUp').innerHTML=up.slice(0,innerWidth<=760||innerHeight<=500?1:3).map(([t,n,live])=>`<div class="tr"><span>${esc(n)}</span><b>${live?'Now':fmt(t)}</b></div>`).join('')}
 async function tvWake(){try{if(TV.on&&navigator.wakeLock&&document.visibilityState==='visible')TV.lock=await navigator.wakeLock.request('screen')}catch(e){}} // keep the screen from sleeping
 function tvStart(){if(TV.on)return;TV.on=true;document.body.classList.add('tv');$('#tv').hidden=false;if(!document.body.classList.contains('fs'))toggleFS();TV.shot=null;TV.key='';TV.uiAt=0;TV.user={layer:VIEW.layer,speed};
  if(!LIVE.ok){speed=1;playing=true}if(!AU.ready)auInit();tvWake();sync()}

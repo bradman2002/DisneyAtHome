@@ -1,0 +1,120 @@
+/* ===== AUDIO — real recordings only (no synthesized sounds). Every clip is an actual field or studio
+   recording under CC0 or CC BY 4.0; see SOUND_CREDITS. None are Disney recordings: they are stand-ins
+   chosen to match what each place sounds like (crowd walla, waterfalls, rivers, monorail-style electric train, etc.). ===== */
+const SOUND_CREDITS=[
+ ['Crowd, waterfall, jungle wind & birds, river, water lapping, flag, wind chimes, creek, machine hum, lake shore, bus engine, electric train pass-by & doors, horse, marching snare, orchestral fanfare','“Oculus Audio Pack 01” by Oculus VR, LLC, CC BY 4.0 (via Meta Open Sound; OGG files trimmed, mixed to mono and re-encoded)'],
+ ['Daytime birdsong; night crickets','felix.blume on Freesound (#414098, #476672), CC0'],
+ ['Fireworks bursts and show bed','rubberduck, “25 CC0 bang/firework SFX”, OpenGameArt, CC0'],
+ ['Ship’s bell (ferry departures/arrivals)','Nigel K, Ship’s Bells, CC0'],
+ ['Applause (built by layering real hand-clap recordings)','Owlish sound pack, CC0']];
+const AU={ctx:null,mute:false,ready:false,loading:false,v:{master:.8,music:.55,crowd:.7,amb:.1,trans:.7,show:.8},buf:{},L:{},lt:0,last:{}};
+const LOOPDEF={crowd:'crowd',crowdEv:'crowd',birds:'amb',crickets:'amb',falls:'amb',jungle:'amb',river:'amb',lap:'amb',flag:'amb',chimes:'amb',creek:'amb',hum:'amb',lake:'amb',engine:'trans',fwbed:'show'};
+const LOOPSRC={crowdEv:'crowd'};
+/* Sound files live in the audio/ folder next to index.html. Loop points (seconds) mark the seamless part of each bed. */
+const AUDIO_DIR='audio/';
+const SOUND_FILES=["applause", "applause_big", "bell1", "bell2", "birds", "chimes", "creek", "crickets", "crowd", "doorsclose", "doorsopen", "engine", "falls", "fanfare", "flag", "fw1", "fw2", "fw3", "fw4", "fw5", "fw6", "fwbed", "horse", "hum", "jungle", "lake", "lap", "river", "snare", "trainpass"];
+const LOOP_POINTS={"crowd": [0.3, 48.17359], "birds": [0.3, 45.3], "crickets": [0.3, 45.3], "falls": [0.3, 43.93469], "jungle": [0.3, 40.3], "river": [0.3, 44.91869], "lap": [0.3, 45.3], "flag": [0.3, 18.508], "chimes": [0.3, 31.86109], "creek": [0.3, 44.91153], "hum": [0.3, 30.3], "lake": [0.3, 45.3], "engine": [0.3, 4.45706], "fwbed": [0.3, 13.712]};
+async function loadSound(c,n){let err;
+ for(let tries=0;tries<4;tries++){ // retry: a busy local server or a decoder hiccup shouldn't lose a sound
+  try{const r=await fetch(AUDIO_DIR+n+'.m4a',{cache:'no-store'});if(!r.ok)throw new Error(n+': HTTP '+r.status);const ab=await r.arrayBuffer();
+   return await new Promise((res,rej)=>c.decodeAudioData(ab,res,e=>rej(e||new Error(n+': could not decode'))))}catch(e){err=e;await new Promise(r=>setTimeout(r,400*(tries+1)))}}
+ throw err}
+async function auInit(){if(AU.ctx){AU.ctx.resume();return}if(AU.loading)return;AU.loading=true;
+ const c=AU.ctx=new(window.AudioContext||window.webkitAudioContext)();AU.m=c.createGain();AU.m.connect(c.destination);AU.g={};
+ for(const k of['crowd','amb','trans','show']){const g=c.createGain();g.connect(AU.m);AU.g[k]=g}applyVol();
+ let done=0;AU.failed=[];const st=t=>{const b=$('#au');if(b)b.textContent=t};
+ // load four at a time rather than all thirty at once
+ const queue=SOUND_FILES.slice();await Promise.all([0,1,2,3].map(async()=>{while(queue.length){const n=queue.shift();
+  try{AU.buf[n]=await loadSound(c,n)}catch(e){AU.failed.push(n);console.warn('Sound not loaded:',n,e)}done++;st(`Loading sounds… ${done}/${SOUND_FILES.length}`)}}));
+ for(const k in LOOPDEF){const n=LOOPSRC[k]||k,b=AU.buf[n];if(!b)continue;const s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.loop=true;
+  const lp=LOOP_POINTS[n];if(lp){s.loopStart=lp[0];s.loopEnd=lp[1]}g.gain.value=0;s.connect(g).connect(AU.g[LOOPDEF[k]]);
+  s.start(0,lp?lp[0]+Math.random()*(lp[1]-lp[0]):0);AU.L[k]={s,g}}
+ AU.ready=true;AU.loading=false;AU.lt=T;auSync();setInterval(auTick,500);
+ st(AU.failed.length===SOUND_FILES.length?'Sounds unavailable':'Audio on');
+ if(AU.failed.length)toast(AU.failed.length===SOUND_FILES.length?(location.protocol==='file:'?'Sounds can’t load from a file opened directly. Run a local web server (see README).':'Sound files not found in the audio/ folder.'):`${AU.failed.length} sound effect(s) couldn’t load (${AU.failed.join(', ')}). Reload the page to try again.`)}
+function applyVol(){if(!AU.ctx)return;AU.m.gain.value=AU.mute?0:AU.v.master;for(const k of['crowd','amb','trans','show'])AU.g[k].gain.value=AU.v[k]}
+function play(n,v,dst,at,rate){const b=AU.buf[n];if(!b||!AU.ready||v<.004)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;
+ s.playbackRate.value=rate||1;g.gain.value=v;s.connect(g).connect(dst);s.start(c.currentTime+(at||0))}
+const prox=(x,y,s)=>Math.exp(-Math.hypot(cam.x-x,cam.y-y)/(s||260));
+const EVPOS={parade:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2],xmas:[(P_.hub[0]+P_.townsq[0])/2+26,(P_.hub[1]+P_.townsq[1])/2+30],boo:[(P_.hub[0]+P_.townsq[0])/2-26,(P_.hub[1]+P_.townsq[1])/2+30],caval:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2-34],welcome:[P_.stage[0]-30,P_.stage[1]+8],flag:[P_.townsq[0]+24,P_.townsq[1]],kiss:[P_.castle[0]+34,P_.castle[1]-40],castle:P_.stage,band:P_.townsq,fire:[P_.castle[0],P_.castle[1]-60]};
+const busXY=b=>BUSP.at((1010-b.x)/370*BUSP.L);
+const evP=(ev,s)=>{const q=EVPOS[ev.id]||P_.hub;return .25+.75*prox(q[0],q[1],s||380)};
+function cue(ev){if(!AU.ready||speed>30)return;const d=AU.g.show,p=evP(ev);
+ if(ev.id==='castle'||ev.id==='welcome')play('fanfare',.7*p,d);else if(ev.id==='flag'){play('snare',.5*p,d);AU.last['snare'+ev.id]=performance.now()}else if(isParade(ev.id)||ev.id==='band'){play('snare',.55*p,d);AU.last['snare'+ev.id]=performance.now()}
+ else if(ev.id==='fire')play('fw4',.6*p,d)}
+function auSync(){for(const m of MONO)m._ps=m.st;for(const f of FERRY)f._ps=f.st;for(const b of BUS)b._ps=b.st;for(const ev of EV)ev._aps=ev.ph}
+function lvl(k,v,tc){const l=AU.L[k];if(l)l.g.gain.setTargetAtTime(Math.max(0,v),AU.ctx.currentTime,tc||.6)}
+function auTick(){if(!AU.ready||FF)return;
+ // a large jump in simulated time means a seek or a fast speed: resync state without firing stale one-shots
+ const jump=Math.abs(T-AU.lt)>Math.max(60,speed*3);AU.lt=T;if(jump){auSync();}
+ const z=.6+.4*Math.min(1,cam.m/2),open=T>=8.5*3600&&T<22.5*3600,dens=Math.min(1,guests.length*K/24000),day=1-nf,zl=.5+.5*Math.min(1,Math.max(0,(cam.m-1)/1.5)),LP=k=>zl*prox(LANDS[k][1],LANDS[k][2],230);
+ // beds
+ lvl('crowd',(open?.12+.55*dens:.02)*z);
+ let ce=0;for(const ev of EV)if(ev.ph==='gather'||ev.ph==='live'){ce=Math.max(ce,evP(ev,300)*(ev.ph==='live'?1:.55)*Math.min(1,.4+dens))}lvl('crowdEv',ce*.6);
+ // nature sits well under the crowd, and drops further while a show's music is playing
+ const nat=PARADES.some(P=>parPlaying(P.id))||(HEA.ready&&!HEA.audio.paused)?.35:1;
+ lvl('birds',day*(.06+.1*(1-dens*.6))*nat);lvl('crickets',nf*.13*nat,1.5);
+ lvl('falls',LP('adv')*.3*nat);lvl('jungle',LP('adv')*.24*(.4+.6*day)*nat);lvl('river',LP('fr')*.3*nat);
+ lvl('lap',LP('lib')*.24*nat);lvl('flag',(LP('lib')*.22+LP('ms')*.12)*(.5+.5*day));
+ lvl('chimes',LP('fan')*.2*nat);lvl('creek',LP('fan')*.15*nat);lvl('hum',LP('tom')*.38);{let lk=0;for(let i=0;i<=8;i++){const q=FER.at(FER.L*i/8);lk=Math.max(lk,prox(q[0],q[1],260))}lvl('lake',lk*.3*nat)} // anywhere along the lagoon crossing
+ let bv=0;for(const b of BUS){const p=busXY(b);bv=Math.max(bv,prox(p[0],p[1],240)*(b.st==='dwell'?.55:1))}lvl('engine',bv*.5,.3);
+ if(AU.L.engine)AU.L.engine.s.playbackRate.setTargetAtTime(BUS.some(b=>{const p=busXY(b);return b.st!=='dwell'&&prox(p[0],p[1],240)>.3})?.8:.62,AU.ctx.currentTime,.5);
+ const F=EV.find(e=>e.id==='fire');lvl('fwbed',F&&F.ph==='live'&&playing?.55*evP(F,500):0,.4);
+ if(jump)return;const q=speed<=30;const TR=AU.g.trans,SH=AU.g.show;
+ // transport one-shots on state changes
+ for(const m of MONO){if(m._ps!==m.st&&q){const mp=monoXY(m),p=prox(mp[0],mp[1],320);if(m.st==='dwell')play('doorsopen',.45*p,TR,.8);else{play('doorsclose',.45*p,TR);play('trainpass',.55*p,TR,1.6)}}m._ps=m.st}
+ for(const f of FERRY){if(f._ps!==f.st&&q){const fp=FER.at(f.p*FER.L),p=prox(fp[0],fp[1],300);play(f.st==='run'?'bell2':'bell1',.5*p,TR)}f._ps=f.st}
+ for(const b of BUS){if(b._ps!==b.st&&b.st==='dwell'&&q)play('doorsopen',.25*prox(P_.busstation[0],P_.busstation[1],240),TR,0,.85);b._ps=b.st}
+ // horse-drawn streetcar on Main Street
+ if(open&&q&&playing&&Math.random()<.035)play('horse',.35*LP('ms'),AU.g.amb,0,.95+Math.random()*.1);
+ // entertainment: cadence during parades/band sets, applause when a show ends
+ const now=performance.now();
+ for(const ev of EV){const was=ev._aps;ev._aps=ev.ph;if(!q)continue;const p=evP(ev);
+  if((isParade(ev.id)&&!parPlaying(ev.id)||ev.id==='band'||ev.id==='flag')&&ev.ph==='live'&&playing&&now-(AU.last['snare'+ev.id]||0)>4200){play('snare',.45*p,SH,0,.97+Math.random()*.06);AU.last['snare'+ev.id]=now}
+  if(was==='live'&&ev.ph!=='live')play(ev.id==='fire'?'applause_big':'applause',.8*p,SH)}}
+function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(now-(AU.last.fw||0)<110)return;AU.last.fw=now;
+ const F=EV.find(e=>e.id==='fire');play('fw'+(1+(Math.random()*6|0)),(.35+.4*Math.random())*evP(F,500),AU.g.show,0,.85+Math.random()*.3)}
+/* ===== AREA MUSIC =====
+   Each land's background music loop (the owner's own copies, in audio/area-*.mp3, never committed). The music follows
+   the camera: the land you are looking at plays, neighbouring lands blend in toward their edges, and it fades away as
+   you zoom out over the lagoon. The Main Street view always hears Main Street. It drops right down while a parade,
+   the fireworks or the water pageant has its own music playing, and stops after the park closes.
+   The files are long (25 to 60 minutes) and simply loop; each keeps its place while it is silent. A missing file is
+   skipped. */
+const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3'};
+const AM={el:{},vol:{},bad:{}};
+function areaTargets(){const t={};for(const k in AREA)t[k]=0;
+ if(T<OPEN*3600-1800||T>CLOSE*3600+900)return t;
+ if(SV.on){t.ms=1;return t}
+ /* nearness of each land's centre to the middle of the screen; the nearest dominates, and everything fades as you zoom out */
+ const zoom=Math.max(0,Math.min(1,(cam.m-.55)/.9)),w={};let sum=0,top=0;
+ for(const k in AREA){const L=LANDS[k];if(!L)continue;let d=Math.hypot(cam.x-L[1],cam.y-L[2]);if(k==='ms'&&LANDS.hub)d=Math.min(d,Math.hypot(cam.x-LANDS.hub[1],cam.y-LANDS.hub[2])*.8); /* the hub in front of the castle plays Main Street's music, as in the park */
+  const v=Math.exp(-d/150);w[k]=v**5;sum+=w[k];top=Math.max(top,v)}
+ /* the nearest land dominates sharply (fifth power), so the hub hears mostly one land, not a muddle of six */
+ if(sum>0)for(const k in w)t[k]=w[k]/sum*Math.min(1,top*2.2)*zoom;
+ return t}
+function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()),
+  duck=show?.12:1,base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
+ for(const k in AREA){if(AM.bad[k])continue;const want=t[k]*duck*base,v=AM.vol[k]=(AM.vol[k]||0)+(want-(AM.vol[k]||0))*.12;let a=AM.el[k];
+  if(v>.004){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
+   a.volume=Math.min(1,v);if(a.paused)a.play().catch(()=>{})}
+  else if(a&&!a.paused){a.volume=0;a.pause()}}}
+setInterval(areaTick,120);
+/* ===== YOUR AUDIO, KEPT IN THIS BROWSER =====
+   The Disney music is never put on the website itself (it is Disney's, and a public site would be giving it away). Instead,
+   "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
+   browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
+   name: happily-ever-after.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
+   electrical-water-pageant.mp3 and area-*.mp3. Anything else in the folder is ignored. */
+async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
+async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+function pickAudioFolder(){const i=document.createElement('input');i.type='file';i.multiple=true;i.webkitdirectory=true;i.onchange=()=>loadAudioFiles([...i.files]);i.click()}
+async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.textContent=t};let n=0,miss=0;
+ try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){} /* ask the browser not to clear it to save space */
+ for(const f of files){const nm=f.name.toLowerCase();let key=null,use=null;
+  if(nm==='happily-ever-after.mp3'){key='hea';use=()=>heaUse(f,f.name)}
+  else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
+  else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.id;use=()=>parUse(P,f,f.name)}
+   else{const m=/^area-(\w+)\.mp3$/.exec(nm);if(m&&AREA[m[1]]){key='area-'+m[1];use=()=>{const a=AM.el[m[1]];AM.bad[m[1]]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}}}
+  if(!key)continue;st(`Saving ${f.name}…`);try{await saveFile(key,f);use();n++}catch(e){miss++;console.warn('Could not keep',f.name,e)}}
+ st(n?`${n} file${n>1?'s':''} kept in this browser${miss?` · ${miss} could not be saved (not enough space?)`:''}.`:'No matching audio files in that folder.');toast(n?'Audio saved in this browser':'No matching audio files found')}

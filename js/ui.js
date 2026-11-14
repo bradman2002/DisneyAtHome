@@ -1,0 +1,151 @@
+/* ===== UI: app-style shell (top bar, map, sheets, bottom navigation) ===== */
+const fmt=t=>{t=Math.floor(t/60);const h=Math.floor(t/60)%24,m=t%60;return(h%12||12)+':'+String(m).padStart(2,'0')+(h<12?' AM':' PM')};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mday=n=>(n%100)+' '+['January','February','March','April','May','June','July','August','September','October','November','December'][Math.floor(n/100)-1]; // 1031 → 31 October
+const LAYERS={wait:'Wait Times',shows:'Entertainment',dining:'Dining & Shops',transport:'Transportation',crowds:'Crowds'};
+let sheet=null; // which panel is open
+const SPEEDS=[1,5,15,30,60];
+function sync(){$('#bp').setAttribute('aria-label',playing?'Pause':'Play');$('#bp').innerHTML=playing?SVG.pause:SVG.play;$('#spdv').textContent=speed+'×';
+ $('#layerName').textContent=LAYERS[VIEW.layer];$('#vMap').classList.toggle('on',!SV.on);$('#vStreet').classList.toggle('on',SV.on);
+ document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.s===(sheet||'map')))}
+const SVG={play:'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',pause:'<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>'};
+/* ---------- sheets ---------- */
+function openSheet(name){sheet=name;$('#sheet').classList.add('open');$('#sheet').dataset.s=name;buildSheet();sync()}
+function closeSheet(){sheet=null;$('#sheet').classList.remove('open');sync()}
+const wc=w=>w<=20?'g':w<=45?'y':w<=75?'o':'r';
+function buildSheet(){const T2={list:'Wait Times',filter:'Filter',detail:'',home:'Today in the park',shows:'Entertainment',search:'Search',menu:'Sound & settings'};
+ $('#shTitle').textContent=T2[sheet]??'';let h='';
+ if(sheet==='list'){let l='';for(const a of AT){if(!VIEW.lands.has(a.l))continue;if(a.l!==l){l=a.l;h+=`<div class="lh">${LANDS[l][0]}</div>`}
+  h+=`<button class="row" data-k="a" data-i="${a.i}"><span class="n">${esc(a.n)}<small data-s="${a.i}"></small></span><span class="wt" data-w="${a.i}"></span></button>`}}
+ else if(sheet==='filter'){h='<div class="lh">Lands</div>'+Object.keys(LANDS).filter(k=>k!=='hub').map(k=>`<label class="chk"><input type="checkbox" data-land="${k}" ${VIEW.lands.has(k)?'checked':''}> ${LANDS[k][0]}</label>`).join('')+
+  `<div class="lh">Show on the map</div><label class="chk"><input type="checkbox" id="fClosed" ${VIEW.hideClosed?'checked':''}> Hide closed attractions</label><label class="chk"><input type="checkbox" id="fGuests" ${VIEW.guests?'checked':''}> Guests walking the park</label><label class="chk"><input type="checkbox" id="fLabels" ${VIEW.labels?'checked':''}> Land names</label><label class="chk"><input type="checkbox" id="fFw" ${VIEW.fwWaits?'checked':''}> Wait times during the fireworks</label>`}
+ else if(sheet==='detail')h='<div id="insp"></div>';
+ else if(sheet==='home')h='<div class="card"><div class="lh" style="margin-top:0">Date</div><input type="date" id="dt" aria-label="Date"><p class="mu" id="dinfo"></p></div><div id="sx"></div>';
+ else if(sheet==='shows'){h=`<div class="card hea"><h4>Happily Ever After</h4><p class="mu" id="heaStat"></p><div class="btns"><button class="cta" id="heaWatch">Watch the show</button><button id="heaLoad">Load soundtrack…</button></div>
+  <label class="chk"><input type="checkbox" id="heaAuto" ${HEA.auto?'checked':''}> Switch to 1× when the show starts, so the music stays in sync</label>
+  <p class="mu">The soundtrack plays from <code>audio/happily-ever-after.mp3</code>. If that file isn’t there, choose it with “Load soundtrack…” and this browser remembers it.</p></div>
+  `+PARADES.filter(P=>P.file).map(P=>{const ev=paradeEv(P.id);return`<div class="card hea" data-par="${P.id}"><h4>${P.n} Parade</h4><p class="mu pstat"></p><div class="btns"><button class="cta pwatch">Watch the parade</button><button class="pload">Load soundtrack…</button></div>
+  <label class="chk"><input type="checkbox" class="pauto" ${P.a.auto?'checked':''}> Switch to 1× when the parade steps off, so the music stays in sync</label>
+  <p class="mu">${ev&&ev.season?`Runs in the evening from ${mday(ev.season[0])} to ${mday(ev.season[1])}; “Watch the parade” plays it on any date. `:''}The soundtrack plays from <code>${P.file}</code> and gets louder as the floats come near. If that file isn’t there, choose it with “Load soundtrack…”.</p></div>`}).join('')+`
+  <div class="card hea"><h4>Electrical Water Pageant</h4><p class="mu" id="ewpStat"></p><div class="btns"><button class="cta" id="ewpWatch">Watch the pageant</button><button id="ewpLoad">Load soundtrack…</button></div>
+  <label class="chk"><input type="checkbox" id="ewpOn" ${EWP.on?'checked':''}> Enabled</label><label class="chk"><input type="checkbox" id="ewpAuto" ${EWP.auto?'checked':''}> Switch to 1× when a showing starts near where you’re looking</label>
+  <p class="mu">Fourteen barges of lights cross Seven Seas Lagoon every night: off the Polynesian Village at 9:00 PM, the Grand Floridian at 9:15 PM, then on Bay Lake off Wilderness Lodge at 9:35, Fort Wilderness at 9:45 and the Contemporary at 10:10 PM. The music plays from <code>audio/electrical-water-pageant.mp3</code> when the map is near the barges.</p></div>
+  <p class="mu">Edit start times (HH:MM, comma separated) and how long each runs.</p>`;
+  for(const e of EV)h+=`<div class="card" data-e="${e.id}"><h4>${esc(e.n)}</h4><div class="mu" data-es="${e.id}"></div><label class="chk"><input type="checkbox" class="ee" ${e.on!==false?'checked':''}> Enabled</label><label class="fl">Start times<input type="text" class="et" value="${e.t.map(s=>hm24(s)).join(', ')}"></label>
+   <div class="two"><label class="fl">Minutes<input type="number" class="ed" min="1" max="90" step="0.1" value="${e.dur}"></label><label class="fl">Crowd gathers (min before)<input type="number" class="el" min="0" max="90" value="${e.lead}"></label></div>
+   <div class="btns"><button class="ea">Apply</button><button class="ej">Jump to next</button></div></div>`}
+ else if(sheet==='search')h='<input type="search" id="q" placeholder="Search attractions, dining and shops" aria-label="Search"><div id="qr"></div>';
+ else if(sheet==='menu'){h=`<div class="card"><button id="au" class="cta wide">${AU.ready?'Audio on':AU.loading?'Loading sounds…':'Turn on sound'}</button><label class="chk"><input type="checkbox" id="mu" ${AU.mute?'checked':''}> Mute everything</label>`+
+  [['master','Master volume'],['music','Area music'],['crowd','Crowds'],['amb','Nature & land ambience'],['trans','Transportation'],['show','Shows & fireworks']].map(([k,n])=>`<label class="fl">${n}<input type="range" min="0" max="1" step=".01" value="${AU.v[k]}" data-v="${k}"></label>`).join('')+
+  `<p class="mu">All effects are real recordings, played from the <code>audio/</code> folder. They’re stand-ins, not recordings from the park. Area music plays from <code>audio/area-*.mp3</code> (your own copies).</p></div><div class="card"><h4>Your music</h4><p class="mu">The Disney soundtracks and land music aren’t part of the website. To hear them on a hosted copy (GitHub Pages) or a new device, pick your <code>audio</code> folder once; this browser keeps the files.</p><button class="wide" id="afLoad">Load audio folder…</button><p class="mu small" id="afStat"></p></div><div class="lh">Transportation</div><div id="tr"></div>
+  <div class="lh">Sound credits</div>`+SOUND_CREDITS.map(([w,c])=>`<p class="mu small"><b>${w}</b><br>${c}</p>`).join('')+`<div class="lh">Map data</div><p class="mu small">Park and resort-area layout, buildings, walkways, roads, monorail beams and water from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a> (ODbL), illustrated for this site.</p><p class="mu small">When “Live” is on, wait times, ride closures, show times and park hours are the real ones, from <a href="https://themeparks.wiki" target="_blank" rel="noopener">ThemeParks.wiki</a> (not affiliated with Disney). Guests, crowds and vehicles are always simulated.</p>`}
+ $('#shBody').innerHTML=h;wireSheet();ui(true)}
+function wireSheet(){const B=$('#shBody');
+ B.querySelectorAll('.row[data-k]').forEach(r=>r.onclick=()=>pick({k:r.dataset.k,i:r.dataset.k==='e'?r.dataset.i:+r.dataset.i},true));
+ B.querySelectorAll('[data-land]').forEach(i=>i.onchange=()=>{i.checked?VIEW.lands.add(i.dataset.land):VIEW.lands.delete(i.dataset.land)});
+ const on=(id,f)=>{const el=$(id);if(el)f(el)};
+ on('#fClosed',e=>e.onchange=()=>VIEW.hideClosed=e.checked);on('#fGuests',e=>e.onchange=()=>VIEW.guests=e.checked);on('#fLabels',e=>e.onchange=()=>VIEW.labels=e.checked);on('#fFw',e=>e.onchange=()=>VIEW.fwWaits=e.checked);
+ on('#dt',e=>{e.value=dateStr;e.onchange=()=>{liveUnfollow();dateStr=e.value||dateStr;const t=T;reset(7*3600);seek(t,false)}});
+ on('#heaLoad',e=>e.onclick=heaPick);B.querySelectorAll('[data-par]').forEach(cd=>{const P=parOf(cd.dataset.par);cd.querySelector('.pload').onclick=()=>parPick(P.id);cd.querySelector('.pwatch').onclick=()=>watchParade(P.id);cd.querySelector('.pauto').onchange=e=>P.a.auto=e.target.checked});parBadge();on('#ewpWatch',e=>e.onclick=()=>watchPageant());on('#ewpLoad',e=>e.onclick=ewpPick);on('#ewpOn',e=>e.onchange=()=>{EWP.on=e.checked;ewpBadge()});on('#ewpAuto',e=>e.onchange=()=>EWP.auto=e.checked);ewpBadge();on('#heaWatch',e=>e.onclick=watchHEA);on('#heaAuto',e=>e.onchange=()=>HEA.auto=e.checked);svBadge();
+ B.querySelectorAll('.card[data-e]').forEach(cd=>{const e=EV.find(x=>x.id===cd.dataset.e);cd.querySelector('.ea').onclick=()=>{const ts=cd.querySelector('.et').value.split(',').map(hm).filter(x=>x!==null);if(ts.length)e.t=ts.sort((a,b)=>a-b);
+   {const nd=+cd.querySelector('.ed').value||e.dur;if(nd!==e.dur)e.userDur=true;e.dur=nd}e.lead=+cd.querySelector('.el').value;e.on=cd.querySelector('.ee').checked;if(e.season)e.userOn=true;cd.querySelector('.et').value=e.t.map(s=>hm24(s)).join(', ');toast('Schedule updated')};
+  cd.querySelector('.ej').onclick=()=>{const n=e.t.find(s=>s>T)??e.t[0];seek(n-e.lead*60-60,n<T)}});
+ on('#q',q=>{const go=()=>{const s=q.value.trim().toLowerCase();const r=[...AT.map(a=>({k:'a',i:a.i,n:a.n,d:LANDS[a.l][0]})),...VN.map(v=>({k:'v',i:v.i,n:v.n,d:v.k==='eat'?'Dining':'Shop'}))].filter(o=>!s||o.n.toLowerCase().includes(s));
+   $('#qr').innerHTML=r.map(o=>`<button class="row" data-k="${o.k}" data-i="${o.i}"><span class="n">${esc(o.n)}<small>${o.d}</small></span></button>`).join('')||'<p class="mu">Nothing matches. Try a ride or restaurant name.</p>';
+   $('#qr').querySelectorAll('.row').forEach(r=>r.onclick=()=>pick({k:r.dataset.k,i:+r.dataset.i},true))};q.oninput=go;go();setTimeout(()=>q.focus(),50)});
+ on('#afLoad',b=>b.onclick=pickAudioFolder);on('#au',b=>b.onclick=()=>{if(!AU.ready)b.textContent='Loading sounds…';auInit()});on('#mu',m=>m.onchange=()=>{AU.mute=m.checked;applyVol()});
+ B.querySelectorAll('[data-v]').forEach(s=>s.oninput=()=>{AU.v[s.dataset.v]=+s.value;applyVol()})}
+function pick(s,fly){sel=s;follow=null;if(!s){closeSheet();return}if(fly&&!SV.on){const p=selPos(s);if(p){cam.tx=p[0];cam.ty=p[1];cam.tm=Math.max(cam.tm,2.2)}}openSheet('detail')}
+function spark(a){const c=$('#sp');if(!c)return;const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.strokeStyle='#1a8fd6';x.lineWidth=2;x.beginPath();const h=a.hist,mx=Math.max(30,...h);h.forEach((v,i)=>{const px=i/Math.max(1,h.length-1)*(c.width-2)+1,py=c.height-3-v/mx*(c.height-8);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()}
+/* live text, refreshed four times a second */
+function ui(force){
+ $('#ck').textContent=fmt(T);const h=T/3600;$('#ph').textContent=nf>.7?'Night':h>sunset-.3?'Evening':gf>.3&&h>12?'Sunset':h<12?'Morning':'Afternoon';
+ $('#ts').value=Math.floor(T/900)*15;
+ if(!sheet)return;const B=$('#shBody');
+ if(sheet==='list'){B.querySelectorAll('[data-w]').forEach(e=>{const a=AT[+e.dataset.w],s=aStat(a),ok=s==='Operating'||s==='Last riders';e.innerHTML=ok?`${a.wt}<small>min</small>`:'<small>'+(s==='Closed'?'Closed':'Down')+'</small>';e.className='wt '+(ok?wc(a.wt):'x');
+  const r=e.parentNode;r.classList.toggle('sel',!!sel&&sel.k==='a'&&sel.i===a.i);r.querySelector('[data-s]').textContent=ok?'':' · '+s})}
+ else if(sheet==='detail'&&sel){let h2='';
+  if(sel.k==='a'){const a=AT[sel.i],s=aStat(a),ok=s==='Operating'||s==='Last riders';$('#shTitle').textContent=a.n;
+   h2=`<div class="hero"><div class="big">${ok?a.wt:'—'}<small>${ok?'min wait':s}</small></div><div><div class="mu">${LANDS[a.l][0]}</div><span class="pill">${s}</span></div></div><div class="kv"><span>In line now</span><span>~${(a.q.length*K).toLocaleString()} guests</span><span>Riding now</span><span>~${(a.ri.length*K).toLocaleString()} guests</span><span>Capacity</span><span>${a.thr.toLocaleString()} an hour · ${Math.round(a.dur/60*10)/10} min ride</span><span>Hours</span><span>${fmt(a.open*3600)}–${fmt(a.close*3600)}</span><span>Riders today</span><span>~${(a.rides*K).toLocaleString()}</span></div><div class="mu small" style="margin:6px 0">${liveText(a)}</div><canvas id="sp" width="320" height="50"></canvas><div class="mu small">Wait time today (10-minute samples)</div>`}
+  else if(sel.k==='v'){const v=VN[sel.i];let n=0;for(const g of guests)if(g.st===3&&g.tgt===v.i&&(g.intent==='eat'||g.intent==='shop'))n++;$('#shTitle').textContent=v.n;h2=`<div class="mu">${v.k==='eat'?'Dining':'Shop'}</div><div class="kv"><span>Guests inside now</span><span>~${(n*K).toLocaleString()}</span></div>`}
+  else if(sel.k==='l'){const L=LANDS[sel.i],r=AT.filter(a=>a.l===sel.i),o=r.filter(a=>aStat(a)==='Operating');let near=0;for(const g of guests)if(Math.hypot(g.x-L[1],g.y-L[2])<110&&g.st!==1&&g.st!==2&&g.st!==3)near++;$('#shTitle').textContent=L[0];
+   h2=`<div class="kv"><span>Attractions running</span><span>${o.length} of ${r.length}</span><span>Average wait</span><span>${o.length?Math.round(o.reduce((s,a)=>s+a.wt,0)/o.length):'—'} min</span><span>Guests out walking</span><span>~${(near*K).toLocaleString()}</span></div>`+r.map(a=>`<button class="row" data-k="a" data-i="${a.i}"><span class="n">${esc(a.n)}</span><span class="wt ${aStat(a)==='Operating'?wc(a.wt):'x'}">${aStat(a)==='Operating'?a.wt+'<small>min</small>':'<small>—</small>'}</span></button>`).join('')}
+  else if(sel.k==='e'){const e=EV.find(x=>x.id===sel.i);$('#shTitle').textContent=e.n;h2=`<p class="mu">${evText(e)}</p>${e.id==='fire'?'<button class="cta wide" id="dWatch">Watch Happily Ever After</button>':isParade(e.id)?'<button class="cta wide" id="dWatchP">Watch the parade</button>':''}<button class="wide" id="dJump" style="margin-top:8px">Jump to the next show</button>`}
+  else if(sel.k==='m'){const m=MONO[sel.i],l=MLINE[m.l];$('#shTitle').textContent=`Monorail ${m.nm}`;h2=`<div class="mu">${l.n} line · ${l.stops.map(s=>STOPNAME[s]).join(' → ')}</div><div class="kv"><span>Status</span><span>${m.st==='run'?'Next stop: '+STOPNAME[l.stops[m.nx]]:'Boarding at '+STOPNAME[l.stops[m.at]]}</span><span>Riders</span><span>~${m.ld*K}</span></div>`}
+  else if(sel.k==='r'){const r=RESORTS[sel.i];$('#shTitle').textContent=r.n;h2=`<p class="mu">${r.t}</p>`+(r.boat?`<div class="lh">Boats</div><div class="kv">`+boatsAt(r.boat).map(([R,b])=>`<span>${R.n}</span><span>${b.tm>0?'At a dock':'Under way'}</span>`).join('')+'</div>':'')+(r.boat?'':`<div class="lh">Monorails arriving</div><div class="kv">`)+monoEta(sel.i).map(({m,t})=>`<span>Monorail ${m.nm} · ${MLINE[m.l].n}</span><span>${t<1?'Boarding now':t<60?'Arriving':Math.round(t/60)+' min'}</span>`).join('')+(r.boat?'':'</div>')+(sel.i==='ttc'||sel.i==='mk'?`<div class="lh">Ferryboats</div><div class="kv">`+FERRY.map((f,i)=>`<span>Ferry ${i+1}</span><span>${f.st==='run'?'Crossing the lagoon':'Docked at '+(f.p===0?'Magic Kingdom':'the Ticket Center')}</span>`).join('')+'</div>':'')}
+  else if(sel.k==='f'){const f=FERRY[sel.i];$('#shTitle').textContent=`Ferryboat ${sel.i+1}`;h2=`<div class="kv"><span>Status</span><span>${f.st==='run'?'Crossing the lagoon':'Docked'}</span><span>Riders</span><span>~${f.ld*K}</span></div>`}
+  else if(sel.k==='w'){$('#shTitle').textContent='Electrical Water Pageant';h2=`<p class="mu">${esc(ewpText())}</p><div class="kv">`+EWP.shows.map(s=>`<span>${s.n}</span><span>${T>=s.t&&T<s.t+EWP.len?'On now':T<s.t?fmt(s.t):'Done'}</span>`).join('')+'</div><button class="cta wide" id="dWatchW" style="margin-top:10px">Watch the pageant</button>'}
+  else if(sel.k==='g'){const g=sel.g,ev=id=>(EV.find(e=>e.id===id)||{n:'the show'}).n.replace(/ \(.*\)/,''),A=()=>AT[g.tgt]?AT[g.tgt].n:'a ride',V=()=>VN[g.tgt]?VN[g.tgt].n:'somewhere';$('#shTitle').textContent=g.n===1?'A guest on their own':'Party of '+g.n;
+   const doing=g.st===7?'Has left the park':g.st===1?'In line for '+A():g.st===2?'Riding '+A():g.st===3?'Inside '+V():g.st===4?'Watching '+ev(g.evId):g.st===5?(g.intent==='hold'?'Waiting for the park to open':'Taking a break'):g.intent==='ride'?'Walking to '+A():g.intent==='eat'||g.intent==='shop'?'Heading to '+V():g.intent==='watch'?'Finding a spot for '+ev(g.evId):g.intent==='exit'?'Heading home':g.intent==='hold'?'Heading in to wait for opening':'Looking for somewhere to stop';
+   const done=Object.keys(g.v).map(i=>AT[i].n);h2=`<p class="mu">${esc(doing)}</p><div class="kv"><span>Arrived</span><span>${fmt(g.t0)} by ${['monorail','ferry','bus','foot'][g.mode]||'foot'}</span><span>Rides so far</span><span>${done.length}</span><span>Plans to leave around</span><span>${fmt(Math.min(g.leave,86399))}</span></div>${done.length?'<p class="mu small">'+esc(done.join(' · '))+'</p>':''}<button class="cta wide" id="dFollow" style="margin-top:8px">Follow this party</button><p class="mu small">Each party on the map stands for about ${K} real guests.</p>`}
+  else if(sel.k==='b'){$('#shTitle').textContent='Bus stop';h2=`<div class="kv"><span>Buses at the stop</span><span>${BUS.length}</span><span>Waiting to leave</span><span>~${Math.round((dep[0]+dep[1]+dep[2])*K)}</span></div>`}
+  const I=$('#insp');if(force||I.dataset.h!==h2.replace(/\d/g,'')){I.innerHTML=h2;I.dataset.h=h2.replace(/\d/g,'');I.querySelectorAll('.row').forEach(r=>r.onclick=()=>pick({k:'a',i:+r.dataset.i},true));
+   const w=$('#dWatch');if(w)w.onclick=watchHEA;const ww=$('#dWatchW');if(ww)ww.onclick=()=>watchPageant();const fo=$('#dFollow');if(fo)fo.onclick=()=>{follow={k:'g',g:sel.g};cam.tm=Math.max(cam.tm,3.2);closeSheet()};const wp=$('#dWatchP');if(wp)wp.onclick=()=>watchParade(sel.i);const j=$('#dJump');if(j)j.onclick=()=>{const e=EV.find(x=>x.id===sel.i),n=e.t.find(s=>s>T)??e.t[0];seek(n-e.lead*60-60,n<T)}}
+  else{I.innerHTML=h2}if(sel.k==='a')spark(AT[sel.i])}
+ else if(sheet==='shows'){ewpBadge();for(const e of EV){const el=B.querySelector(`[data-es="${e.id}"]`);if(el)el.textContent=evText(e)}}
+ else if(sheet==='home'){const idx=Math.round((att-20000)/6000);const di=$('#dinfo');if(di)di.textContent=`Estimated attendance ${att.toLocaleString()} · crowd level ${Math.max(1,Math.min(10,idx))}/10 · open ${fmt(OPEN*3600)}–${fmt(CLOSE*3600)}`;
+  const c=[0,0,0,0,0];for(const g of guests)c[g.st===0||g.st===5?0:g.st===1?1:g.st===2?2:g.st===3?3:4]++;const n=Math.max(1,guests.length),open=AT.filter(a=>aStat(a)==='Operating'),aw=open.length?Math.round(open.reduce((s,a)=>s+a.wt,0)/open.length):0;
+  $('#sx').innerHTML=`<div class="stats"><div><b>${(guests.length*K).toLocaleString()}</b><span>in the park</span></div><div><b>${aw}<small> min</small></b><span>average wait</span></div><div><b>${open.length}/${AT.length}</b><span>rides running</span></div><div><b>${Math.max(0,...AT.map(a=>a.wt))}<small> min</small></b><span>longest wait</span></div></div><div class="card"><div class="lh" style="margin-top:0">What guests are doing</div>`+
+   [['Walking around',0],['In line',1],['On a ride',2],['Eating or shopping',3],['Watching a show',4]].map(([t,i])=>`<div class="kv"><span>${t}</span><span>${Math.round(c[i]/n*100)}%</span></div><div class="bar"><i style="width:${c[i]/n*100}%"></i></div>`).join('')+`</div><p class="mu small">Arrivals today ~${(ST.arr*K).toLocaleString()} · departures ~${(ST.dep*K).toLocaleString()}. All figures are simulated.</p>`}
+ else if(sheet==='menu'){const q=m=>`~${Math.round(pend[m]*K)}`;const tr=$('#tr');if(tr)tr.innerHTML=`<div class="card"><h4>Monorail</h4>${MONO.map(m=>`<div class="kv"><span>${m.nm} · ${MLINE[m.l].n}</span><span>${m.st==='run'?'to '+STOPNAME[MLINE[m.l].stops[m.nx]]:'at '+STOPNAME[MLINE[m.l].stops[m.at]]} · ~${m.ld*K}</span></div>`).join('')}</div><div class="card"><h4>Ferryboats</h4>${FERRY.map((f,i)=>`<div class="kv"><span>Ferry ${i+1}</span><span>${f.st==='run'?'crossing':'docked'} · ~${f.ld*K}</span></div>`).join('')}</div><div class="card"><h4>Buses</h4><div class="kv"><span>At the stop</span><span>${BUS.length}</span><span>Arriving guests waiting</span><span>${q(2)}</span></div></div>`}}
+const evText=e=>e.on===false?'Turned off':e.ph==='gather'?`Crowds gathering · starts ${fmt(e.key)}`:e.ph==='live'?`On now · ends ${fmt(e.key+e.dur*60)}`:e.ph==='done'?'Just ended · crowds leaving':e.nx!==null?`Next show ${fmt(e.nx)} (in ${Math.round((e.nx-T)/60)} min)`:'No more shows today';
+/* ---------- views, show shortcut ---------- */
+function setView(street){SV.on=street;$('#svb').style.display='none';sync()}
+function watchHEA(){const ev=fireEv();if(!ev)return;ev.on=true;const s=ev.t.find(x=>x>=T-60)??ev.t[0];if(!AU.ready)auInit();seek(s-25,s-25<T);HEA.liveKey=null;speed=1;playing=true;
+ if(!SV.on){cam.tx=P_.castle[0];cam.ty=P_.castle[1]-20;cam.tm=1.6}closeSheet();sync();if(!HEA.ready)toast('Add audio/happily-ever-after.mp3 (or load it in Entertainment) to hear the show');
+ HEA.audio.play().then(()=>HEA.audio.pause()).catch(()=>{})}
+/* ---------- controls ---------- */
+$('#bp').onclick=()=>{liveUnfollow();playing=!playing;sync()};$('#liveBtn').onclick=()=>LIVE.follow?liveUnfollow():liveFollow();$('#bm').onclick=()=>seek(Math.floor(T/900)*900-(T%900<1?900:0));$('#bf').onclick=()=>seek((Math.floor(T/900)+1)*900);
+$('#spd').onclick=()=>{liveUnfollow();speed=SPEENEXT();try{localStorage.setItem('mk-speed',speed)}catch(e){}sync()};/* the speed you pick is remembered for next time */const SPEENEXT=()=>SPEEDS[(SPEEDS.indexOf(speed)+1)%SPEEDS.length];
+$('#ts').oninput=e=>seek(+e.target.value*60);
+$('#fBtn').onclick=()=>sheet==='filter'?closeSheet():openSheet('filter');$('#lBtn').onclick=()=>sheet==='list'?closeSheet():openSheet('list');
+$('#layerBtn').onclick=e=>{e.stopPropagation();const m=$('#layerMenu');m.hidden=!m.hidden;$('#layerBtn').setAttribute('aria-expanded',!m.hidden)};
+$('#layerMenu').innerHTML=Object.entries(LAYERS).map(([k,n])=>`<button role="menuitem" data-l="${k}">${n}</button>`).join('');
+$('#layerMenu').onclick=e=>{const b=e.target.closest('button');if(!b)return;VIEW.layer=b.dataset.l;$('#layerMenu').hidden=true;$('#lBtn').hidden=VIEW.layer!=='wait';sync()};
+document.addEventListener('click',e=>{if(!e.target.closest('#layerMenu,#layerBtn'))$('#layerMenu').hidden=true});
+$('#shClose').onclick=()=>{if(sheet==='detail')sel=null;closeSheet()};
+$('#vMap').onclick=()=>setView(false);$('#vStreet').onclick=()=>setView(true);
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{const s=b.dataset.s;if(s==='map'){closeSheet();if(!SV.on){cam.tx=P_.hub[0];cam.ty=P_.hub[1]-30;cam.tm=1.7}else setView(false);return}sheet===s?closeSheet():openSheet(s)});
+/* ---------- map input: drag to pan, wheel/pinch to zoom, tap a callout or place ---------- */
+let drag=null;const ptr=new Map();
+function hitMap(x,y){const z=zf(),r=16/Math.min(z,2);let b=null,bd=r;for(const a of AT){const d=Math.hypot(a.x-x,a.y-y);if(d<bd){bd=d;b={k:'a',i:a.i}}}for(const v of VN){const d=Math.hypot(v.x-x,v.y-y);if(d<Math.min(bd,12)){bd=d;b={k:'v',i:v.i}}}
+ for(const k in RESORTS){const c=RESORTS[k].c;if(!b&&Math.hypot(c[0]-x,c[1]-y)<Math.max(26,20/z))b={k:'r',i:k}}
+ MONO.forEach((m,i)=>{const p=monoXY(m);if(Math.hypot(p[0]-x,p[1]-y)<30)b={k:'m',i}});FERRY.forEach((f,i)=>{const p=FER.at(f.p*FER.L);if(Math.hypot(p[0]-x,p[1]-y)<26)b={k:'f',i}});
+ {const st=ewpState(T);if(st)for(let i=0;i<EWP.N;i++){const p=ewpBarge(st,i);if(p&&Math.hypot(p[0]-x,p[1]-4-y)<9)b={k:'w',i:0}}}
+ if(!b&&z>1.5){let bd=4.5;for(const g of guests){if(g.st===1||g.st===2||g.st===3)continue;const d=Math.hypot(g.x-x,g.y-y);if(d<bd){bd=d;b={k:'g',g}}}} /* zoomed in: tap a party to see what they are up to */
+ if(!b){let d0=110;for(const k in LANDS){const L=LANDS[k],d=Math.hypot(L[1]-x,L[2]-y);if(d<d0&&k!=='hub'){d0=d;b={k:'l',i:k}}}}return b}
+function zoomAt(sx,sy,f){const[bx,by]=toW(sx,sy);cam.tm=cam.m=Math.max(minM(),Math.min(7,cam.m*f));const[ax,ay]=toW(sx,sy);cam.x+=bx-ax;cam.y+=by-ay;cam.tx=cam.x;cam.ty=cam.y;follow=null}
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);
+ if(SV.on){drag={x:e.clientX,y:e.clientY,p:SV.pan,t:SV.tilt,sv:1};return}
+ if(ptr.size===2){const[a,b]=[...ptr.values()];drag={pinch:Math.hypot(a[0]-b[0],a[1]-b[1]),mv:1};return}
+ drag={x:e.clientX,y:e.clientY,cx:cam.tx,cy:cam.ty,mv:0};cv.classList.add('grab')});
+cv.addEventListener('pointermove',e=>{if(!ptr.has(e.pointerId))return;ptr.set(e.pointerId,[e.clientX,e.clientY]);if(!drag)return;
+ if(SV.on&&drag.sv){SV.pan=Math.max(-7,Math.min(7,drag.p-(e.clientX-drag.x)/SV.f*40));SV.tilt=Math.max(-.12,Math.min(.2,drag.t+(e.clientY-drag.y)/ch*.6));svLayout();return}
+ if(drag.pinch&&ptr.size===2){const[a,b]=[...ptr.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),r=cv.getBoundingClientRect();
+  if(SV.on){SV.zoom=Math.max(.6,Math.min(2.6,SV.zoom*d/drag.pinch));svLayout()}else zoomAt((a[0]+b[0])/2-r.left,(a[1]+b[1])/2-r.top,d/drag.pinch);drag.pinch=d;return}
+ const z=zf(),dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.mv=1;if(drag.mv&&!drag.pinch){follow=null;cam.tx=cam.x=drag.cx-dx/z;cam.ty=cam.y=drag.cy-dy/z}});
+const endPtr=e=>{ptr.delete(e.pointerId);cv.classList.remove('grab');if(SV.on){if(!ptr.size)drag=null;return}
+ if(drag&&!drag.mv&&!drag.pinch&&e.type==='pointerup'){const r=cv.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top;const b=[...BUB].reverse().find(o=>sx>=o.r[0]&&sx<=o.r[2]&&sy>=o.r[1]&&sy<=o.r[3]);
+  if(b)pick(b.item);else{const[x,y]=toW(sx,sy),h=hitMap(x,y);if(h)pick(h);else{sel=null;if(sheet==='detail')closeSheet()}}}
+ if(!ptr.size)drag=null;else if(ptr.size===1)drag=null};
+cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
+cv.addEventListener('wheel',e=>{e.preventDefault();if(SV.on){SV.zoom=Math.max(.6,Math.min(2.6,SV.zoom*(e.deltaY<0?1.1:1/1.1)));svLayout();return}const r=cv.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.15:1/1.15)},{passive:false});
+addEventListener('resize',resize);if(window.ResizeObserver)new ResizeObserver(()=>{const r=cv.parentElement.getBoundingClientRect();if(Math.abs(r.width-cw)>.5||Math.abs(r.height-ch)>.5)resize()}).observe(cv.parentElement); // the map area can change size without the window doing so
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();liveUnfollow();playing=!playing;sync()}if(e.key==='Escape'){closeSheet();if(document.body.classList.contains('fs')&&!fsActive())setFS(false)}if((e.key==='f'||e.key==='F')&&!e.metaKey&&!e.ctrlKey)toggleFS()});
+/* ---------- full screen ---------- */
+const fsEl=document.documentElement,fsActive=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+function setFS(on){if(!$('#fsBtn'))return;document.body.classList.toggle('fs',on);$('#fsBtn').setAttribute('aria-label',on?'Exit full screen':'Full screen');$('#fsBtn').title=on?'Exit full screen (F)':'Full screen (F)';poke();requestAnimationFrame(resize)}
+function toggleFS(){const on=!document.body.classList.contains('fs');
+ if(on){const req=fsEl.requestFullscreen||fsEl.webkitRequestFullscreen;setFS(true);if(req)Promise.resolve(req.call(fsEl)).catch(()=>{})}   // iPhone/iPad: no true full screen, so just fill the window
+ else{const ex=document.exitFullscreen||document.webkitExitFullscreen;setFS(false);if(fsActive()&&ex)Promise.resolve(ex.call(document)).catch(()=>{})}}
+for(const ev of['fullscreenchange','webkitfullscreenchange'])document.addEventListener(ev,()=>{if(!fsActive()&&document.body.classList.contains('fs'))setFS(false)}); // Esc leaves full screen
+if($('#fsBtn')){$('#fsBtn').onclick=toggleFS;$('#fsList').onclick=()=>sheet==='list'?closeSheet():openSheet('list');$('#fsShows').onclick=()=>sheet==='shows'?closeSheet():openSheet('shows')} // (a browser still holding the older page has no full-screen button; don't let that stop the map loading)
+// in full screen, controls fade after 3 s without the mouse moving or a tap; any movement brings them back
+let idleT=0;function poke(){document.body.classList.remove('idle');clearTimeout(idleT);if(document.body.classList.contains('fs'))idleT=setTimeout(()=>{if(!sheet)document.body.classList.add('idle')},3000)}
+for(const ev of['pointermove','pointerdown','keydown','wheel'])addEventListener(ev,poke,{passive:true});
+/* ---------- boot ---------- */
+try{const s=+localStorage.getItem('mk-speed');if(SPEEDS.includes(s))speed=s}catch(e){} // starts at 1× (real time) unless you chose another speed before
+for(const e of EV)if(!Array.isArray(e.t))e.t=e.ts.map(hm).filter(x=>x!==null).sort((a,b)=>a-b);relTimes();
+loadCastleImage().then(()=>{buildMap();resize();reset(7*3600);seek(9*3600-900,false);sync();ui(true);liveInit();
+ let last=performance.now(),uit=0;
+ (function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;frame(dt);uit+=dt;if(uit>.25){uit=0;ui(false)}requestAnimationFrame(loop)})(last)});

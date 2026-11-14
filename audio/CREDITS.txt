@@ -1,0 +1,9 @@
+All .m4a files here are real recordings, trimmed and re-encoded for this site.
+- crowd, falls, jungle, river, lap, flag, chimes, creek, hum, lake, engine, trainpass,
+  doorsopen, doorsclose, horse, snare, fanfare: "Oculus Audio Pack 01" by Oculus VR, LLC,
+  CC BY 4.0 (https://developers.meta.com/vr/downloads/package/oculus-audio-pack-1/)
+- birds, crickets: felix.blume on Freesound (#414098, #476672), CC0
+- fw1–fw6, fwbed: rubberduck, "25 CC0 bang/firework SFX", OpenGameArt, CC0
+- bell1, bell2: Nigel K, Ship's Bells, CC0
+- applause, applause_big: built from Owlish pack hand-clap recordings, CC0
+happily-ever-after.mp3 is not included — add your own copy (see README.md).

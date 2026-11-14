@@ -160,6 +160,14 @@ PowerShell script serves the files. If Windows warns about the file the first ti
 anyway. Press Alt+F4 in the full-screen window to stop. It opens on the main display, so make the TV the
 main display or duplicate the screens. Copy the whole folder, including your audio files, to the PC.
 
+## Putting it online (GitHub Pages)
+
+The site works from GitHub Pages as it is (Settings → Pages → Deploy from a branch → main, / (root)). The Disney
+music is never uploaded: it is Disney's, and a public site would be giving it away. To hear it on the hosted
+site, open ☰ → **Load audio folder…** on each device (the TV included) and pick your `audio` folder. That
+browser keeps the soundtracks and land music from then on. Use the same browser each time, and avoid private
+windows, which don't keep anything.
+
 ## Running it anywhere else
 
 Browsers block loading sound files from a page opened by double-clicking, so use a web

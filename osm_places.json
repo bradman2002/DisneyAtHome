@@ -1,0 +1,371 @@
+{
+"places": {
+"castle": [
+923.6,
+420.5
+],
+"stage": [
+921.3,
+453.6
+],
+"hub": [
+921.6,
+508.5
+],
+"hea": [
+921.4,
+476.4
+],
+"townsq": [
+914.2,
+706.4
+],
+"station": [
+921.3,
+762.4
+],
+"monostation": [
+819.0,
+824.9
+],
+"busstation": [
+1174.1,
+845.6
+],
+"mainst": [
+921.7,
+595.1
+],
+"ms": [
+932.7,
+642.9
+],
+"adv": [
+685.5,
+616.3
+],
+"fr": [
+637.5,
+310.3
+],
+"lib": [
+783.6,
+390.4
+],
+"fan": [
+998.1,
+306.1
+],
+"tom": [
+1186.8,
+461.0
+]
+},
+"pos": {
+"Jungle Cruise": {
+"c": [
+694.8,
+597.0
+],
+"nd": 464
+},
+"Pirates of the Caribbean": {
+"c": [
+551.2,
+614.8
+],
+"nd": 1027
+},
+"The Magic Carpets of Aladdin": {
+"c": [
+693.2,
+540.0
+],
+"nd": 634
+},
+"Walt Disney's Enchanted Tiki Room": {
+"c": [
+651.5,
+541.2
+],
+"nd": 809
+},
+"Swiss Family Treehouse": {
+"c": [
+743.0,
+567.0
+],
+"nd": 113
+},
+"Big Thunder Mountain Railroad": {
+"c": [
+563.8,
+324.6
+],
+"nd": 160
+},
+"Tiana's Bayou Adventure": {
+"c": [
+541.4,
+457.8
+],
+"nd": 863
+},
+"Country Bear Musical Jamboree": {
+"c": [
+658.0,
+508.6
+],
+"nd": 175
+},
+"The Haunted Mansion": {
+"c": [
+752.6,
+263.2
+],
+"nd": 936
+},
+"The Hall of Presidents": {
+"c": [
+830.3,
+402.5
+],
+"nd": 432
+},
+"Seven Dwarfs Mine Train": {
+"c": [
+1034.7,
+297.3
+],
+"nd": 697
+},
+"Peter Pan's Flight": {
+"c": [
+839.5,
+342.6
+],
+"nd": 258
+},
+"\"it's a small world\"": {
+"c": [
+839.0,
+269.2
+],
+"nd": 188
+},
+"The Many Adventures of Winnie the Pooh": {
+"c": [
+1002.2,
+366.5
+],
+"nd": 806
+},
+"Under the Sea: Journey of the Little Mermaid": {
+"c": [
+1066.8,
+206.9
+],
+"nd": 587
+},
+"Mickey's PhilharMagic": {
+"c": [
+876.0,
+370.8
+],
+"nd": 812
+},
+"Dumbo the Flying Elephant": {
+"c": [
+1150.1,
+313.9
+],
+"nd": 581
+},
+"Mad Tea Party": {
+"c": [
+1065.6,
+366.3
+],
+"nd": 638
+},
+"Prince Charming Regal Carrousel": {
+"c": [
+920.9,
+347.5
+],
+"nd": 813
+},
+"The Barnstormer": {
+"c": [
+1195.7,
+301.4
+],
+"nd": 457
+},
+"Space Mountain": {
+"c": [
+1315.6,
+461.4
+],
+"nd": 753
+},
+"TRON Lightcycle / Run": {
+"c": [
+1369.6,
+308.1
+],
+"nd": 1070
+},
+"Buzz Lightyear's Space Ranger Spin": {
+"c": [
+1066.6,
+593.0
+],
+"nd": 1057
+},
+"Tomorrowland Speedway": {
+"c": [
+1187.9,
+414.3
+],
+"nd": 544
+},
+"Tomorrowland Transit Authority PeopleMover": {
+"c": [
+1123.1,
+535.3
+],
+"nd": 356
+},
+"Walt Disney's Carousel of Progress": {
+"c": [
+1156.1,
+613.4
+],
+"nd": 827
+},
+"Astro Orbiter": {
+"c": [
+1126.1,
+542.9
+],
+"nd": 601
+},
+"Monsters, Inc. Laugh Floor": {
+"c": [
+1048.3,
+569.4
+],
+"nd": 859
+},
+"Town Square Theater": {
+"c": [
+962.6,
+734.6
+],
+"nd": 251
+},
+"Emporium": {
+"c": [
+900.1,
+671.7
+],
+"nd": 726
+},
+"Main Street Confectionery": {
+"c": [
+936.6,
+690.8
+],
+"nd": 1100
+},
+"Casey's Corner": {
+"c": [
+908.5,
+598.1
+],
+"nd": 720
+},
+"The Plaza Restaurant": {
+"c": [
+949.7,
+600.8
+],
+"nd": 495
+},
+"The Crystal Palace": {
+"c": [
+842.6,
+581.0
+],
+"nd": 910
+},
+"Agrabah Bazaar": {
+"c": [
+703.5,
+513.0
+],
+"nd": 285
+},
+"Columbia Harbor House": {
+"c": [
+805.8,
+366.9
+],
+"nd": 431
+},
+"Pecos Bill Tale Tale Inn and Caf\u00e9": {
+"c": [
+599.3,
+510.6
+],
+"nd": 162
+},
+"Frontier Trading Post": {
+"c": [
+705.3,
+496.2
+],
+"nd": 351
+},
+"Be Our Guest Restaurant": {
+"c": [
+950.8,
+197.3
+],
+"nd": 344
+},
+"Storybook Treats": {
+"c": [
+980.4,
+343.2
+],
+"nd": 535
+},
+"Cosmic Ray's Starlight Caf\u00e9": {
+"c": [
+1052.4,
+438.0
+],
+"nd": 404
+},
+"Mickey's Star Traders": {
+"c": [
+1087.3,
+473.6
+],
+"nd": 742
+}
+},
+"gate": 987,
+"townsq": 92,
+"mainst": 721,
+"hub": 472,
+"land": {
+"adv": 1044,
+"fr": 999,
+"lib": 1017,
+"fan": 1120,
+"tom": 215
+}
+}

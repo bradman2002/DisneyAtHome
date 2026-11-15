@@ -38,7 +38,7 @@ function tvTick(rdt){const now=performance.now();
  if(TV.replay||!LIVE.ok){const lo=(OPEN-.5)*3600,hi=(CLOSE+.45)*3600;if(T<lo||T>hi){LIVE.inTick=true;seek(lo,true);LIVE.inTick=false}
   playing=true;const show=!!tvEvent()||(()=>{const f=fireEv();return f&&f.ph==='gather'&&f.key-T<40})();const sp=show?1:30;if(speed!==sp){speed=sp;sync()}} // time-lapse, but every show plays at its real speed
  if(!TV.shot||now>TV.until||tvEvent()!==TV.key)tvNext();
- const s=TV.shot;if(s.k==='map'){if(s.vx){cam.tx+=s.vx*rdt;cam.ty+=s.vy*rdt}if(s.zoom)cam.tm*=1+(s.zoom-1)*rdt/s.dur}
+ const s=TV.shot;if(s.k==='map'&&s.vx){cam.tx+=s.vx*rdt;cam.ty+=s.vy*rdt} /* a slow pan only: a slow zoom re-scales the whole map a hair every frame, which shimmers */
  if(now-TV.uiAt>500){TV.uiAt=now;tvBoard(now)}}
 function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
  $('#tvTime').textContent=fmt(T);$('#tvDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});

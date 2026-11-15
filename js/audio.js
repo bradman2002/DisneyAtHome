@@ -8,7 +8,7 @@ const SOUND_CREDITS=[
  ['Ship’s bell (ferry departures/arrivals)','Nigel K, Ship’s Bells, CC0'],
  ['Applause (built by layering real hand-clap recordings)','Owlish sound pack, CC0'],
  ['“The Star-Spangled Banner” (Flag Retreat)','United States Navy Band, public domain (US government work), via Wikimedia Commons']];
-const AU={ctx:null,mute:false,ready:false,loading:false,v:{master:.8,music:.55,crowd:.49,amb:.1,trans:.7,show:.8},buf:{},L:{},lt:0,last:{}};
+const AU={ctx:null,mute:false,ready:false,loading:false,v:{master:.8,music:.55,crowd:.25,amb:.1,trans:.7,show:.8},buf:{},L:{},lt:0,last:{}};
 const LOOPDEF={crowd:'crowd',crowdEv:'crowd',birds:'amb',crickets:'amb',falls:'amb',jungle:'amb',river:'amb',lap:'amb',flag:'amb',chimes:'amb',creek:'amb',hum:'amb',lake:'amb',engine:'trans',fwbed:'show'};
 const LOOPSRC={crowdEv:'crowd'};
 /* Sound files live in the audio/ folder next to index.html. Loop points (seconds) mark the seamless part of each bed. */

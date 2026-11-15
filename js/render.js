@@ -34,7 +34,8 @@ function frame(rdt){
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
  paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();
  if(SV.on){drawStreet(rdt);BUB=[];return}
- {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k} // TV mode glides between shots
+ {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k; /* TV mode glides between shots */
+  if(Math.abs(cam.tm-cam.m)<cam.m*.0015)cam.m=cam.tm;if(Math.abs(cam.tx-cam.x)<.04)cam.x=cam.tx;if(Math.abs(cam.ty-cam.y)<.04)cam.y=cam.ty} /* then settle exactly, rather than creeping closer by ever-smaller amounts (which kept the picture shimmering) */
  if(follow){const o=vehPos(follow);if(o){cam.tx=o[0];cam.ty=o[1]}}clampCam();
  heaSync();
  const z=zf(),now=performance.now();

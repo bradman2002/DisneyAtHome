@@ -156,7 +156,10 @@ function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monor
  for(const a of AT){const k=rideAt(a);if(!k)continue;const run=aStat(a)==='Operating'||aStat(a)==='Last riders';if(!run)continue;
   let v=z*Math.exp(-Math.hypot(cam.x-a.x,cam.y-a.y)/55); /* close in on it */
   if(sel&&sel.k==='a'&&sel.i===a.i&&sheet==='detail')v=Math.max(v,.9); /* you tapped it */
-  t[k]=Math.max(t[k],Math.min(1,v*1.4))}return t}
+  t[k]=Math.max(t[k],Math.min(1,v*1.4))}
+ /* only one ride (or the monorail) is heard at a time: the one you're closest to, or tapped. Neighbouring rides
+    (Haunted Mansion and small world are next door to each other) would otherwise play over each other */
+ let top=null;for(const k in t)if(t[k]>.02&&(!top||t[k]>t[top]))top=k;for(const k in t)if(k!==top)t[k]=0;return t}
 function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id)),
   base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?.25:1);let top=0;
  for(const k in t){if(RA.bad[k])continue;const want=t[k]*base,v=RA.vol[k]=(RA.vol[k]||0)+(want-(RA.vol[k]||0))*.06;top=Math.max(top,t[k]);let a=RA.el[k];

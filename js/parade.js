@@ -264,3 +264,18 @@ function welcomeSync(){const e=EV.find(x=>x.id==='welcome'),A=WELC.a,a=A.audio;i
  if(live&&A.ready&&playing&&speed===1&&!FF&&(!dur||pos<dur-.3)){setVol(a,(AU.mute?0:AU.v.master)*(SV.on?.55:.3+.7*prox(EVPOS.welcome[0],EVPOS.welcome[1],320)));
   if(a.paused){a.currentTime=Math.max(0,pos);a.play().catch(()=>{})}else syncTrack(A,a,a.currentTime-pos,()=>{a.currentTime=Math.max(0,pos)})}
  else if(!a.paused)a.pause()}
+/* ---------- the Kiss Goodnight's soundtrack ----------
+   "A Kiss Goodnight" (the owner's copy, audio/kiss-goodnight.mp3, never committed) plays half an hour after closing
+   while the castle shimmers; the moment lasts as long as the track. Kept in step like the other shows. */
+const KISS={file:'audio/kiss-goodnight.mp3',a:{audio:new Audio(),ready:false,src:'folder',liveKey:null}};
+{const A=KISS.a,a=A.audio,ev=()=>EV.find(e=>e.id==='kiss');a.preload='auto';
+ a.addEventListener('canplay',()=>{A.ready=true});
+ a.addEventListener('loadedmetadata',()=>{const d=a.duration,e=ev();if(d&&isFinite(d)&&e&&!e.userDur)e.dur=d/60});
+ a.addEventListener('error',async()=>{if(A.src!=='folder')return;A.src='none';try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('kiss');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob){A.src='picked';a.src=URL.createObjectURL(v.blob);a.load()}}catch(e){}});
+ loadTrack(a,KISS.file)}
+const kissPlaying=()=>KISS.a.ready&&!KISS.a.audio.paused;
+function kissSync(){const e=EV.find(x=>x.id==='kiss'),A=KISS.a,a=A.audio;if(!e)return;const live=e.on!==false&&e.ph==='live',pos=live?T-e.key:0,dur=a.duration||0;
+ if(live&&A.liveKey!==e.key){A.liveKey=e.key;if(A.ready&&speed!==1&&!FF){speed=1;sync();toast('A Kiss Goodnight — speed set to 1× so the music stays in sync')}}
+ if(live&&A.ready&&playing&&speed===1&&!FF&&(!dur||pos<dur-.3)){setVol(a,(AU.mute?0:AU.v.master)*(SV.on?.7:.35+.65*prox(P_.castle[0],P_.castle[1],380)));
+  if(a.paused){a.currentTime=Math.max(0,pos);a.play().catch(()=>{})}else syncTrack(A,a,a.currentTime-pos,()=>{a.currentTime=Math.max(0,pos)})}
+ else if(!a.paused)a.pause()}

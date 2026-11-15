@@ -30,18 +30,18 @@ const GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=64;co
 function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
- paradeSync();pageantSync();welcomeSync();anthemSync();
+ paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k} // TV mode glides between shots
  if(follow){const o=vehPos(follow);if(o){cam.tx=o[0];cam.ty=o[1]}}clampCam();
  heaSync();
  const z=zf(),now=performance.now();
  cx.setTransform(1,0,0,1,0,0);cx.fillStyle='#9fc46e';cx.fillRect(0,0,cv.width,cv.height);
- cx.setTransform(dpr*z,0,0,dpr*z,dpr*(cw/2-cam.x*z),dpr*(ch/2-cam.y*z));
+ cx.setTransform(dpr*z,0,0,dpr*z,Math.round(dpr*(cw/2-cam.x*z)),Math.round(dpr*(ch/2-cam.y*z))); /* snapped to whole pixels, so a slowly drifting camera doesn't make the picture shimmer */
  const vis=d=>d.base&&z*dpr>MAP.mss*1.15&&d.x<cam.x+cw/2/z&&d.x+d.w>cam.x-cw/2/z&&d.y<cam.y+ch/2/z&&d.y+d.h>cam.y-ch/2/z; // sharper close-up layers, once painted
  cx.drawImage(MAP.base,0,0,W,H);for(const d of MAP.detail)if(vis(d))cx.drawImage(d.base,d.x,d.y,d.w,d.h);
  drawLive(now);
- if(MAP.castleImg){const[bx,by,bw,bh]=MAP.castleBox;cx.drawImage(MAP.castle,bx,by,bw,bh)} // keep rides behind the castle hidden
+ if(MAP.castleImg){const[bx,by,bw,bh]=MAP.castleBox;cx.drawImage(CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:MAP.castle,bx,by,bw,bh)} /* the castle again on top, from the original image so it lines up exactly with the one in the background */ // keep rides behind the castle hidden
  // daylight → sunset → night
  cx.globalCompositeOperation='multiply';const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t),col=mix(mix([255,255,255],[255,214,170],gf),[60,74,135],nf);
  cx.fillStyle=`rgb(${col.map(Math.round)})`;cx.fillRect(0,0,W,H);

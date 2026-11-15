@@ -21,7 +21,9 @@ const VW=1000,VH=940;
 const baseZ=()=>{const fit=Math.min(cw/VW,ch/VH);return cw<ch?Math.max(fit,Math.min(cw/VW*1.7,ch/VH)):fit};
 const minM=()=>Math.min(1,Math.min(cw/W,ch/H)/baseZ()); // furthest out: the whole resort area on screen
 const zf=()=>baseZ()*cam.m;
-const toS=(x,y)=>{const z=zf();return[(x-cam.x)*z+cw/2,(y-cam.y)*z+ch/2]};
+/* map point → screen, in step with the map's whole-pixel camera, and itself rounded to a whole device pixel, so the
+   callouts, pins and labels move with the map instead of shimmering between pixels */
+const toS=(x,y)=>{const z=zf(),d=dpr||1,ox=Math.round(d*(cw/2-cam.x*z)),oy=Math.round(d*(ch/2-cam.y*z));return[Math.round(x*z*d+ox)/d,Math.round(y*z*d+oy)/d]};
 const toW=(sx,sy)=>{const z=zf();return[(sx-cw/2)/z+cam.x,(sy-ch/2)/z+cam.y]};
 function clampCam(){const z=zf(),hw=cw/2/z,hh=ch/2/z;for(const k of['x','tx']){cam[k]=hw*2>=W?W/2:Math.max(hw,Math.min(W-hw,cam[k]))}for(const k of['y','ty']){cam[k]=hh*2>=H?H/2:Math.max(hh,Math.min(H-hh,cam[k]))}}
 /* glow sprite */

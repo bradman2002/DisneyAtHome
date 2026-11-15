@@ -57,7 +57,7 @@ button,input{font:inherit;color:inherit}button{cursor:pointer}
 @media(max-width:760px){#osmc{bottom:auto;top:52px;right:8px}}
 #liveBtn{white-space:nowrap;width:auto;padding:0 10px}#liveBtn.on{background:#d6303f;color:#fff;border-color:#d6303f}
 /* TV mode: no controls; a caption for each shot, a clock, what's coming up and a wait-time board (they drift a few pixels over time so nothing sits still on the screen) */
-#tv{position:absolute;inset:0;pointer-events:none;z-index:4;font-variant-numeric:tabular-nums;animation:tvdrift 600s ease-in-out infinite alternate}
+#tv{position:absolute;inset:0;pointer-events:none;z-index:4;font-variant-numeric:tabular-nums;animation:tvdrift 600s steps(9) infinite alternate} /* moves a whole pixel at a time, about once a minute, rather than gliding (which made the text shimmer on phones) */
 @keyframes tvdrift{from{transform:translate(0,0)}to{transform:translate(9px,7px)}}
 #tvCap,#tvClock,.tvCard{background:rgba(18,24,48,.64);color:#fff;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 #tvCap{position:absolute;left:28px;top:24px;font-weight:800;font-size:20px;padding:8px 16px;border-radius:14px;opacity:0}

@@ -28,7 +28,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - These files pack many statements onto one long line. Never add a `//` comment in the middle of such a line: it
   silently comments out everything after it (this has broken the speed button and guest arrivals). Use `/* */`,
   or put the comment on its own line.
-- Load order in index.html matters: park-osm → sim → audio → choreo → map-art → street → characters → parade → pageant → live → render → ui → tv.
+- Load order in index.html matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv.
 
 ## Files
 - `js/park-osm.js` — GENERATED geometry for the park and resort area from OpenStreetMap (buildings, walkways,
@@ -45,8 +45,14 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   routes the player through a Web Audio gain node.
 - Ride audio (`RIDEAUD`, `rideTick` in `audio.js`): `audio/ride-<key>.mp3` fades in when the camera is zoomed in close to
   that ride (TV mode has shots for them) or its sheet is open, only while it runs; area music steps aside via
-  `rideLevel`. Files are the owner's copies, git-ignored like the other Disney audio.
-- `js/choreo.js` — Happily Ever After fireworks cues derived offline from that soundtrack.
+  `rideLevel`. Files are the owner's copies, git-ignored like the other Disney audio. `ride-monorail.mp3` is the monorail's
+  onboard audio: it plays while TV mode follows a train, a train's card is open, or the mouse hovers one (`MONOHOVER`).
+- `js/choreo.js` — Happily Ever After fireworks cues derived offline from that soundtrack (`var CHOREO`).
+- `js/choreo-minnie.js` — GENERATED cues for Minnie's Wonderful Christmastime Fireworks (`CHOREO_MINNIE`), made by
+  `tools/fireworks_from_audio.py` from the soundtrack (decode with `afconvert` first; pure Python, no numpy). The
+  engine switches shows with `fwSet()`/`fwAuto()` in `street.js` (`FW`): automatic = Minnie's when the live data lists
+  it tonight (party nights), otherwise Happily Ever After; Entertainment can force either. Never switches mid-show.
+  Tinker Bell only flies in Happily Ever After.
 - `js/map-art.js` — paints the aerial map from OSM data into cached canvases, painterly style. `paintMap()`
   paints any rectangle at any resolution: `MAP.base`/`MAP.glow` cover the whole map at a modest resolution,
   and `MAP.detail` holds sharper layers for the park and each monorail stop, painted just after start-up and
@@ -106,7 +112,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   music with the site on 14 Nov 2026; declined (redistributing Disney's recordings), this was built instead.
 - Soundtracks are the owner's copies of Disney's music, never committed or bundled:
   `audio/happily-ever-after.mp3`, `audio/festival-of-fantasy.mp3`, `audio/boo-to-you.mp3`,
-  `audio/once-upon-a-christmastime.mp3`, `audio/electrical-water-pageant.mp3`, `audio/kiss-goodnight.mp3` (`KISS` in `parade.js`; the Kiss Goodnight lasts the track's length), `audio/let-the-magic-begin.mp3` (the
+  `audio/once-upon-a-christmastime.mp3`, `audio/electrical-water-pageant.mp3`, `audio/minnies-christmas-fireworks.mp3`, `audio/kiss-goodnight.mp3` (`KISS` in `parade.js`; the Kiss Goodnight lasts the track's length), `audio/let-the-magic-begin.mp3` (the
   welcome show; `WELC` in `parade.js`, the show is the track's length and ends at opening) and the area loops `audio/area-*.mp3`.
   Keep them out of git and out of any zip. The parade's length auto-matches its soundtrack (18:49).
 - Soundtrack sync: the music is the master clock. `syncTrack()` moves the music only after a deliberate
@@ -143,6 +149,9 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - OpenStreetMap attribution must stay visible on the map (ODbL).
 
 ## Ideas not done yet
+- Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
+  which line the recording is and give rough timestamps for each station announcement; then jump the audio at each
+  departure and match the trains' run times to the recording.
 - More of the resort area: the Epcot monorail line, and guests who actually stay at, eat at or travel between
   the resorts.
 - Optional nicer painted map art (e.g. restyling a render of this map with a structure-locked image model).

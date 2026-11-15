@@ -38,7 +38,7 @@ async function auInit(){if(AU.ctx){AU.ctx.resume();return}if(AU.loading)return;A
 function setVol(a,v){v=isFinite(v)?Math.max(0,Math.min(1,v)):0;if(AU.ctx&&!a._nog){if(!a._g){try{const s=AU.ctx.createMediaElementSource(a);a._g=AU.ctx.createGain();s.connect(a._g).connect(AU.ctx.destination);a.volume=1}catch(e){a._nog=1}}
   if(a._g){a._g.gain.value=v;return} /* (callers already ease the level over time) */}a.volume=v}
 function applyVol(){if(!AU.ctx)return;AU.m.gain.value=AU.mute?0:AU.v.master;for(const k of['crowd','amb','trans','show'])AU.g[k].gain.value=AU.v[k]}
-function play(n,v,dst,at,rate){const b=AU.buf[n];if(!b||!AU.ready||v<.004)return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;
+function play(n,v,dst,at,rate){const b=AU.buf[n];if(!b||!AU.ready||!(v>=.004&&isFinite(v)))return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;
  s.playbackRate.value=rate||1;g.gain.value=v;s.connect(g).connect(dst);s.start(c.currentTime+(at||0))}
 const prox=(x,y,s)=>Math.exp(-Math.hypot(cam.x-x,cam.y-y)/(s||260));
 const EVPOS={parade:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2],xmas:[(P_.hub[0]+P_.townsq[0])/2+26,(P_.hub[1]+P_.townsq[1])/2+30],boo:[(P_.hub[0]+P_.townsq[0])/2-26,(P_.hub[1]+P_.townsq[1])/2+30],caval:[(P_.hub[0]+P_.townsq[0])/2,(P_.hub[1]+P_.townsq[1])/2-34],welcome:[P_.stage[0]-30,P_.stage[1]+8],flag:P_.flagpole||[P_.townsq[0]+24,P_.townsq[1]],kiss:[P_.castle[0]+34,P_.castle[1]-40],castle:P_.stage,band:P_.townsq,fire:[P_.castle[0],P_.castle[1]-60]};
@@ -109,7 +109,7 @@ setInterval(areaTick,120);
    The Disney music is never put on the website itself (it is Disney's, and a public site would be giving it away). Instead,
    "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
-   name: happily-ever-after.mp3, let-the-magic-begin.mp3, kiss-goodnight.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
+   name: happily-ever-after.mp3, minnies-christmas-fireworks.mp3, let-the-magic-begin.mp3, kiss-goodnight.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
    electrical-water-pageant.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
@@ -118,6 +118,7 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){} /* ask the browser not to clear it to save space */
  for(const f of files){const nm=f.name.toLowerCase();let key=null,use=null;
   if(nm==='happily-ever-after.mp3'){key='hea';use=()=>heaUse(f,f.name)}
+  else if(nm==='minnies-christmas-fireworks.mp3'){key='minnie';use=()=>{const M=FW.shows.minnie;M.src='picked';M.el.src=URL.createObjectURL(f);M.el.load()}}
   else if(nm==='kiss-goodnight.mp3'){key='kiss';use=()=>{KISS.a.src='picked';KISS.a.audio.src=URL.createObjectURL(f);KISS.a.audio.load()}}
   else if(nm==='let-the-magic-begin.mp3'){key='welcome';use=()=>{WELC.a.src='picked';WELC.a.audio.src=URL.createObjectURL(f);WELC.a.audio.load()}}
   else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
@@ -139,15 +140,19 @@ function soundAuto(){auInit();setTimeout(soundHint,1500);
 /* ===== RIDE AUDIO =====
    A ride's own soundtrack (the owner's copies, audio/ride-<name>.mp3, never committed) fades in when you look closely
    at that ride, the way you hear it walking up to the entrance: when you tap the ride, when you zoom in on it, or when
-   TV mode's camera visits it. The land music dips underneath, and the ride fades out again as you move away. It only
+   TV mode's camera visits it. The monorail works the same way: its onboard audio plays while TV mode follows a train,
+   when you tap one, or when the mouse is over one. The land music dips underneath, and the ride fades out again as you move away. It only
    plays while the ride is running. Each track keeps its place, but starts from the top if it hasn't been heard for ten
    minutes, when it jumps to a random spot, so you drop in partway through as if walking up to the ride. To add a ride, put its file in audio/ and add a line to RIDEAUD. */
 const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirates','"it\'s a small world"':'smallworld','Space Mountain':'spacemtn'};
 const RA={el:{},vol:{},bad:{},heard:{}};let rideLevel=0;
 const rideAt=a=>a&&RIDEAUD[a.osm];
 async function rideSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('ride-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
-function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;
- if(SV.on)return t;const z=Math.max(0,Math.min(1,(cam.m-1.9)/1.1));
+let MONOHOVER=false; /* the mouse is over a monorail (set in ui.js) */
+function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monorail=0;
+ if(SV.on)return t;
+ /* the monorail's onboard audio (audio/ride-monorail.mp3): while TV mode rides along with a train, while a train's card is open, or while the mouse is over one; only in operating hours */
+ if(T>OPEN*3600-5400&&T<CLOSE*3600+3600)t.monorail=follow&&follow.k==='m'?1:sel&&sel.k==='m'&&sheet==='detail'?.95:MONOHOVER?.85:0;const z=Math.max(0,Math.min(1,(cam.m-1.9)/1.1));
  for(const a of AT){const k=rideAt(a);if(!k)continue;const run=aStat(a)==='Operating'||aStat(a)==='Last riders';if(!run)continue;
   let v=z*Math.exp(-Math.hypot(cam.x-a.x,cam.y-a.y)/55); /* close in on it */
   if(sel&&sel.k==='a'&&sel.i===a.i&&sheet==='detail')v=Math.max(v,.9); /* you tapped it */

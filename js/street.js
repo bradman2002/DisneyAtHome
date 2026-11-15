@@ -233,7 +233,7 @@ function person(c,x,y,k,sh,sk,hr,ph,mv,dark){const h=1.7*k;if(h<1.2){c.fillStyle
    frontage (x = ±STREET) at distance zb; if a building stands there (not a gap such as Center Street), the person is hidden.
    Guests out in the hub beyond the corner buildings, or on side streets, would otherwise be drawn on top of the facades. */
 function svHidden(x,z){const dx=x-SV.pan,s=dx<0?-1:1,ex=s*STREET-SV.pan;if(Math.abs(dx)<=Math.abs(ex))return false;const zb=z*ex/dx;if(zb<20||zb>198)return false;
- return BLOCKS.some(b=>b.s===s&&!b.gap&&zb>=b.z0&&zb<=b.z1)}
+ return true} /* behind the frontage anywhere along Main Street, Center Street included (it is closed off at the back), so out of sight */
 const BALL=['#ff4d6d','#ffd23f','#3bceac','#5e7cff','#ff8fd3'];
 function drawGuests(c){const now=performance.now()/1000,list=[],clear=paradeBusy();
  for(let i=0;i<guests.length;i++){const g=guests[i];if(g.y<P_.castle[1]-30||g.y>P_.townsq[1]+40||Math.abs(g.x-P_.mainst[0])>120||g.st===7||g.st===1||g.st===2||g.st===3)continue;let[x0,z0]=simToWorld(g.x,g.y);if(z0<200){const hh=(i*7919)%1000/1000;x0=clear?(hh<.5?-1:1)*(8.1+(i*104729%1000/1000)*2.1):Math.max(-10.3,Math.min(10.3,x0+(hh-.5)*17))} /* during a parade everyone on Main Street stands along the kerbs, leaving the road to the floats */
@@ -256,11 +256,22 @@ function drawStreetcar(c){const h=T/3600;if(h<9||h>14.5||paradeBusy())return;/* 
   c.fillStyle='#3b2a1a';const l=Math.sin(performance.now()/180)*.1*kk;c.fillRect(q[0]-.35*kk+l,q[1]-.85*kk,.12*kk,.85*kk);c.fillRect(q[0]+.23*kk-l,q[1]-.85*kk,.12*kk,.85*kk)}}
 /* ---------- Happily Ever After: soundtrack-synced fireworks ---------- */
 const HEA={audio:new Audio(),ready:false,name:'',ci:0,lastSt:-9,rk:[],pt:[],smoke:[],fwC:null,auto:true,fade:0};
-HEA.audio.preload='auto';HEA.audio.addEventListener('canplay',()=>{HEA.ready=true;svBadge()});
+const HEA_EL=HEA.audio;HEA_EL.preload='auto';HEA_EL.addEventListener('canplay',()=>{FW.shows.hea.ready=true;if(HEA.audio===HEA_EL){HEA.ready=true;svBadge()}});
+/* which fireworks show is on: mode 'auto' picks Minnie's when the live data says tonight is a party night (it lists
+   Minnie's Wonderful Christmastime Fireworks), otherwise Happily Ever After; Entertainment can force either */
+const FW={v:'hea',mode:'auto',shows:{hea:{n:'Happily Ever After',ready:false,el:HEA_EL},minnie:{n:'Minnie’s Wonderful Christmastime Fireworks',file:'audio/minnies-christmas-fireworks.mp3',ready:false,el:new Audio(),src:'folder'}}};
+{const M=FW.shows.minnie,a=M.el;a.preload='auto';a.addEventListener('canplay',()=>{M.ready=true;if(HEA.audio===a){HEA.ready=true;svBadge()}});
+ a.addEventListener('error',async()=>{if(M.src!=='folder')return;M.src='none';try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('minnie');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob){M.src='picked';a.src=URL.createObjectURL(v.blob);a.load()}}catch(e){}});
+ setTimeout(()=>loadTrack(a,M.file),0)}
+const fwName=()=>FW.shows[FW.v].n;
+function fwSet(v){if(v===FW.v||(v==='minnie'&&typeof CHOREO_MINNIE==='undefined'))return;const ev=EV.find(e=>e.id==='fire');if(ev&&ev.ph==='live')return; /* never switch in the middle of a show */
+ if(!HEA.audio.paused)HEA.audio.pause();if(FW.v==='hea')HEA.hname=HEA.name;FW.v=v;const S=FW.shows[v];HEA.audio=S.el;HEA.ready=S.ready;HEA.name=v==='hea'?(HEA.hname||HEA.name):S.n;CHOREO=v==='minnie'?CHOREO_MINNIE:CHOREO_HEA;
+ HEA.ci=0;HEA.lastSt=-9;HEA.rk.length=0;HEA.pt.length=0;if(ev){ev.n=S.n+' (fireworks)';if(!ev.userDur)ev.dur=Math.ceil(CHOREO.end/6)/10+.3}if(typeof svBadge==='function')svBadge()}
+function fwAuto(){fwSet(FW.mode!=='auto'?FW.mode:(typeof LIVENOW!=='undefined'&&LIVENOW&&LIVE.fwShow==='minnie'?'minnie':'hea'))}
 const IDB=()=>new Promise((res,rej)=>{const r=indexedDB.open('mk-sim',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 async function heaSave(file){try{const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:file,name:file.name},'hea');t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){console.warn('Could not save the soundtrack in this browser',e)}}
 async function heaLoadSaved(){try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('hea');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob)heaUse(v.blob,v.name)}catch(e){}}
-function heaUse(blob,name){HEA.src='picked';HEA.name=name||'soundtrack';HEA.audio.src=URL.createObjectURL(blob);HEA.audio.load();svBadge()}
+function heaUse(blob,name){HEA.src='picked';HEA.name=name||'soundtrack';HEA_EL.src=URL.createObjectURL(blob);HEA_EL.load();svBadge()}
 function heaPick(){const i=document.createElement('input');i.type='file';i.accept='audio/*,.mp3,.m4a,.wav,.ogg';i.onchange=()=>{const f=i.files[0];if(!f)return;heaUse(f,f.name);heaSave(f)};i.click()}
 const fireEv=()=>EV.find(e=>e.id==='fire');
 function showClock(){const ev=fireEv();if(!ev||ev.key==null||(ev.ph!=='live'&&ev.ph!=='done'))return null;return T-ev.key}
@@ -273,7 +284,7 @@ function kissSparkle(){const e=EV.find(x=>x.id==='kiss');if(!e||e.ph!=='live'||!
  if(SV.on){const C=SV.C;if(!C.castle)return;w=C.castle.width/dpr;h=C.castle.height/dpr;x0=C.cox;y0=C.coy}else{const[bx,by,bw,bh]=MAP.castleBox,a=toS(bx,by),z=zf();x0=a[0];y0=a[1];w=bw*z;h=bh*z}
  for(let i=0;i<5;i++){const u=Math.random(),v=Math.random()**.7;HEA.pt.push({x:x0+w*(.5+(u-.5)*(.25+.6*v)),y:y0+h*(.05+.9*v),vx:0,vy:4,l:.5+Math.random()*.7,m:1.2,h:45+Math.random()*20,s:70,li:90,dr:1,g:0,w:1.3,fl:1})}}
 const TINK={t0:1040,dur:27}; // 17:20 into the show, at "You Can Fly"
-const tinkU=st=>st!==null&&st>=TINK.t0&&st<=TINK.t0+TINK.dur?(st-TINK.t0)/TINK.dur:null;
+const tinkU=st=>FW.v==='hea'&&st!==null&&st>=TINK.t0&&st<=TINK.t0+TINK.dur?(st-TINK.t0)/TINK.dur:null;
 // draw her at screen point (x,y), s pixels per metre, leaning along her line of flight
 function drawTink(c,x,y,s,lean){const r=s*2.6,g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba(255,250,190,.85)');g.addColorStop(.35,'rgba(210,255,140,.3)');g.addColorStop(1,'rgba(200,255,120,0)');
  c.save();c.globalCompositeOperation='lighter';c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2);c.restore();
@@ -281,8 +292,8 @@ function drawTink(c,x,y,s,lean){const r=s*2.6,g=c.createRadialGradient(x,y,0,x,y
  if(playing)for(let i=0;i<3;i++)HEA.pt.push({x:x+(Math.random()-.5)*s,y:y+(Math.random()-.3)*s,vx:-18+(Math.random()-.5)*26,vy:-6+Math.random()*22,l:1.1+Math.random()*.6,m:1.7,h:50+Math.random()*30,s:95,li:78,dr:.955,g:16,w:1,fl:Math.random()<.35})}
 function heaSection(st){const S=CHOREO.sec;let i=0;while(i<S.length-2&&st>=S[i+1])i++;return i}
 const envAt=st=>CHOREO.env[Math.max(0,Math.min(CHOREO.env.length-1,Math.floor(st*2)))]||0;
-function heaSync(){const ev=fireEv(),st=showClock(),a=HEA.audio,live=ev&&ev.ph==='live';
- if(live&&HEA.liveKey!==ev.key){HEA.liveKey=ev.key;if(HEA.ready&&HEA.auto&&speed!==1&&!FF){speed=1;sync();toast('Happily Ever After is starting — speed set to 1× so the soundtrack stays in sync')}}
+function heaSync(){fwAuto();const ev=fireEv(),st=showClock(),a=HEA.audio,live=ev&&ev.ph==='live';
+ if(live&&HEA.liveKey!==ev.key){HEA.liveKey=ev.key;if(HEA.ready&&HEA.auto&&speed!==1&&!FF){speed=1;sync();toast(fwName()+' is starting — speed set to 1× so the soundtrack stays in sync')}}
  const want=live&&HEA.ready&&playing&&speed===1&&!FF&&st!==null&&st<a.duration-.5;
  if(want){setVol(a,(AU.mute?0:AU.v.master)*1.1*(1-.85*(typeof ewpNear==='function'&&ewpPlaying()?ewpNear():0)));/* quieter when the map is out at the water pageant */if(a.paused){a.currentTime=Math.max(0,st);a.play().catch(()=>{HEA.blocked=true;svBadge()})}
   else syncTrack(HEA,a,a.currentTime-st,()=>{a.currentTime=Math.max(0,st)})} // the soundtrack is the master clock
@@ -319,7 +330,7 @@ function heaFrame(rdt){const st=showClock();kissSparkle();
 /* A fuller show. choreo.js holds the cues derived from the soundtrack; this adds to them every time the page loads, the
    same way each time: partner shells beside the originals, comets and mines mirrored into pairs, extra shells wherever
    the music is loud, and three-circle "Mickey" shells on the big moments and all through the finale. */
-(function(){const C=CHOREO.cues,out=[],SH=['peony','chrys','ring','willow','crossette','strobe','peony','chrys'],cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+function augmentChoreo(){const C=CHOREO.cues,out=[],SH=['peony','chrys','ring','willow','crossette','strobe','peony','chrys'],cl=(v,a,b)=>Math.max(a,Math.min(b,v));
  const H=i=>{let n=Math.imul(i+1,2654435761)>>>0;n^=n>>>15;n=Math.imul(n,2246822519)>>>0;n^=n>>>13;return(n>>>0)/4294967296}; // a repeatable "random" number for cue i
  C.forEach((q,i)=>{out.push(q);const[t,k,x,alt,h,sz]=q,r=H(i),r2=H(i+7777),r3=H(i+31337);
   if(k==='comet'){if(r<.7)out.push([t,k,-x,alt,h,sz]);if(r2<.3)out.push([t+.12,k,x*.5,cl(alt+.1,0,1),h,sz*.9])}
@@ -332,7 +343,12 @@ function heaFrame(rdt){const st=showClock();kissSparkle();
  let last=-99;C.forEach((q,i)=>{const[t,k,,,h,sz]=q;if(k!=='comet'&&k!=='mine'&&sz>=1.05&&t>20&&t-last>13&&t<CHOREO.end-30){last=t;out.push([t+.05,'mickey',(H(i+9)-.5)*.9,.72+H(i+10)*.25,h,1.15+H(i+11)*.3])}});
  for(let t=CHOREO.end-28,n=0;t<CHOREO.end-3;t+=2.1,n++)out.push([t,'mickey',[-.5,.5,0][n%3],.7+H(n+900)*.3,CHOREO.pal[heaSection(t)][n%2],1.2+H(n+950)*.3]);
  for(const[x,a]of[[-.85,.8],[0,1],[.85,.8]])out.push([CHOREO.end-1.4,'mickey',x,a,45,1.3]);
- CHOREO.cues=out.sort((a,b)=>cueLaunch(a)-cueLaunch(b))})();
+ CHOREO.cues=out.sort((a,b)=>cueLaunch(a)-cueLaunch(b))}
+/* Two fireworks shows share this engine: Happily Ever After (choreo.js), and on Christmas party nights Minnie's
+   Wonderful Christmastime Fireworks (choreo-minnie.js, derived from its soundtrack by tools/fireworks_from_audio.py).
+   CHOREO is whichever is showing; both get the same fuller-show treatment above. */
+const CHOREO_HEA=CHOREO;augmentChoreo();
+if(typeof CHOREO_MINNIE!=='undefined'){CHOREO=CHOREO_MINNIE;augmentChoreo();CHOREO=CHOREO_HEA}
 function streetShell(q){const[t,kind,cx,alt]=q;const z=CZ+60+Math.abs(cx)*30,wx=cx*85,wy=kind==='mine'?2:kind==='comet'?18+alt*45:38+alt*62;
  return{b:svProj(wx*(kind==='comet'?.6:1)+(kind==='comet'?(Math.random()-.5)*14:0),kind==='comet'?24:6,z),e:svProj(wx,wy,z),k:SV.f/z,m:svProj(wx,24,z)[1]}}
 function cueLaunch(q){const[t,k,x,alt]=q;return t-(k==='comet'||k==='mine'?.9+alt*.8:1.3+alt*1.3)}
@@ -396,7 +412,7 @@ function drawStreet(rdt){if(SV.dirty)buildStatic();buildTint();heaSync();const C
  svOverlay(st)}
 /* on-canvas show banner */
 function svOverlay(st){const ev=fireEv();let txt=null;
- if(ev&&ev.ph==='gather')txt='Guests gathering for Happily Ever After';else if(st!==null&&ev.ph==='live')txt=st<CHOREO.end?`Happily Ever After  ${Math.floor(st/60)}:${String(Math.floor(st%60)).padStart(2,'0')} / 18:24`:'Happily Ever After has ended — exit music';
+ if(ev&&ev.ph==='gather')txt='Guests gathering for '+fwName();else if(st!==null&&ev.ph==='live')txt=st<CHOREO.end?`${fwName()}  ${Math.floor(st/60)}:${String(Math.floor(st%60)).padStart(2,'0')} / ${Math.floor(CHOREO.end/60)}:${String(CHOREO.end%60|0).padStart(2,'0')}`:fwName()+' has ended — exit music';
  const b=$('#svb');if(b){b.style.display=txt?'block':'none';if(txt)b.textContent=txt}}
 function svBadge(){const el=$('#heaStat');if(el)el.innerHTML=HEA.name?`<b>${HEA.name.replace(/[<>&]/g,'')}</b> — ${HEA.ready?'ready':'loading…'}${HEA.blocked?' (tap Play to allow audio)':''}`:'No soundtrack loaded. The show still runs, silently, with the choreography.'}
 function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),4200)}

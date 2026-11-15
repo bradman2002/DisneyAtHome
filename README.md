@@ -77,6 +77,14 @@ while a parade, the fireworks or the water pageant plays its own music, and it s
 Street view always plays Main Street. "Area music" in the ☰ menu sets its volume. These files are Disney's
 music and are kept out of git; a missing one is simply skipped.
 
+## Christmas party fireworks
+
+On Mickey's Very Merry Christmas Party nights the park shows Minnie's Wonderful Christmastime Fireworks instead
+of Happily Ever After. With Live on, the site switches to it automatically when the park lists it for the night;
+Entertainment → Fireworks show can also force either show. Its music goes at
+`audio/minnies-christmas-fireworks.mp3`. The bursts were timed from that soundtrack by
+`tools/fireworks_from_audio.py`, which can do the same for another show.
+
 ## The parade soundtrack
 
 Put your copy of the parade music at:

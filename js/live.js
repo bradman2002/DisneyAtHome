@@ -25,6 +25,7 @@ function liveApply(live,c){const by={};for(const x of live.liveData||[])if(x.ent
    if(o!==null&&cl!==null)LIVE.hours=[o/3600,Math.min(23.75,cl/3600)]}}
  // today's show times
  const times={};for(const x of live.liveData||[]){if(x.entityType!=='SHOW')continue;const m=LIVE_SHOWS.find(([re])=>re.test(x.name));if(!m)continue;const t=times[m[1]]||(times[m[1]]=new Set());for(const s of x.showtimes||[]){const v=isoSec(s.startTime,c.date);if(v!==null&&v<86400-20*60)t.add(v)}}
+ LIVE.fwShow=(live.liveData||[]).some(x=>x.entityType==='SHOW'&&/minnie.*fireworks/i.test(x.name)&&(x.showtimes||[]).some(s=>isoSec(s.startTime,c.date)!==null))?'minnie':'hea'; /* party night: Minnie's fireworks instead of Happily Ever After */
  LIVE.shows={};for(const[,id]of LIVE_SHOWS)LIVE.shows[id]=[...(times[id]||[])].sort((a,b)=>a-b);
  if(LIVE.follow)liveSchedule(true)}
 // put today's real hours and show times into the simulation (on), or give back the built-in ones (off)

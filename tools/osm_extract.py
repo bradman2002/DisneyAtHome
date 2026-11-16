@@ -234,7 +234,7 @@ print('railroad chain points',len(RRP),'closed gap',round(math.dist(RRP[0],RRP[-
 st_main=proj(-81.58122,28.41665) # placeholder, replaced below
 def in_park(q):
     x,y=q
-    return inside(q,RRP) or (OX+300*S<x<OX+800*S and OY+650*S<y<OY+856*S)
+    return inside(q,RRP) or (OX+300*S<x<OX+800*S and OY+650*S<y<OY+856*S) or bool(EPC and inside(q,EPC))  # EPCOT: inside its park outline
 paths=[];G=collections.defaultdict(set)
 for wid,w in WAYS.items():
     t=w['t'];hw=t.get('highway')
@@ -260,6 +260,9 @@ for s in G:
             if v not in seen: seen.add(v);q.append(v)
     comps.append(c)
 comps.sort(key=len,reverse=True);main=set(comps[0])
+if EPC:  # EPCOT's own walkways: its largest connected piece (the two parks aren't joined by a walk)
+    epc=next((c for c in comps if inside(ND[c[0]],EPC)),None)
+    if epc: main|=set(epc);print('EPCOT walk graph',len(epc),'nodes')
 print('walk graph',len(G),'nodes; components',[len(c) for c in comps[:6]])
 # collapse degree-2 chains, keeping a node every ~14 units so walking follows the curves
 keep={u for u in main if len(G[u])!=2}
@@ -306,6 +309,10 @@ def find_named(name,pref=('attraction','tourism','amenity','shop','building')):
 ALIAS={"Mickey's PhilharMagic":["Mickey's PhillarMagic"]}  # misspellings seen in the live data
 def place(name):
     b=find_named(name) or next((x for x in map(find_named,ALIAS.get(name,[])) if x),None)
+    if not b:  # mapped as a multipolygon (Soarin', Journey of Water): its largest outer ring
+        rl=next((x for x in RELS if x['t'].get('name')==name),None)
+        rg=rings_from([ref for ty,ref,role in rl['m'] if ty=='way' and role in('outer','')]) if rl else []
+        if rg: o=max(rg,key=len);b=(1,centroid(o[:-1] if o[0]==o[-1] else o),o)
     if not b: print('  MISSING',name);return None
     return b
 out['nodes']=NODES;out['edges']=EDGES
@@ -344,7 +351,14 @@ for key,name in {'castle':'Cinderella Castle','stage':'Cinderella Castle Stage',
 ATTR=['Jungle Cruise','Pirates of the Caribbean','The Magic Carpets of Aladdin',"Walt Disney's Enchanted Tiki Room",'Swiss Family Treehouse','Big Thunder Mountain Railroad',"Tiana's Bayou Adventure",'Country Bear Musical Jamboree',
  'The Haunted Mansion','The Hall of Presidents','Seven Dwarfs Mine Train',"Peter Pan's Flight",'"it\'s a small world"','The Many Adventures of Winnie the Pooh','Under the Sea: Journey of the Little Mermaid',"Mickey's PhilharMagic",'Dumbo the Flying Elephant',
  'Mad Tea Party','Prince Charming Regal Carrousel','The Barnstormer','Space Mountain','TRON Lightcycle / Run',"Buzz Lightyear's Space Ranger Spin",'Tomorrowland Speedway','Tomorrowland Transit Authority PeopleMover',"Walt Disney's Carousel of Progress",'Astro Orbiter','Monsters, Inc. Laugh Floor','Town Square Theater']
-VEN=['Emporium','Main Street Confectionery',"Casey's Corner",'The Plaza Restaurant','The Crystal Palace','Agrabah Bazaar','Columbia Harbor House','Pecos Bill Tale Tale Inn and Café','Frontier Trading Post','Be Our Guest Restaurant','Storybook Treats',"Cosmic Ray's Starlight Café","Mickey's Star Traders"]
+# EPCOT (when its map data is there)
+EP_ATTR=['Spaceship Earth','Guardians Of The Galaxy: Cosmic Rewind','Test Track','Mission: SPACE',"Soarin' Around The World",'Living with the Land','The Seas with Nemo & Friends','Turtle Talk with Crush',
+ 'Journey Into Imagination With Figment','Journey of Water, Inspired by Moana','Awesome Planet','Frozen Ever After','Remy’s Ratatouille Adventure','Gran Fiesta Tour Starring The Three Caballeros','Reflections of China',
+ 'Canada Far and Wide','Impressions de France;Beauty and the Beast Sing-Along','The American Adventure']
+EP_VEN=['Sunshine Seasons','Regal Eagle Smokehouse: Craft Drafts & Barbecue','Katsura Grill','Les Halles Boulangerie & Pâtisserie','Via Napoli Ristorante e Pizzeria','La Cantina de San Angel','Lotus Blossom Cafe',
+ 'Yorkshire County Fish Shop','Space 220 Restaurant','Sommerfest','Tangierine Cafe','Kringla Bakeri Og Kafe']
+if EPC: ATTR=ATTR+EP_ATTR
+VEN=(EP_VEN if EPC else [])+['Emporium','Main Street Confectionery',"Casey's Corner",'The Plaza Restaurant','The Crystal Palace','Agrabah Bazaar','Columbia Harbor House','Pecos Bill Tale Tale Inn and Café','Frontier Trading Post','Be Our Guest Restaurant','Storybook Treats',"Cosmic Ray's Starlight Café","Mickey's Star Traders"]
 POS={}
 for n in ATTR+VEN:
     b=place(n)
@@ -359,6 +373,10 @@ for n in ATTR+VEN:
     POS[n]={'c':R1(c),'nd':best}
 nearest=lambda q:min(range(len(NODES)),key=lambda i:math.dist(NODES[i],q))
 gate=nearest((OX+443*S,OY+725*S));townsq=nearest((OX+443*S,OY+650*S));mainst=nearest((OX+443*S,OY+540*S));hub=nearest((OX+443*S,OY+425*S))
+epgate=None
+if EPC:  # EPCOT's main entrance: just inside the ticket booths, south of the monorail station
+    tb=[centroid(pts(w['ids'])[:-1]) for w in WAYS.values() if w['t'].get('name')=='Epcot Ticket Booths' and len(w['ids'])>3]
+    if tb: c_=(sum(q[0] for q in tb)/len(tb),sum(q[1] for q in tb)/len(tb)+14);epgate=nearest(c_);print('EPCOT gate node',epgate,NODES[epgate])
 landnodes={k:nearest(PLACES[k]) for k in('adv','fr','lib','fan','tom') if k in PLACES}
 json.dump({'places':PLACES,'pos':POS,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,'land':landnodes},open('osm_places.json','w'),indent=0)
 # land boundaries (place=locality polygons named after the lands)
@@ -435,7 +453,7 @@ if EPC:
     if wsl: PLACES['wslagoon']=R1(centroid(pts(wsl['ids'])[:-1]))
     print('epcot places',PLACES.get('epcot'),PLACES.get('sse'),PLACES.get('wslagoon'))
 data_extra={'regions':[[round(v) for v in r] for r in REGIONS],'epcot':out.get('epcot'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
- 'keys':{'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
+ 'keys':{'epgate':epgate,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
 # compact JS
 data={'W':W,'H':H,'S':S,'areas':out['areas'],'buildings':out['buildings'],'lines':out['lines'],'paths':out['paths'],'trees':out['trees'],'lamps':out['lamps'],'routes':out['routes'],'monoLines':out['monoLines'],'nodes':NODES,'edges':EDGES,**data_extra}
 js='/* Magic Kingdom resort-area geometry from OpenStreetMap (© OpenStreetMap contributors, ODbL — openstreetmap.org/copyright).\n   Converted to map units (1 unit = '+str(round(1/S,3))+' m), north up. Generated by osm_extract.py. */\nconst OSM='+json.dumps(data,separators=(',',':'))+';\n'

@@ -4,18 +4,20 @@
 /* ===== Magic Kingdom Simulator — structure: DATA / GRAPH / STATIC ART / SIM / AUDIO / RENDER / UI.
    A new park = new DATA block (lands, nodes, edges, attractions, venues, events). ===== */
 const $=s=>document.querySelector(s),W=OSM.W,H=OSM.H,K=12,MKR=OSM.regions?OSM.regions[0]:[0,0,W,H],EPR=OSM.regions&&OSM.regions[1]; /* MKR: the Magic Kingdom resort area; EPR: Epcot (the map between them is blank for now) */
-let OPEN=9,CLOSE=22,LIVENOW=false,CROWDX=1; // park hours (live mode sets today's real ones); LIVENOW: real wait times and closures apply right now (see live.js)
+let OPEN=9,CLOSE=22,EOPEN=9,ECLOSE=21,LIVENOW=false,CROWDX=1; /* EOPEN/ECLOSE: EPCOT's hours */ // park hours (live mode sets today's real ones); LIVENOW: real wait times and closures apply right now (see live.js)
  // K = real guests represented by one party on the map; CROWDX scales arrivals (live mode sets it from how busy the real park is)
 /* ===== DATA: built from the OpenStreetMap geometry in park-osm.js (real walkways, buildings and positions) ===== */
 const P_=OSM.places,POS=OSM.pos;
 const ptIn=(x,y,poly)=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[xi,yi]=poly[i],[xj,yj]=poly[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c};
 const polyC=p=>{let x=0,y=0;for(const q of p){x+=q[0];y+=q[1]}return[x/p.length,y/p.length]};
-const LANDNAME={ms:'Main Street, U.S.A.',adv:'Adventureland',fr:'Frontierland',lib:'Liberty Square',fan:'Fantasyland',tom:'Tomorrowland'};
+const LANDNAME={ms:'Main Street, U.S.A.',adv:'Adventureland',fr:'Frontierland',lib:'Liberty Square',fan:'Fantasyland',tom:'Tomorrowland',wc:'World Celebration',wd:'World Discovery',wn:'World Nature',ws:'World Showcase'};
+const EPL=new Set(['wc','wd','wn','ws']),parkOf=l=>EPL.has(l)?1:0; /* EPCOT's neighbourhoods; park 0 = Magic Kingdom, 1 = EPCOT */
 // label/ambience centre for each land (inside its real boundary, near its main plaza)
 const LC={ms:[P_.mainst[0],P_.mainst[1]+40],hub:P_.hub,adv:POS['The Magic Carpets of Aladdin'].c,fr:[POS['Country Bear Musical Jamboree'].c[0]-30,POS['Country Bear Musical Jamboree'].c[1]-30],lib:[POS['The Hall of Presidents'].c[0]-25,POS['The Hall of Presidents'].c[1]+18],fan:[P_.castle[0]+60,P_.castle[1]-110],tom:[POS['Astro Orbiter'].c[0]+10,POS['Astro Orbiter'].c[1]-70]};
+if(P_.sse&&POS['Test Track']){LC.wc=[P_.sse[0],P_.sse[1]+120];LC.wd=[POS['Test Track'].c[0]+10,POS['Test Track'].c[1]-85];LC.wn=[POS['Living with the Land'].c[0]+60,POS['Living with the Land'].c[1]+80];LC.ws=[POS['The American Adventure'].c[0],POS['The American Adventure'].c[1]-120]}
 const PARK={name:'Magic Kingdom',
 LANDS:Object.fromEntries(Object.entries(LC).map(([k,c])=>[k,[k==='hub'?'Central Hub':LANDNAME[k],c[0],c[1]]])),
-SC:{ms:['#f3e0c8','#a9433f'],hub:['#eadfc8','#8a6a3a'],adv:['#d8b46a','#6e8a3a'],fr:['#a8754a','#5a4030'],lib:['#e6e1d4','#4b5f7f'],fan:['#f1d6e4','#8c63b5'],tom:['#d7e3ec','#4f84b2']},
+SC:{ms:['#f3e0c8','#a9433f'],hub:['#eadfc8','#8a6a3a'],adv:['#d8b46a','#6e8a3a'],fr:['#a8754a','#5a4030'],lib:['#e6e1d4','#4b5f7f'],fan:['#f1d6e4','#8c63b5'],tom:['#d7e3ec','#4f84b2'],wc:['#e9edf2','#6a5aa8'],wd:['#e2e6ee','#c0563a'],wn:['#e2efdc','#3f8a5a'],ws:['#efe2c8','#a8693f']},
 N:OSM.nodes,E:OSM.edges,
 // display name, OpenStreetMap name, land, throughput/hr, ride sec, popularity, kind, open, close, breakdown risk/hr
 A:[['Jungle Cruise','Jungle Cruise','adv',1800,540,1.0,'box'],['Pirates of the Caribbean','Pirates of the Caribbean','adv',1800,500,1.0,'box'],['Magic Carpets of Aladdin','The Magic Carpets of Aladdin','adv',900,90,.5,'spin'],['Enchanted Tiki Room',"Walt Disney's Enchanted Tiki Room",'adv',1500,720,.4,'box',9,21],['Swiss Family Treehouse','Swiss Family Treehouse','adv',1200,600,.3,'tree',9,21],
@@ -23,9 +25,17 @@ A:[['Jungle Cruise','Jungle Cruise','adv',1800,540,1.0,'box'],['Pirates of the C
 ['Haunted Mansion','The Haunted Mansion','lib',1800,420,1.2,'house'],['Hall of Presidents','The Hall of Presidents','lib',1800,1380,.3,'box',9,19],
 ['Seven Dwarfs Mine Train','Seven Dwarfs Mine Train','fan',1400,180,1.9,'mtn3',9,22,1.2],['Peter Pan’s Flight',"Peter Pan's Flight",'fan',1000,190,1.4,'box'],['“it’s a small world”','"it\'s a small world"','fan',2200,660,.7,'box'],['Winnie the Pooh','The Many Adventures of Winnie the Pooh','fan',1500,200,.8,'box'],['Under the Sea','Under the Sea: Journey of the Little Mermaid','fan',1400,360,.8,'box'],['PhilharMagic',"Mickey's PhilharMagic",'fan',2000,720,.6,'box'],['Dumbo the Flying Elephant','Dumbo the Flying Elephant','fan',900,100,.8,'spin'],
 ['Mad Tea Party','Mad Tea Party','fan',1100,90,.6,'spin'],['Prince Charming Regal Carrousel','Prince Charming Regal Carrousel','fan',1500,120,.4,'spin'],['The Barnstormer','The Barnstormer','fan',1000,60,.6,'box'],
-['Space Mountain','Space Mountain','tom',1700,180,1.7,'dome',9,22,1.0],['TRON Lightcycle / Run','TRON Lightcycle / Run','tom',1400,120,1.9,'tron',9,22,1.4],['Buzz Lightyear Space Ranger Spin',"Buzz Lightyear's Space Ranger Spin",'tom',1700,300,.9,'box'],['Tomorrowland Speedway','Tomorrowland Speedway','tom',1400,300,.6,'track',9,21],['PeopleMover','Tomorrowland Transit Authority PeopleMover','tom',2400,600,.5,'pm'],['Carousel of Progress',"Walt Disney's Carousel of Progress",'tom',2400,1260,.3,'box',9,20],['Astro Orbiter','Astro Orbiter','tom',700,90,.4,'spin'],['Monsters Inc. Laugh Floor','Monsters, Inc. Laugh Floor','tom',1500,900,.4,'box'],['Town Square Theater','Town Square Theater','ms',900,420,.6,'box',9,21]].filter(r=>POS[r[1]]),
+['Space Mountain','Space Mountain','tom',1700,180,1.7,'dome',9,22,1.0],['TRON Lightcycle / Run','TRON Lightcycle / Run','tom',1400,120,1.9,'tron',9,22,1.4],['Buzz Lightyear Space Ranger Spin',"Buzz Lightyear's Space Ranger Spin",'tom',1700,300,.9,'box'],['Tomorrowland Speedway','Tomorrowland Speedway','tom',1400,300,.6,'track',9,21],['PeopleMover','Tomorrowland Transit Authority PeopleMover','tom',2400,600,.5,'pm'],['Carousel of Progress',"Walt Disney's Carousel of Progress",'tom',2400,1260,.3,'box',9,20],['Astro Orbiter','Astro Orbiter','tom',700,90,.4,'spin'],['Monsters Inc. Laugh Floor','Monsters, Inc. Laugh Floor','tom',1500,900,.4,'box'],['Town Square Theater','Town Square Theater','ms',900,420,.6,'box',9,21],
+// EPCOT (hours are relative to its own 9 to 9; most of World Showcase opens at 11)
+['Spaceship Earth','Spaceship Earth','wc',2400,960,.55,'dome',9,21],['Guardians of the Galaxy: Cosmic Rewind','Guardians Of The Galaxy: Cosmic Rewind','wd',1500,180,2.0,'box',9,21,1.2],['Test Track','Test Track','wd',1300,300,1.6,'box',9,21,1.4],['Mission: SPACE','Mission: SPACE','wd',1600,330,.6,'box',9,21,1.0],
+['Soarin’','Soarin\' Around The World','wn',2000,330,1.4,'box',9,21],['Living with the Land','Living with the Land','wn',2000,840,.6,'box',9,21],['The Seas with Nemo & Friends','The Seas with Nemo & Friends','wn',1800,240,.5,'box',9,21],['Turtle Talk with Crush','Turtle Talk with Crush','wn',1400,900,.3,'box',9,21],
+['Journey Into Imagination with Figment','Journey Into Imagination With Figment','wn',1800,420,.5,'box',9,21],['Journey of Water','Journey of Water, Inspired by Moana','wn',1200,600,.45,'box',9,21],['Awesome Planet','Awesome Planet','wn',1500,600,.2,'box',9,21],
+['Frozen Ever After','Frozen Ever After','ws',1100,300,2.0,'box',9,21,1.2],['Remy’s Ratatouille Adventure','Remy’s Ratatouille Adventure','ws',1400,300,1.7,'box',9,21],['Gran Fiesta Tour','Gran Fiesta Tour Starring The Three Caballeros','ws',1500,480,.5,'box',11,21],['Reflections of China','Reflections of China','ws',1500,840,.3,'box',11,21],
+['Canada Far and Wide','Canada Far and Wide','ws',1500,900,.3,'box',11,21],['Impressions de France','Impressions de France;Beauty and the Beast Sing-Along','ws',1500,780,.3,'box',11,21],['The American Adventure','The American Adventure','ws',1800,1800,.4,'box',11,21]].filter(r=>POS[r[1]]),
 // venues: display name, OpenStreetMap name, kind
-V:[['Emporium','Emporium','shop'],['Main Street Confectionery','Main Street Confectionery','shop'],['Casey’s Corner',"Casey's Corner",'eat'],['The Plaza Restaurant','The Plaza Restaurant','eat'],['The Crystal Palace','The Crystal Palace','eat'],['Agrabah Bazaar','Agrabah Bazaar','shop'],['Columbia Harbour House','Columbia Harbor House','eat'],['Pecos Bill Tall Tale Inn','Pecos Bill Tale Tale Inn and Café','eat'],['Frontier Trading Post','Frontier Trading Post','shop'],['Be Our Guest','Be Our Guest Restaurant','eat'],['Storybook Treats','Storybook Treats','eat'],['Cosmic Ray’s Starlight Café',"Cosmic Ray's Starlight Café",'eat'],['Star Traders',"Mickey's Star Traders",'shop']].filter(r=>POS[r[1]]),
+V:[['Emporium','Emporium','shop'],['Main Street Confectionery','Main Street Confectionery','shop'],['Casey’s Corner',"Casey's Corner",'eat'],['The Plaza Restaurant','The Plaza Restaurant','eat'],['The Crystal Palace','The Crystal Palace','eat'],['Agrabah Bazaar','Agrabah Bazaar','shop'],['Columbia Harbour House','Columbia Harbor House','eat'],['Pecos Bill Tall Tale Inn','Pecos Bill Tale Tale Inn and Café','eat'],['Frontier Trading Post','Frontier Trading Post','shop'],['Be Our Guest','Be Our Guest Restaurant','eat'],['Storybook Treats','Storybook Treats','eat'],['Cosmic Ray’s Starlight Café',"Cosmic Ray's Starlight Café",'eat'],['Star Traders',"Mickey's Star Traders",'shop'],
+ ['Sunshine Seasons','Sunshine Seasons','eat','wn'],['Regal Eagle Smokehouse','Regal Eagle Smokehouse: Craft Drafts & Barbecue','eat','ws'],['Katsura Grill','Katsura Grill','eat','ws'],['Les Halles Boulangerie','Les Halles Boulangerie & Pâtisserie','eat','ws'],['Via Napoli','Via Napoli Ristorante e Pizzeria','eat','ws'],
+ ['La Cantina de San Angel','La Cantina de San Angel','eat','ws'],['Lotus Blossom Café','Lotus Blossom Cafe','eat','ws'],['Yorkshire County Fish Shop','Yorkshire County Fish Shop','eat','ws'],['Space 220','Space 220 Restaurant','eat','wd'],['Sommerfest','Sommerfest','eat','ws'],['Tangierine Café','Tangierine Cafe','eat','ws'],['Kringla Bakeri Og Kafe','Kringla Bakeri Og Kafe','eat','ws']].filter(r=>POS[r[1]]),
 // entertainment: editable; times in HH:MM (names are generic placeholders)
 EV:[{id:'parade',n:'Festival of Fantasy Parade',ts:['12:00','15:00'],dur:20,lead:40,pref:.5},{id:'castle',n:'Castle Stage Show (placeholder)',ts:['11:30','13:30','16:30'],dur:20,lead:20,pref:.3},{id:'band',n:'Main Street Band & Singers',ts:['10:30','12:30','14:30','18:00'],dur:20,lead:8,pref:.12},{id:'fire',n:'Happily Ever After (fireworks)',ts:['21:00'],dur:19,lead:40,pref:.75,exit:.6},
  // the Christmas parade: evenings in the holiday season only (season = first and last day as month*100+day); it can be switched on for any date in Entertainment
@@ -38,12 +48,16 @@ EV:[{id:'parade',n:'Festival of Fantasy Parade',ts:['12:00','15:00'],dur:20,lead
  {id:'flag',n:'Flag Retreat',ts:['17:00'],dur:12,lead:8,pref:.1},
  {id:'kiss',n:'Kiss Goodnight',ts:['22:30'],dur:3,lead:0,pref:0,rel:['close',1800]}]};
 const {LANDS,SC,N,E,V,EV}=PARK;
-const AT=PARK.A.map((r,i)=>{const p=POS[r[1]];return{i,n:r[0],osm:r[1],l:r[2],x:p.c[0],y:p.c[1],nd:p.nd,dx:N[p.nd][0],dy:N[p.nd][1],thr:r[3],dur:r[4],pop:r[5],k:r[6],open:r[7]||9,close:r[8]||22,o0:r[7]||9,c0:r[8]||22,risk:r[9]||.7}});
-const VN=V.map((r,i)=>{const p=POS[r[1]];return{i,n:r[0],osm:r[1],k:r[2],x:p.c[0],y:p.c[1],nd:p.nd,dr:0}});
+const AT=PARK.A.map((r,i)=>{const p=POS[r[1]],pk=parkOf(r[2]);return{i,n:r[0],osm:r[1],l:r[2],pk,x:p.c[0],y:p.c[1],nd:p.nd,dx:N[p.nd][0],dy:N[p.nd][1],thr:r[3],dur:r[4],pop:r[5],k:r[6],open:r[7]||9,close:r[8]||(pk?21:22),o0:r[7]||9,c0:r[8]||(pk?21:22),risk:r[9]||.7}});
+/* Soarin' and Awesome Planet are inside The Land: guests go in by its door, not the nearest path to the far side of the building */
+{const L=AT.find(a=>a.osm==='Living with the Land');if(L)for(const a of AT)if(a.osm==='Soarin\' Around The World'||a.osm==='Awesome Planet'){a.nd=L.nd;a.dx=L.dx;a.dy=L.dy}}
+const VN=V.map((r,i)=>{const p=POS[r[1]];return{i,n:r[0],osm:r[1],k:r[2],l:r[3],pk:r[3]?parkOf(r[3]):0,x:p.c[0],y:p.c[1],nd:p.nd,dr:0}});
 // set the park's hours; each ride keeps its own offset from them (a ride that normally shuts an hour early still does)
 // shows whose time follows the park's hours (the welcome show five minutes before opening, the Kiss Goodnight half an hour after closing)
 function relTimes(){for(const e of EV)if(e.rel&&Array.isArray(e.t)){const t=(e.rel[0]==='open'?OPEN:CLOSE)*3600+e.rel[1];e.t=[Math.min(t,86400-e.dur*60-90)]}}
-function setHours(o,c){OPEN=o;CLOSE=c;relTimes();for(const a of AT){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(22-a.c0))}}
+function setHours(o,c){OPEN=o;CLOSE=c;relTimes();for(const a of AT)if(!a.pk){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(22-a.c0))}}
+function setHoursEP(o,c){EOPEN=o;ECLOSE=c;for(const a of AT)if(a.pk){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(21-a.c0))}}
+const pOpen=pk=>pk?EOPEN:OPEN,pClose=pk=>pk?ECLOSE:CLOSE;
 const GATE=OSM.keys.gate,TOWNSQ=OSM.keys.townsq,MAINST=OSM.keys.mainst,HUB=OSM.keys.hub;
 /* ---- graph: real walkways. Routes are computed on demand toward each destination (Dijkstra), then cached ---- */
 const ADJ=N.map(()=>[]);E.forEach(([a,b])=>{const d=Math.hypot(N[a][0]-N[b][0],N[a][1]-N[b][1]);ADJ[a].push([b,d]);ADJ[b].push([a,d])});
@@ -100,17 +114,18 @@ const MSPEED=14,monoXY=(m,off)=>{const l=MLINE[m.l].p;return l.at((((m.x+(off||0
    A route is {p: path, loop, st: distances of its stops, col, n: name}. */
 const BOATR=[];{const B=OSM.boats||{},add=(pts,loop,stops,col,n)=>{if(!pts||pts.length<4)return;const p=mkPath(pts),st=[...new Set([0,...stops.filter(Boolean).map(q=>Math.round(p.proj(...q))),loop?0:Math.floor(p.L)])].sort((a,b)=>a-b);BOATR.push({p,loop,st,col,n})};
  add(OSM.launchPath,true,[P_.gf,P_.poly],'#d9a520','Gold flag launch');add(B.fw,false,[],'#2f7d5a','Fort Wilderness boat');add(B.wl,false,[],'#b3262e','Wilderness Lodge boat');add(B.blue,true,[P_.fw,P_.wldock],'#2f6fd6','Blue flag launch')}
-const GATEXY=N[GATE];
+const GATEXY=N[GATE],EPGATE=OSM.keys.epgate??null,EPGATEXY=EPGATE!==null?N[EPGATE]:null; /* EPCOT's main entrance */
 /* Where guests may stand: every paved place in the map data (plazas, walkways and queue paths), minus building
    footprints and the Speedway track. Guests walk along the path network, but the exact spot they stop at (outside a
    ride, watching a show, waiting at the gate) is checked against this, so nobody ends up on a track, a lawn or the water. */
-const PAVE=(()=>{const R0=OSM.regions?OSM.regions[0]:[0,0,W,H],q=2,gw=Math.ceil((R0[2]-R0[0])/q),gh=Math.ceil((R0[3]-R0[1])/q),k=document.createElement('canvas');k.width=gw;k.height=gh;const c=k.getContext('2d');c.scale(1/q,1/q);c.translate(-R0[0],-R0[1]); /* covers the Magic Kingdom area only: guests are only simulated there */c.fillStyle=c.strokeStyle='#000';c.lineCap=c.lineJoin='round';
+const PAVE1=R0=>{const q=2,gw=Math.ceil((R0[2]-R0[0])/q),gh=Math.ceil((R0[3]-R0[1])/q),k=document.createElement('canvas');k.width=gw;k.height=gh;const c=k.getContext('2d');c.scale(1/q,1/q);c.translate(-R0[0],-R0[1]);c.fillStyle=c.strokeStyle='#000';c.lineCap=c.lineJoin='round';
  const ring=r=>{r.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath()};
  for(const a of OSM.areas)if(a.k==='ped'){c.beginPath();ring(a.o);for(const r of a.i||[])ring(r);c.fill('evenodd')}
  for(const p of OSM.paths){c.beginPath();p.p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(p.a)c.fill();else{c.lineWidth=Math.max(2.6,p.w);c.stroke()}}
  c.globalCompositeOperation='destination-out';for(const b of OSM.buildings)if(b.p.length>2&&b.k!=='roof'){c.beginPath();ring(b.p);c.fill()}
  c.lineWidth=7;for(const l of OSM.lines)if(l.k==='race')for(const p of l.p){c.beginPath();p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke()}
- const d=c.getImageData(0,0,gw,gh).data;return(x,y)=>{const i=Math.floor((x-R0[0])/q),j=Math.floor((y-R0[1])/q);return i>=0&&j>=0&&i<gw&&j<gh&&d[(j*gw+i)*4+3]>128}})();
+ const d=c.getImageData(0,0,gw,gh).data;return(x,y)=>{const i=Math.floor((x-R0[0])/q),j=Math.floor((y-R0[1])/q);return i>=0&&j>=0&&i<gw&&j<gh&&d[(j*gw+i)*4+3]>128}};
+const PAVE=(()=>{const P0=PAVE1(MKR),P1=EPR?PAVE1(EPR):null;return(x,y)=>P1&&x>=EPR[0]&&y>=EPR[1]?P1(x,y):P0(x,y)})(); /* one mask per park area (Magic Kingdom with its resorts, and EPCOT) */
 // Each ride and venue is entered from the nearest point on the path network that is out in the open (the closest point
 // can be an indoor queue path under the building's roof, where guests would be drawn standing on the roof).
 for(const o of[...AT,...VN]){const seen=new Set([o.nd]);let q=[o.nd],hit=PAVE(...N[o.nd])?o.nd:-1;for(let d=0;d<8&&hit<0&&q.length;d++){const nx=[];for(const u of q)for(const[v]of ADJ[u]){if(seen.has(v))continue;seen.add(v);if(PAVE(...N[v])){hit=v;break}nx.push(v)}q=nx}
@@ -120,14 +135,15 @@ function paved(x,y,r,nd){for(let i=0;i<12;i++){const px=x+rr(-r,r),py=y+rr(-r,r)
 /* ===== SIMULATION ===== */
 let T=9*3600,speed=1,playing=true,FF=false,dateStr='2026-11-12',att=50000,nf=0,gf=0,sunset=17.7,sunrise=7.2,rs=1;
 const R=()=>{rs|=0;rs=rs+0x6D2B79F5|0;let t=Math.imul(rs^rs>>>15,1|rs);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},rr=(a,b)=>a+R()*(b-a);
-let guests=[],pend=[0,0,0],dep=[0,0,0],sp=0,ST={arr:0,dep:0},ARR=[0,0,0,0,0,0,0,0,.14,.2,.15,.1,.08,.07,.06,.05,.04,.04,.03,.02,.02,0,0,0],MODE=[.38,.17,.3,.15];
+const EPATT=.8; /* EPCOT's crowd relative to Magic Kingdom's */
+let guests=[],pend=[0,0,0],dep=[0,0,0],sp=0,spE=0,ST={arr:0,dep:0},ARR=[0,0,0,0,0,0,0,0,.14,.2,.15,.1,.08,.07,.06,.05,.04,.04,.03,.02,.02,0,0,0],MODE=[.38,.17,.3,.15];
 let MONO=[],FERRY=[],LAUNCH=[],BUS=[],busT=0,RRT=0,sel=null,follow=null;
 function dayParams(){const d=new Date(dateStr+'T12:00:00'),m=d.getMonth(),dw=d.getDay(),doy=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5),dd=d.getDate();
  sunset=18.9+1.4*Math.cos(2*Math.PI*(doy-172)/365);sunrise=6.85-.38*Math.cos(2*Math.PI*(doy-172)/365);
  let f=[.9,.95,1.2,1.05,.85,1,1.05,.85,.75,.95,1,1.1][m]*(dw==0||dw==6?1.12:1);if((m==10&&dd>=21)||(m==11&&dd>=19)||(m==6&&dd<=5)||(m==2&&dd>=10&&dd<=25))f*=1.28;
  const h=((d.getFullYear()*372+m*31+dd)*2654435761>>>0)/4294967296;att=Math.max(22000,Math.min(80000,Math.round(42000*f*(.9+h*.2)/500)*500));rs=(d.getFullYear()*372+m*31+dd)|0;
  for(const e of EV)if(e.season&&!e.userOn){const md=(m+1)*100+dd;e.on=md>=e.season[0]&&md<=e.season[1]}} // seasonal shows follow the date unless switched by hand
-function reset(t0){dayParams();T=t0;guests=[];pend=[0,0,0];dep=[0,0,0];sp=0;ST={arr:0,dep:0};busT=0;RRT=0;
+function reset(t0){dayParams();T=t0;guests=[];pend=[0,0,0];dep=[0,0,0];sp=0;spE=0;ST={arr:0,dep:0};busT=0;RRT=0;
  for(const a of AT){Object.assign(a,{q:[],ri:[],acc:0,down:0,dt:0,posted:5,est:0,wt:0,rides:0,hist:[],hw:0})}
  for(const e of EV){e.key=null;e.ph='idle';e.p=0}
  MONO=[];for(const k in MLINE){const l=MLINE[k];l.trains.forEach(([nm,col],i)=>{const x=(l.sd[0]+i*l.p.L/l.trains.length)%l.p.L;let nx=l.sd.findIndex(d=>d>x+1);if(nx<0)nx=0;
@@ -143,25 +159,37 @@ const PARTY=[.08,.35,.57,.83,.94,1]; // share of parties with up to 1, 2, … 6 
 const DCELL=18,DW=Math.ceil(W/DCELL),DH=Math.ceil(H/DCELL),DENS=new Uint16Array(DW*DH);let densAt=-99;
 function crowdGrid(){DENS.fill(0);for(const g of guests)if(g.st===0||g.st===4||g.st===5){const i=(g.y/DCELL|0)*DW+(g.x/DCELL|0);if(i>=0&&i<DENS.length)DENS[i]+=g.n}densAt=T}
 const crowdAt=(x,y)=>DENS[(y/DCELL|0)*DW+(x/DCELL|0)]||0,crowdSlow=(x,y)=>{const d=crowdAt(x,y);return d<26?1:Math.max(.4,1-(d-26)*.012)};
-function mk(x,y,m){[x,y]=paved(x,y,5);const stay=R()<.35?(CLOSE+.4-T/3600)*3600:rr(3.5,8)*3600,r=R();let n=1;while(n<6&&r>PARTY[n-1])n++;
- const g={x,y,tx:x,ty:y,hx:0,hy:-1,node:nearestNode(x,y),goal:GATE,st:5,timer:rr(3,40),intent:'',tgt:-1,n,sz:Math.min(3,n),col:R()*6|0,seed:R()*1e6|0,spd:rr(.85,1.35)*(n>4?.9:1),lane:rr(-.3,2.1),t0:T,ox:rr(-2.2,2.2),oy:rr(-2.2,2.2),leave:Math.min(T+stay,CLOSE*3600+rr(0,2400)),mode:m,v:{},tol:rr(25,80),eat:Math.max(11.3*3600,T+2.5*3600)+rr(0,5400)};guests.push(g);ST.arr++;return g}
+function mk(x,y,m,pk){pk=pk||0;[x,y]=paved(x,y,5);const CL=pClose(pk),stay=R()<.35?(CL+.4-T/3600)*3600:rr(3.5,8)*3600,r=R();let n=1;while(n<6&&r>PARTY[n-1])n++;
+ const g={pk,x,y,tx:x,ty:y,hx:0,hy:-1,node:nearestNode(x,y),goal:pk?EPGATE:GATE,st:5,timer:rr(3,40),intent:'',tgt:-1,n,sz:Math.min(3,n),col:R()*6|0,seed:R()*1e6|0,spd:rr(.85,1.35)*(n>4?.9:1),lane:rr(-.3,2.1),t0:T,ox:rr(-2.2,2.2),oy:rr(-2.2,2.2),leave:Math.min(T+stay,CL*3600+rr(0,2400)),mode:m,v:{},tol:rr(25,80),eat:Math.max(11.3*3600,T+2.5*3600)+rr(0,5400)};guests.push(g);ST.arr++;return g}
 function setT(g,n,x,y,i){g.goal=n;g.tx=x;g.ty=y;g.intent=i;g.st=0}
 function decide(g){
+ if(g.pk)return decideEP(g);
  if(T<OPEN*3600){if(T<OPEN*3600-50*60)return setT(g,GATE,...paved(GATEXY[0],GATEXY[1]+12,22,GATE),'hold'); // early: wait outside the gate
   const[x,y]=paved(P_.hub[0],P_.hub[1]-6,42);return setT(g,nearestNode(x,y),x,y,'hold')}                              // the last 50 minutes: let in as far as the hub, held there until opening (rope drop)
  if(g.leave<=T||T>=CLOSE*3600+600)return setT(g,GATE,...paved(GATEXY[0],GATEXY[1]+8,10,GATE),'exit');
  const r=R();
- if(T>=g.eat){const c=VN.filter(v=>v.k==='eat'),w=c.map(v=>Math.exp(-dist(g.node,v.nd)/260)*(.4+R()));let b=0;w.forEach((x,i)=>{if(x>w[b])b=i});g.eat=T+rr(4,5.2)*3600;const v=c[b];g.tgt=v.i;return setT(g,v.nd,...paved(N[v.nd][0],N[v.nd][1],2.5,v.nd),'eat')}
- if(r<.09){const c=VN.filter(v=>v.k==='shop'),v=c[R()*c.length|0];g.tgt=v.i;return setT(g,v.nd,...paved(N[v.nd][0],N[v.nd][1],2.5,v.nd),'shop')}
+ if(T>=g.eat){const c=VN.filter(v=>v.k==='eat'&&!v.pk),w=c.map(v=>Math.exp(-dist(g.node,v.nd)/260)*(.4+R()));let b=0;w.forEach((x,i)=>{if(x>w[b])b=i});g.eat=T+rr(4,5.2)*3600;const v=c[b];g.tgt=v.i;return setT(g,v.nd,...paved(N[v.nd][0],N[v.nd][1],2.5,v.nd),'eat')}
+ if(r<.09){const c=VN.filter(v=>v.k==='shop'&&!v.pk),v=c[R()*c.length|0];g.tgt=v.i;return setT(g,v.nd,...paved(N[v.nd][0],N[v.nd][1],2.5,v.nd),'shop')}
  if(r<.17){const[x,y]=paved(g.x,g.y,7,g.node);g.rest=rr(60,300);return setT(g,g.node,x,y,'rest')} /* take a break: step off to the side of the path first */
- let tot=0;const w=AT.map(a=>{const ok=aOpen(a)&&(LIVENOW&&a.live||T<a.close*3600-300)&&!(a.dt===2&&a.down>0),x=ok?a.pop*Math.exp(-dist(g.node,a.nd)/330)/(1+a.posted/22)*(g.v[a.i]?.3:1)*(LIVENOW&&a.live&&a.live.w!==null?Math.max(.35,Math.min(3,(a.live.w+8)/(a.est+8))):1):0; /* live: guests drift toward the rides whose real lines are longer than ours, so the queues you see track the real ones */tot+=x;return x});
+ let tot=0;const w=AT.map(a=>{const ok=a.pk===g.pk&&aOpen(a)&&(LIVENOW&&a.live||T<a.close*3600-300)&&!(a.dt===2&&a.down>0),x=ok?a.pop*Math.exp(-dist(g.node,a.nd)/330)/(1+a.posted/22)*(g.v[a.i]?.3:1)*(LIVENOW&&a.live&&a.live.w!==null?Math.max(.35,Math.min(3,(a.live.w+8)/(a.est+8))):1):0; /* live: guests drift toward the rides whose real lines are longer than ours, so the queues you see track the real ones */tot+=x;return x});
  let u=R()*tot,i=0;for(;i<w.length-1&&(u-=w[i])>0;i++);const a=AT[i];g.tgt=i;setT(g,a.nd,...paved(a.dx,a.dy,3,a.nd),'ride')} // walk to the ride's entrance, not its middle
+/* EPCOT's guests: the same day as a Magic Kingdom guest's, in their own park. Before opening they wait outside the gate
+   (there is no rope drop to a hub here); they ride, eat around the world and leave by the main entrance. */
+function decideEP(g){const O=EOPEN*3600,C=ECLOSE*3600;
+ if(T<O)return setT(g,EPGATE,...paved(EPGATEXY[0],EPGATEXY[1]-12,22,EPGATE),'hold');
+ if(g.leave<=T||T>=C+600)return setT(g,EPGATE,...paved(EPGATEXY[0],EPGATEXY[1]-8,10,EPGATE),'exit');
+ const r=R();
+ if(T>=g.eat){const c=VN.filter(v=>v.k==='eat'&&v.pk===1);if(c.length){const w=c.map(v=>Math.exp(-dist(g.node,v.nd)/300)*(.4+R()));let b=0;w.forEach((x,i)=>{if(x>w[b])b=i});g.eat=T+rr(4,5.2)*3600;const v=c[b];g.tgt=v.i;return setT(g,v.nd,...paved(N[v.nd][0],N[v.nd][1],2.5,v.nd),'eat')}}
+ if(r<.14){const[x,y]=paved(g.x,g.y,7,g.node);g.rest=rr(60,420);return setT(g,g.node,x,y,'rest')} /* a stroll round World Showcase has more pauses */
+ let tot=0;const w=AT.map(a=>{const ok=a.pk===1&&aOpen(a)&&(LIVENOW&&a.live||T<a.close*3600-300)&&!(a.dt===2&&a.down>0),x=ok?a.pop*Math.exp(-dist(g.node,a.nd)/380)/(1+a.posted/22)*(g.v[a.i]?.3:1)*(LIVENOW&&a.live&&a.live.w!==null?Math.max(.35,Math.min(3,(a.live.w+8)/(a.est+8))):1):0;tot+=x;return x});
+ if(tot<=0){const[x,y]=paved(g.x,g.y,7,g.node);g.rest=rr(120,600);return setT(g,g.node,x,y,'rest')}
+ let u=R()*tot,i=0;for(;i<w.length-1&&(u-=w[i])>0;i++);const a=AT[i];g.tgt=i;setT(g,a.nd,...paved(a.dx,a.dy,3,a.nd),'ride')}
 const aOpen=a=>LIVENOW&&a.live?a.live.st==='OPERATING':T>=a.open*3600&&T<a.close*3600; // live: the park says whether it is running
 function arrive(g){switch(g.intent){
  case'ride':{const a=AT[g.tgt];if(!aOpen(a)||(a.dt===2&&a.down>0&&R()<.6)||a.posted>g.tol){g.v[a.i]=1;g.st=5;g.timer=rr(2,20);break}g.st=1;a.q.push(g);break}
  case'eat':g.st=3;g.timer=rr(900,2400);break;case'shop':g.st=3;g.timer=rr(300,900);break;
- case'watch':g.st=4;break;case'rest':g.st=5;g.timer=g.rest||60;break;case'hold':g.st=5;g.timer=Math.max(5,(T<OPEN*3600-3000?OPEN*3600-3000:OPEN*3600)-T+rr(0,90));break; // at the gate: until they are let in; at the hub: until opening
- case'exit':g.st=7;dep[g.mode]++;ST.dep++;break;default:g.st=5;g.timer=10}}
+ case'watch':g.st=4;break;case'rest':g.st=5;g.timer=g.rest||60;break;case'hold':g.st=5;g.timer=g.pk?Math.max(5,EOPEN*3600-T+rr(0,240)):Math.max(5,(T<OPEN*3600-3000?OPEN*3600-3000:OPEN*3600)-T+rr(0,90));break; // at the gate: until they are let in; at the hub: until opening
+ case'exit':g.st=7;if(!g.pk)dep[g.mode]++;ST.dep++;break;default:g.st=5;g.timer=10}}
 function upd(g,dt){if(g.evT&&T>=g.evT)joinEv(g);if(g.st===1||g.st===2||g.st===4)return;
  if(g.st===3||g.st===5){g.timer-=dt;if(g.timer<=0)decide(g);return}
  let px,py,nx=-1;if(g.node!==g.goal){nx=hop(g.node,g.goal);const a=N[g.node],b=N[nx],ex=b[0]-a[0],ey=b[1]-a[1],el=Math.hypot(ex,ey)||1;px=b[0]-ey/el*g.lane;py=b[1]+ex/el*g.lane}else{px=g.tx;py=g.ty} /* aim for the right-hand side of the path */
@@ -184,7 +212,7 @@ const hm24=s=>{const m=Math.floor(s/60);return Math.floor(m/60)+':'+String(m%60)
    it each pick their own moment to head over: a few early birds claim the front, most drift in during the last
    minutes, and stragglers keep arriving after it starts. Spots fill from the front (the kerb, the hub by the castle)
    backwards as the crowd grows, and each guest takes a spot near where they already are. */
-function invite(ev,key){ev.nw=0;ev.nexp=0;for(const g of guests){if(g.intent==='exit'||g.st===7||R()>=ev.pref)continue;g.evId=ev.id;g.evK=key;g.evT=key-150-ev.lead*60*R()**2.2;ev.nexp++}}
+function invite(ev,key){ev.nw=0;ev.nexp=0;for(const g of guests){if(g.pk||g.intent==='exit'||g.st===7||R()>=ev.pref)continue;g.evId=ev.id;g.evK=key;g.evT=key-150-ev.lead*60*R()**2.2;ev.nexp++}}
 const isPar=ev=>typeof isParade==='function'?isParade(ev.id):ev.id==='parade',paradeLen=ev=>(typeof parOf==='function'&&parOf(ev.id)?parOf(ev.id).len:300)*OSM.S,paradeHead=ev=>ev.p*(PR.L+paradeLen(ev));
 function spot(ev,g){let s=null;for(let i=0;i<8;i++){s=spot0(ev,g);if(!s)return null;if(PAVE(s[0],s[1])){s[4]=0;break}s[4]=1} // only on pavement: try again if the spot fell on a lawn, a building or the water
  s[2]=nearestNode(s[0],s[1]);if(s[4]){s[0]=N[s[2]][0]+rr(-1.5,1.5);s[1]=N[s[2]][1]+rr(-1.5,1.5)}return s}
@@ -230,6 +258,8 @@ function transport(dt){
  RRT=(RRT+6*dt)%RR.L}
 function step(dt){T+=dt;if(T>=86400){reset(0)}
  const h=Math.max(0,Math.min(23,Math.floor(T/3600-(OPEN-9))));sp+=att*CROWDX*ARR[h]/K/3600*dt;/* the arrival curve moves with the opening time */while(sp>=1){sp--;const r=R();let m=r<.38?0:r<.55?1:r<.85?2:3;if(m===3)mk(GATEXY[0]+rr(-10,10),GATEXY[1]+rr(10,20),3);else pend[m]++}
+ if(EPGATEXY){const he=Math.max(0,Math.min(23,Math.floor(T/3600-(EOPEN-9))));spE+=att*EPATT*CROWDX*ARR[he]/K/3600*dt; /* EPCOT's guests walk in from the monorail and the parking lot, north of the gate */
+  while(spE>=1){spE--;mk(EPGATEXY[0]+rr(-14,14),EPGATEXY[1]-rr(14,30),4,1)}}
  if(T-densAt>3||T<densAt)crowdGrid();
  for(const a of AT)updA(a,dt);for(const e of EV){evUpd(e);if(e.ph==='live'&&isPar(e))trail(e,dt)}transport(dt);
  for(let i=guests.length-1;i>=0;i--){const g=guests[i];if(g.st===7){guests[i]=guests[guests.length-1];guests.pop();continue}upd(g,dt)}}

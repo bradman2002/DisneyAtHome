@@ -217,27 +217,71 @@ function spaceDome(c,e,x,y,R){c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.e
  const g=c.createLinearGradient(x-R,0,x+R,0);g.addColorStop(0,'#ffffff');g.addColorStop(.6,'#e8edf3');g.addColorStop(1,'#b3bdcb');c.fillStyle=g;c.beginPath();c.moveTo(x-R,y+R*.15);c.quadraticCurveTo(x-R*.45,y-R*.85,x,y-R*1.05);c.quadraticCurveTo(x+R*.45,y-R*.85,x+R,y+R*.15);c.closePath();c.fill();
  c.strokeStyle='#9aa5b4';c.lineWidth=.5;for(let i=-6;i<=6;i++){c.beginPath();c.moveTo(x+i*R/6.5,y+R*.15+Math.abs(i)*.3);c.quadraticCurveTo(x+i*R/16,y-R*.6,x,y-R*1.05);c.stroke()}
  e.fillStyle='rgba(140,200,255,.8)';for(let i=-5;i<=5;i+=2)e.fillRect(x+i*R/6-.4,y+R*.1,.8,2)}
+/* ---------- EPCOT ----------
+   Its own look: Future World's white and silver show buildings, each World Showcase pavilion in its country's colours
+   (found from the pavilion buildings' names in the map data), and Spaceship Earth as a faceted silver sphere. */
+const EP_PAV=[['mexico','Mexico',/^Mexico Pavilion$/],['norway','Norway',/^Norway Pavilion$/],['china','China',/^China Pavilion$/],['germany','Germany',/^Germany Pavilion$/],
+ ['italy','Italy',/^Tutto Italia|^Via Napoli/],['usa','The American Adventure',/^The American Adventure$/],['japan','Japan',/^Japan Pavilion$/],['morocco','Morocco',/^Restaurant Marrakesh$|^Spice Road Table$/],
+ ['france','France',/^Impressions de France|^Souvenirs de France$/],['uk','United Kingdom',/^Rose & Crown/],['canada','Canada',/^Canada Far and Wide$/]];
+const EPCOT=(()=>{if(!EPR||!OSM.epcot)return null;const pav=[];
+ for(const[k,n,re]of EP_PAV){const bs=OSM.buildings.filter(b=>re.test(b.n)&&b.p.length>2);if(!bs.length)continue;let x=0,y=0;for(const b of bs){const r=bbox(b.p);x+=(r[0]+r[2])/2;y+=(r[1]+r[3])/2}pav.push({k,n,x:x/bs.length,y:y/bs.length})}
+ let lag=OSM.places.epcot,best=0;for(const w of OSM.areas){if(w.k!=='water'||!(w.o[0][0]>EPR[0]&&w.o[0][1]>EPR[1]))continue;let A=0,X=0,Y=0;w.o.forEach(([x0,y0],i)=>{const[x1,y1]=w.o[(i+1)%w.o.length],f=x0*y1-x1*y0;A+=f;X+=(x0+x1)*f;Y+=(y0+y1)*f});if(Math.abs(A)>best){best=Math.abs(A);lag=[X/3/A,Y/3/A]}} /* World Showcase Lagoon: the biggest body of water in Epcot, labelled at its middle */
+ return{pav,c:lag,sse:OSM.places.sse}})();
+Object.assign(LANDSTYLE,{
+ ep_fw:[['#eef1f5','#e2e7ee','#f6f7f9','#d9e0e8'],['#c3ccd7','#d8dfe7','#aab8c7','#e6ebf0']],
+ ep_mexico:[['#d9a066','#e2b47e','#c98a4b'],['#8d5a3a','#a8693f']],ep_norway:[['#a5523a','#d8c9a8','#8a4a35'],['#3c4a3a','#4a3a2e']],
+ ep_china:[['#c23b2b','#e6d2a8','#b23328'],['#2f6b5a','#d9a441','#2a5a4c']],ep_germany:[['#efe3c8','#d9b98a','#f2e6cf','#e8cfa6'],['#9b3d2b','#7a3a2a','#a8523a']],
+ ep_italy:[['#e8c9a0','#d7a77b','#efd9b8'],['#b4553a','#a8483a']],ep_usa:[['#c8724f','#b9633f','#e9dfcf'],['#5b6b7a','#4f5a66']],
+ ep_japan:[['#efe8dc','#e6dccb','#d8cbb5'],['#3b4148','#a8372d','#454b52']],ep_morocco:[['#e8d5b0','#d9c19a','#efe2c6'],['#3e8a7a','#4a9a88']],
+ ep_france:[['#e6dccb','#efe6d6','#ddd0bb'],['#4f5966','#5a6470']],ep_uk:[['#d8cbb0','#8a5a45','#e6dccb','#7a4f3c'],['#5a5e66','#4a4e56','#6a4a3a']],
+ ep_canada:[['#9a6a4a','#c9b79a','#8a5a3a'],['#4f6b4f','#3f5a45','#6a4a3a']]});
+// which Epcot style a point takes: the nearest pavilion, Future World inside the park, or plain backstage grey outside it
+function epLand(x,y){if(!EPCOT||x<EPR[0]||y<EPR[1]||x>EPR[2]||y>EPR[3])return null;if(!ptIn(x,y,OSM.epcot))return'none';
+ let b=null,d0=95;for(const p of EPCOT.pav){const d=Math.hypot(p.x-x,p.y-y);if(d<d0){d0=d;b=p.k}}return b?'ep_'+b:'ep_fw'}
+// Spaceship Earth: a silver geodesic sphere on its legs; at night its facets light up
+function spaceshipEarth(c,e,x,y,R,S2){const yc=y-R*.25-R*S2*1.05;
+ c.fillStyle='rgba(30,50,40,.25)';c.beginPath();c.ellipse(x+R*.7,y+R*.25,R*1.1,R*.55,0,0,7);c.fill();
+ c.strokeStyle='#6d7682';c.lineWidth=R*.12;for(const dx of[-.45,.45,0]){c.beginPath();c.moveTo(x+dx*R,y+(dx?0:R*.25));c.lineTo(x+dx*R*.5,yc+R*.6);c.stroke()}
+ const g=c.createRadialGradient(x-R*.4,yc-R*.45,R*.05,x,yc,R);g.addColorStop(0,'#ffffff');g.addColorStop(.45,'#d4dae2');g.addColorStop(.85,'#8f9aa8');g.addColorStop(1,'#727d8c');
+ c.fillStyle=g;c.beginPath();c.arc(x,yc,R,0,7);c.fill();
+ c.save();c.beginPath();c.arc(x,yc,R,0,7);c.clip();const s=R/6.5;c.strokeStyle='rgba(80,92,110,.32)';c.lineWidth=Math.max(.2,R*.012);
+ for(const a of[0,Math.PI/3,-Math.PI/3]){const ca=Math.cos(a),sa=Math.sin(a);for(let k=-8;k<=8;k++){const ox=-sa*k*s,oy=ca*k*s;c.beginPath();c.moveTo(x+ox-ca*R*1.2,yc+oy-sa*R*1.2);c.lineTo(x+ox+ca*R*1.2,yc+oy+sa*R*1.2);c.stroke()}}
+ c.restore();c.strokeStyle='#66717f';c.lineWidth=Math.max(.3,R*.02);c.beginPath();c.arc(x,yc,R,0,7);c.stroke();
+ if(e){const h=e.createRadialGradient(x,yc,R*.2,x,yc,R*1.25);h.addColorStop(0,'rgba(150,110,255,.55)');h.addColorStop(.75,'rgba(80,140,255,.35)');h.addColorStop(1,'rgba(80,140,255,0)');e.fillStyle=h;e.beginPath();e.arc(x,yc,R*1.25,0,7);e.fill();
+  e.fillStyle='rgba(235,240,255,.95)';const R2=seeded(77);for(let i=0;i<90;i++){const a=R2()*6.283,r=Math.sqrt(R2())*R*.95;e.fillRect(x+Math.cos(a)*r-.3,yc+Math.sin(a)*r-.3,.6,.6)}}}
+// the Mexico pavilion's stepped pyramid
+function stepPyramid(c,e,bb,hh){const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,w=Math.min(bb[2]-bb[0],bb[3]-bb[1])*.38;
+ for(let i=0;i<5;i++){const s=w*(1-i*.17),top=cy_+s*.3-hh*(.4+i*.32),y0=cy_+s*.3-hh*(i*.32);poly4(c,[[cx_-s,y0],[cx_+s,y0],[cx_+s,top],[cx_-s,top]],i%2?'#c98a4b':'#b97a3e');poly4(c,[[cx_-s,top],[cx_+s,top],[cx_+s*.92,top-s*.55],[cx_-s*.92,top-s*.55]],i%2?'#e2b47e':'#d9a066')}
+ if(e){e.fillStyle='rgba(255,190,110,.6)';e.fillRect(cx_-w*.6,cy_-hh*.2,w*1.2,1)}}
 /* ---------- the build: everything from OpenStreetMap ---------- */
 function buildMap(){
  const phone=Math.min(screen.width,screen.height)<700,P=OSM.places,box=(x0,y0,x1,y1,k)=>({x:Math.max(0,x0),y:Math.max(0,y0),w:Math.min(W,x1)-Math.max(0,x0),h:Math.min(H,y1)-Math.max(0,y0),k,base:null,glow:null});
- MSS=phone?2:3;MAP.mss=Math.min(MSS,Math.sqrt((phone?8e6:16e6)/(W*H)));
- Object.assign(MAP,paintMap(0,0,W,H,MAP.mss));
+ MSS=phone?2:3;const R0=REGIONS[0];MAP.mss=Math.min(MSS,Math.sqrt((phone?8e6:16e6)/((R0[2]-R0[0])*(R0[3]-R0[1]))));
+ /* one layer per region at the same sharpness (Magic Kingdom first, then Epcot); the blank land between them isn't painted */
+ MAP.layers=REGIONS.map(R=>{const L={x:Math.max(0,R[0]),y:Math.max(0,R[1])};L.w=Math.min(W,R[2])-L.x;L.h=Math.min(H,R[3])-L.y;return Object.assign(L,paintMap(L.x,L.y,L.w,L.h,MAP.mss))});
+ MAP.base=MAP.layers[0].base;MAP.glow=MAP.layers[0].glow;
  // close-up layers: the park (the railroad loop plus the entrance), then each stop on the monorail loop
  const rr=bbox(OSM.routes.rail);
  MAP.detail=[box(rr[0]-70,rr[1]-60,rr[2]+70,P.monostation[1]+90,MSS),box(P.cont[0]-230,P.cont[1]-230,P.cont[0]+300,P.cont[1]+200,MSS-.5),box(P.ttc[0]-230,P.ttc[1]-190,P.ttc[0]+250,P.ttc[1]+200,MSS-.5),
   box(P.poly[0]-260,P.poly[1]-280,P.poly[0]+260,P.poly[1]+190,MSS-.5),box(P.gf[0]-200,P.gf[1]-280,P.gf[0]+300,P.gf[1]+230,MSS-.5)];
+ if(P.epcot&&OSM.epcot){const e=bbox(OSM.epcot);MAP.detail.push(box(e[0]-40,e[1]-40,e[2]+40,e[3]+40,MSS-.5))} /* Epcot close up */
  if(P.wl)MAP.detail.push(box(P.wl[0]-230,P.wl[1]-260,P.wl[0]+260,P.wl[1]+200,MSS-.5));if(P.fw)MAP.detail.push(box(P.fw[0]-220,P.fw[1]-130,P.fw[0]+230,P.fw[1]+330,MSS-.5));
  let i=0;const next=()=>{const d=MAP.detail[i++];if(!d)return;Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));setTimeout(next,80)};setTimeout(next,400)}
 /* Paint the rectangle (rx,ry,rw,rh) of the map at `mss` pixels per map unit. Every call walks the same data in the same
    order with the same random seed, so a close-up layer is the same picture as the base, just sharper. */
+/* Working masks (where trees may grow, the forests, the soft shadows) are kept at a reduced scale HS on a big map, so
+   they stay a sensible size in memory (full size would be well over 100 MB each once Epcot is on the map). */
+const HS=Math.min(1,Math.sqrt(8e6/(W*H)));
+// the parts of the map that have content: Magic Kingdom and its resorts, and Epcot (the land between is left blank for now)
+const REGIONS=OSM.regions||[[0,0,W,H]],inRegion=(x,y)=>REGIONS.some(r=>x>=r[0]&&y>=r[1]&&x<=r[2]&&y<=r[3]);
 function paintMap(rx,ry,rw,rh,mss){
  const base=document.createElement('canvas'),glow=document.createElement('canvas'),blk=document.createElement('canvas');
- base.width=glow.width=Math.round(rw*mss);base.height=glow.height=Math.round(rh*mss);blk.width=W;blk.height=H;
- const c=base.getContext('2d'),e=glow.getContext('2d'),b=blk.getContext('2d');for(const q of[c,e]){q.scale(mss,mss);q.translate(-rx,-ry)}c.lineJoin=c.lineCap='round';
+ base.width=glow.width=Math.round(rw*mss);base.height=glow.height=Math.round(rh*mss);if(!MAP.crowns){blk.width=Math.ceil(W*HS);blk.height=Math.ceil(H*HS)}else blk.width=blk.height=1; /* the tree mask is only needed the first time */
+ const c=base.getContext('2d'),e=glow.getContext('2d'),b=blk.getContext('2d');b.scale(HS,HS);for(const q of[c,e]){q.scale(mss,mss);q.translate(-rx,-ry)}c.lineJoin=c.lineCap='round';
  const r=seeded(4242),S2=OSM.S*.78,AREA=W*H/94e4; // S2: height foreshortening for the 3/4 view; AREA: map size relative to the park alone
  /* painterly grass */
- {let g=MAP._grass;if(!g){const gw=W/2|0,gh=H/2|0;g=MAP._grass=document.createElement('canvas');g.width=gw;g.height=gh;const gx=g.getContext('2d'),im=gx.createImageData(gw,gh);
-  for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){const n=fbm(x*2,y*2),i=(y*gw+x)*4;im.data[i]=118+n*60;im.data[i+1]=170+n*48;im.data[i+2]=72+n*22;im.data[i+3]=255}gx.putImageData(im,0,0)}c.imageSmoothingQuality='high';c.drawImage(g,0,0,W,H)}
+ {let g=MAP._grass;if(!g){const gs=Math.min(.5,HS*.6),gw=W*gs|0,gh=H*gs|0;g=MAP._grass=document.createElement('canvas');g.width=gw;g.height=gh;const gx=g.getContext('2d'),im=gx.createImageData(gw,gh);
+  for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){const n=fbm(x/gs,y/gs),i=(y*gw+x)*4;im.data[i]=118+n*60;im.data[i+1]=170+n*48;im.data[i+2]=72+n*22;im.data[i+3]=255}gx.putImageData(im,0,0)}c.imageSmoothingQuality='high';c.drawImage(g,0,0,W,H)}
  const A=OSM.areas,by=k=>A.filter(a=>a.k===k&&a.o.length>2);
  b.fillStyle='#000';b.strokeStyle='#000';b.lineCap=b.lineJoin='round'; // mask of where trees may not grow
  /* lawns, scrub, sand, parking, construction */
@@ -290,17 +334,20 @@ function paintMap(rx,ry,rw,rh,mss){
  const{b:tronB,cv:tronCv}=tronParts();
  const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbox(q.p);b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);
-  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,land=landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
+  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,land=epLand(cx_,cy_)||landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
   if(q.n==='Disney’s Contemporary Resort'||q.n==="Disney's Contemporary Resort"){late.push(()=>aframe(c,e,bb,hh));continue} // painted after the monorail beams, which run behind and through it
   if(q.k==='tent'){B.push({y:bb[3],f:()=>tent(c,cx_,bb[3],(bb[2]-bb[0])/2,hh+4,['#d65a8a','#5a8ad6','#e2a321','#7b4fc0'][hs%4])});continue}
+  if(land.startsWith('ep')&&q.n==='Spaceship Earth'){B.push({y:bb[3],f:()=>spaceshipEarth(c,e,cx_,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2,S2)});continue}
+  if(land==='ep_mexico'&&q.n==='Mexico Pavilion'){B.push({y:bb[3],f:()=>{extrude(c,e,q.p,4,'#d9a066','#8d5a3a',{noWin:true});stepPyramid(c,e,bb,hh)}});continue}
   if(tronB&&q===tronB){B.push({y:bb[3],f:()=>tronBuilding(c,e,q,hh)});continue}
   if(tronCv&&q===tronCv){const qq=q;B.push({y:bb[3]+2,f:()=>tronCanopy(c,e,qq.p,bb)});continue} /* the TRON canopy */
   if(q.k==='roof'){roof=tone(roof,.25);hh=Math.min(hh,3.4)}
   if(/Rapunzel/.test(q.n)){B.push({y:bb[3],f:()=>{extrude(c,e,q.p,26,'#e9d8c6','#7b4fc0',{noWin:true});c.fillStyle='#7b4fc0';c.beginPath();c.moveTo(bb[0]-1,bb[1]-26);c.lineTo(cx_,bb[1]-38);c.lineTo(bb[2]+1,bb[1]-26);c.fill()}});continue}
   if(/train_station/.test(q.k||'')){wall='#c9563f';roof='#9e2f2f'}
-  const qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
+  if(land.startsWith('ep')&&/^Project Tomorrow/.test(q.n))hh=Math.min(hh,6*S2); /* Spaceship Earth's low post-show building, not a tower */
+  const qq=q,big=land.startsWith('ep')&&(bb[2]-bb[0])*(bb[3]-bb[1])>1500;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'&&land!=='ep_fw',noWin:big||land==='ep_fw'});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
  // rockwork: the real rock areas (Big Thunder, Tiana's, Seven Dwarfs, the Beast's hill) raised into spires
  for(const a of by('rock')){const bb=bbox(a.o),land=landOf((bb[0]+bb[2])/2,(bb[1]+bb[3])/2),col=land==='fr'?['#c9683a','#dd8a4e','#a54b2a']:land==='adv'?['#b9a27a','#d1bd94','#93805c']:['#9c9a92','#b9b6ac','#7f7c74'];b.fillRect(bb[0],bb[1]-20,bb[2]-bb[0],bb[3]-bb[1]+20);
   B.push({y:bb[3],f:()=>{areaPath(c,a);c.fillStyle=col[2];c.fill('evenodd');const R2=seeded(bb[0]*7+bb[1]|0),sp=[];
@@ -323,19 +370,19 @@ function paintMap(rx,ry,rw,rh,mss){
  for(const a of AT){if(!['mtn2','mtn3','tree'].includes(a.k)&&!(a.k==='tron'&&!tronB))continue; /* TRON has its own art on its real outlines, when the map data has them */const f=attractionArt(c,e,a);if(!f)continue;const S=a.k==='tron'?1.6:1.25;
   B.push({y:a.y+12,f:()=>{for(const ctx of[c,e]){ctx.save();ctx.translate(a.x,a.y);ctx.scale(S,S);ctx.translate(-a.x,-a.y)}f();c.restore();e.restore()}})}
  /* trees: every mapped tree, plus canopy filling the real forests (worked out once, reused by the close-up layers) */
- if(!MAP.crowns){const bd=b.getImageData(0,0,W,H).data,free=(x,y)=>{x|=0;y|=0;return x>1&&y>1&&x<W-1&&y<H-1&&bd[(y*W+x)*4+3]<10};
-  const fm=document.createElement('canvas');fm.width=W;fm.height=H;{const f=fm.getContext('2d');f.fillStyle='#000';for(const a of forest){areaPath(f,a);f.fill('evenodd')}}
-  const fmd=fm.getContext('2d').getImageData(0,0,W,H).data,inForest=(x,y)=>{x|=0;y|=0;return x>=0&&y>=0&&x<W&&y<H&&fmd[(y*W+x)*4+3]>10};
+ if(!MAP.crowns){const BW=blk.width,BH=blk.height,bd=b.getImageData(0,0,BW,BH).data,free=(x,y)=>{if(!(x>1&&y>1&&x<W-1&&y<H-1)||!inRegion(x,y))return false;return bd[((y*HS|0)*BW+(x*HS|0))*4+3]<10};
+  const fm=document.createElement('canvas');fm.width=BW;fm.height=BH;{const f=fm.getContext('2d');f.scale(HS,HS);f.fillStyle='#000';for(const a of forest){areaPath(f,a);f.fill('evenodd')}}
+  const fmd=fm.getContext('2d').getImageData(0,0,BW,BH).data,inForest=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&fmd[((y*HS|0)*BW+(x*HS|0))*4+3]>10;
   const PALM={adv:.6,poly:.55,gf:.25,cont:.2,ttc:.3},kind=(x,y,f)=>{const l=landOf(x,y)||resortOf(x,y),q=r();return q<(PALM[l]||0)*f?'palm':(l==='fr'||l==='lib'||l==='wl'||l==='fw'||(!l&&f<1))&&q<(l==='wl'||l==='fw'?.55:f<1?.22:.3)?'pine':'crown'};
   MAP.crowns=[];
   for(const[x,y]of OSM.trees)if(!onWater(x,y))MAP.crowns.push([x,y,2.8+r()*1.6,kind(x,y,1),(r()*CROWN.length)|0,inForest(x,y)]);
   for(let y=3;y<H;y+=3.6)for(let x=3+((y/3.6|0)%2)*1.8;x<W;x+=3.6){const jx=x+(r()-.5)*2,jy=y+(r()-.5)*2;if(!free(jx,jy)||!free(jx,jy-3))continue;
    const inF=inForest(jx,jy);if(!inF&&r()>.012)continue;MAP.crowns.push([jx,jy,inF?3+r()*2.4:3+r()*1.6,kind(jx,jy,.75),(r()*CROWN.length)|0,inF])}
   /* soft shadows (light from the upper left) */
-  const sh=document.createElement('canvas');sh.width=W;sh.height=H;const sx=sh.getContext('2d');sx.fillStyle='#000';
+  const sh=document.createElement('canvas');sh.width=BW;sh.height=BH;const sx=sh.getContext('2d');sx.scale(HS,HS);sx.fillStyle='#000';
   for(const[x,y,rd]of MAP.crowns){sx.beginPath();sx.ellipse(x+rd*.9,y+rd*.5,rd*1.2,rd*.85,0,0,7);sx.fill()}
   for(const q of OSM.buildings){if(q.p.length<3)continue;const hh=q.h*S2;for(let t=0;t<=1;t+=.25){sx.beginPath();q.p.forEach(([x,y],i)=>i?sx.lineTo(x+hh*.55*t,y+hh*.12*t):sx.moveTo(x+hh*.55*t,y+hh*.12*t));sx.closePath();sx.fill()}}
-  MAP._shadow=softBlur(softBlur(sh,4),2)}
+  MAP._shadow=softBlur(softBlur(sh,Math.max(1.5,4*HS)),Math.max(1.2,2*HS))}
  c.save();c.globalAlpha=.34;c.drawImage(MAP._shadow,0,0,W,H);c.restore();
  const seen=(x,y)=>x>rx-10&&x<rx+rw+10&&y>ry-4&&y<ry+rh+22;
  c.fillStyle='#2a5a28';for(const[x,y,rd,k,v,inF]of MAP.crowns)if(k==='crown'&&inF&&seen(x,y)){c.beginPath();c.arc(x+rd*.2,y-rd*.5,rd*1.12,0,7);c.fill()}

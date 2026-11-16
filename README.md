@@ -113,6 +113,13 @@ circles Fort Wilderness, the Contemporary and Wilderness Lodge. The large bare a
 construction site in the map data, drawn as it is. Fire Rock Geyser, beside Wilderness Lodge, erupts at the top of every hour
 from 7 AM to 10 PM, about 120 feet high, as the real one does.
 
+## EPCOT
+
+EPCOT is on the map at its real place, south-east of the Magic Kingdom (scroll or zoom out to find it; TV mode
+visits it too). For now it is the park itself, drawn from OpenStreetMap: Spaceship Earth, the Future World
+pavilions and each World Showcase country in its own colours, with plain ground between the two parks (to be
+filled in later). There are no guests or wait times in EPCOT yet.
+
 ## Crowds
 
 Guests move as parties of one to six. Each party on the map stands for about 12 real guests, so a busy day has

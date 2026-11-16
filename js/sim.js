@@ -3,7 +3,8 @@
 'use strict';
 /* ===== Magic Kingdom Simulator — structure: DATA / GRAPH / STATIC ART / SIM / AUDIO / RENDER / UI.
    A new park = new DATA block (lands, nodes, edges, attractions, venues, events). ===== */
-const $=s=>document.querySelector(s),W=OSM.W,H=OSM.H,K=12;let OPEN=9,CLOSE=22,LIVENOW=false,CROWDX=1; // park hours (live mode sets today's real ones); LIVENOW: real wait times and closures apply right now (see live.js)
+const $=s=>document.querySelector(s),W=OSM.W,H=OSM.H,K=12,MKR=OSM.regions?OSM.regions[0]:[0,0,W,H],EPR=OSM.regions&&OSM.regions[1]; /* MKR: the Magic Kingdom resort area; EPR: Epcot (the map between them is blank for now) */
+let OPEN=9,CLOSE=22,LIVENOW=false,CROWDX=1; // park hours (live mode sets today's real ones); LIVENOW: real wait times and closures apply right now (see live.js)
  // K = real guests represented by one party on the map; CROWDX scales arrivals (live mode sets it from how busy the real park is)
 /* ===== DATA: built from the OpenStreetMap geometry in park-osm.js (real walkways, buildings and positions) ===== */
 const P_=OSM.places,POS=OSM.pos;
@@ -103,13 +104,13 @@ const GATEXY=N[GATE];
 /* Where guests may stand: every paved place in the map data (plazas, walkways and queue paths), minus building
    footprints and the Speedway track. Guests walk along the path network, but the exact spot they stop at (outside a
    ride, watching a show, waiting at the gate) is checked against this, so nobody ends up on a track, a lawn or the water. */
-const PAVE=(()=>{const q=2,gw=Math.ceil(W/q),gh=Math.ceil(H/q),k=document.createElement('canvas');k.width=gw;k.height=gh;const c=k.getContext('2d');c.scale(1/q,1/q);c.fillStyle=c.strokeStyle='#000';c.lineCap=c.lineJoin='round';
+const PAVE=(()=>{const R0=OSM.regions?OSM.regions[0]:[0,0,W,H],q=2,gw=Math.ceil((R0[2]-R0[0])/q),gh=Math.ceil((R0[3]-R0[1])/q),k=document.createElement('canvas');k.width=gw;k.height=gh;const c=k.getContext('2d');c.scale(1/q,1/q);c.translate(-R0[0],-R0[1]); /* covers the Magic Kingdom area only: guests are only simulated there */c.fillStyle=c.strokeStyle='#000';c.lineCap=c.lineJoin='round';
  const ring=r=>{r.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath()};
  for(const a of OSM.areas)if(a.k==='ped'){c.beginPath();ring(a.o);for(const r of a.i||[])ring(r);c.fill('evenodd')}
  for(const p of OSM.paths){c.beginPath();p.p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(p.a)c.fill();else{c.lineWidth=Math.max(2.6,p.w);c.stroke()}}
  c.globalCompositeOperation='destination-out';for(const b of OSM.buildings)if(b.p.length>2&&b.k!=='roof'){c.beginPath();ring(b.p);c.fill()}
  c.lineWidth=7;for(const l of OSM.lines)if(l.k==='race')for(const p of l.p){c.beginPath();p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke()}
- const d=c.getImageData(0,0,gw,gh).data;return(x,y)=>{const i=Math.floor(x/q),j=Math.floor(y/q);return i>=0&&j>=0&&i<gw&&j<gh&&d[(j*gw+i)*4+3]>128}})();
+ const d=c.getImageData(0,0,gw,gh).data;return(x,y)=>{const i=Math.floor((x-R0[0])/q),j=Math.floor((y-R0[1])/q);return i>=0&&j>=0&&i<gw&&j<gh&&d[(j*gw+i)*4+3]>128}})();
 // Each ride and venue is entered from the nearest point on the path network that is out in the open (the closest point
 // can be an indoor queue path under the building's roof, where guests would be drawn standing on the roof).
 for(const o of[...AT,...VN]){const seen=new Set([o.nd]);let q=[o.nd],hit=PAVE(...N[o.nd])?o.nd:-1;for(let d=0;d<8&&hit<0&&q.length;d++){const nx=[];for(const u of q)for(const[v]of ADJ[u]){if(seen.has(v))continue;seen.add(v);if(PAVE(...N[v])){hit=v;break}nx.push(v)}q=nx}

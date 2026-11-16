@@ -37,7 +37,7 @@ const ewpEnd=s=>{const i=EWP.shows.indexOf(s),nx=EWP.shows[i+1];return Math.min(
  if(P.wldock)spot.wl=off(P.wldock,bay,50,160);if(P.fw)spot.fw=off(P.fw,bay,60,180);
  // where the barges come from and go back to: the north end of Bay Lake, at the top edge of the map (their real mooring is up that way)
  let home=null;for(let d=0;d<W&&!home;d+=CELL)for(const x of[bay[0]-d,bay[0]+d])if(x>0&&x<W&&isW(x,10)&&isW(x,40)){home=[x,10];break}
- if(!home)for(let d=0;d<600&&!home;d+=CELL)for(const y of[spot.cont[1]-d,spot.cont[1]+d])if(y>0&&y<H&&isW(W-8,y)&&isW(W-40,y)){home=[W-8,y];break}
+ if(!home)for(let d=0;d<600&&!home;d+=CELL)for(const y of[spot.cont[1]-d,spot.cont[1]+d])if(y>0&&y<H&&isW(MKR[2]-8,y)&&isW(MKR[2]-40,y)){home=[MKR[2]-8,y];break}
  try{const stops=['poly','gf','wl','fw','cont'].filter(k=>spot[k]),pts=[home,...stops.map(k=>spot[k]),home],legs=[];for(let i=0;i<pts.length-1;i++){const l=astar(pts[i],pts[i+1]);if(!l||l.length<2)throw 0;legs.push(mkPath(l))}
   EWP.legs=legs;EWP.spot=spot;EWP.stops=stops}catch(e){console.warn('Electrical Water Pageant: no clear water course found; the pageant is off');EWP.legs=null}})();
 if(EWP.legs)EWP.shows=EWP.shows.filter(s=>EWP.stops.includes(s.k));

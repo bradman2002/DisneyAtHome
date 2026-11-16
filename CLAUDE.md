@@ -93,6 +93,15 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   inside the park only; the resorts, roads and lagoon are scenery with working transport. Map coordinates are
   pinned to a fixed corner in `osm_extract.py`, so they don't shift when the data is refreshed. Zoom 1 still
   means "the park fills the screen"; zoom goes below 1 to show the whole area.
+- Epcot (owner, 16 Nov 2026: "For now just the park. Just add in a blank space between magic kingdom for now, we
+  will fill that in later"). `epcot.osm` (git-ignored, bbox in the extractor) is merged in; the map now has two
+  filled regions, `OSM.regions` = [Magic Kingdom area (= `MKR`), Epcot (= `EPR`)], at their real positions, and
+  W×H grew to 4847×6577. Everything between them is cut out by the extractor and painted as plain ground. Each
+  region is its own base/glow layer (`MAP.layers`) at the old sharpness, plus an Epcot close-up layer. Epcot is
+  scenery only (no guests, rides or wait times yet): `EPCOT` in `map-art.js` has the pavilion anchors and styles
+  (`ep_*` in `LANDSTYLE`), Spaceship Earth is drawn as a sphere, Mexico gets its pyramid. TV mode visits Epcot
+  (three shots) and cuts, rather than glides, between the parks. Tree/shadow masks are kept at reduced scale `HS`.
+  To fill in the gap later: add a region (or widen one) in `osm_extract.py` and download that area.
 - OpenStreetMap has no usable heights for the resort landmarks, so `HEIGHTS` in `osm_extract.py` sets them.
   Misspelled names in the live data are handled with `ALIAS` there.
 - Exaggerations, like the official guide map: the castle image is drawn ~1.6× its OSM footprint width;

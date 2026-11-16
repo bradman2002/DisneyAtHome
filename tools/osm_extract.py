@@ -3,29 +3,36 @@ loop, the Transportation and Ticket Center, the monorail resorts, and Bay Lake w
 Island and the Fort Wilderness marina) into js/park-osm.js for the simulator.
 Map units: metres * S on a W x H canvas (north up, x east, y south).
 
-Input: map.osm in the current folder. The area is too big for openstreetmap.org's Export button; fetch it
+Input: map.osm in the current folder, plus epcot.osm for Epcot if present (Overpass bbox 28.3590,-81.5620,28.3810,-81.5360).
+The map has two filled-in regions, the Magic Kingdom resort area and Epcot; everything between them is left out (blank)
+for now: areas are clipped to the regions, lines are cut where they leave them.
+Input details: the area is too big The area is too big for openstreetmap.org's Export button; fetch it
 from the Overpass API instead (this is the query used; the bbox is south,west,north,east):
   [out:xml][timeout:180][bbox:28.4005,-81.5925,28.4240,-81.5585];(node;way;);(._;>;);out body;rel;out body;
 Run from the site folder:  python3 tools/osm_extract.py"""
 import xml.etree.ElementTree as ET, math, json, collections, heapq
 
-SRC='map.osm'; OUT='js/park-osm.js'
+import os
+SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else []); OUT='js/park-osm.js'
 # The projection is pinned to a fixed corner (not the file's bounds), so coordinates stay put when the data is refreshed.
 # OX/OY place that corner on the canvas: the park sits in the north, the lagoon and resorts to the south, west and east.
 S=1.02; OX=470; OY=62; W=3090; H=2290
-r=ET.parse(SRC).getroot()
 minlon=-81.58572; maxlat=28.42266; cl=math.cos(math.radians(28.4187))
 def proj(lon,lat): return (OX+(lon-minlon)*cl*111320*S, OY+(maxlat-lat)*111320*S)
-ND={}; NT={}
-for n in r.findall('node'):
-    ND[n.get('id')]=proj(float(n.get('lon')),float(n.get('lat')))
-    t={x.get('k'):x.get('v') for x in n.findall('tag')}
-    if t: NT[n.get('id')]=t
+ND={}; NT={}; WAYS={}; RELS=[]; seen_rel=set()
 tags=lambda e:{x.get('k'):x.get('v') for x in e.findall('tag')}
-WAYS={}
-for w in r.findall('way'):
-    WAYS[w.get('id')]={'ids':[x.get('ref') for x in w.findall('nd') if x.get('ref') in ND],'t':tags(w)}
-RELS=[{'t':tags(rl),'m':[(m.get('type'),m.get('ref'),m.get('role')) for m in rl.findall('member')]} for rl in r.findall('relation')]
+roots=[ET.parse(f).getroot() for f in SRCS]
+for r in roots:
+    for n in r.findall('node'):
+        ND[n.get('id')]=proj(float(n.get('lon')),float(n.get('lat')))
+        t={x.get('k'):x.get('v') for x in n.findall('tag')}
+        if t: NT[n.get('id')]=t
+for r in roots:
+    for w in r.findall('way'):
+        WAYS[w.get('id')]={'ids':[x.get('ref') for x in w.findall('nd') if x.get('ref') in ND],'t':tags(w)}
+    for rl in r.findall('relation'):
+        if rl.get('id') in seen_rel: continue
+        seen_rel.add(rl.get('id'));RELS.append({'t':tags(rl),'m':[(m.get('type'),m.get('ref'),m.get('role')) for m in rl.findall('member')]})
 pts=lambda ids:[ND[i] for i in ids]
 R1=lambda p:[round(p[0],1),round(p[1],1)]
 def inside(pt,poly):
@@ -82,7 +89,55 @@ def chain(way_ids):
             if s[-1]==cur[0]: cur=s[:-1]+cur;segs.pop(i);changed=True;break
             if s[0]==cur[0]: cur=s[::-1][:-1]+cur;segs.pop(i);changed=True;break
     return pts(cur)
-def clip_box(p,m=60): return any(-m<x<W+m and -m<y<H+m for x,y in p)
+# ---------------- regions: the Magic Kingdom area, and Epcot (from its theme-park outline) ----------------
+REGIONS=[(0,0,W,H)]
+def epcot_outline():
+    for wid,w in WAYS.items():
+        t=w['t']
+        if t.get('tourism')=='theme_park' and 'epcot' in t.get('name','').lower() and len(w['ids'])>3: return pts(w['ids'])
+    for rl in RELS:
+        t=rl['t']
+        if t.get('tourism')=='theme_park' and 'epcot' in t.get('name','').lower():
+            rg=rings_from([ref for ty,ref,role in rl['m'] if ty=='way' and role in('outer','')])
+            if rg: return max(rg,key=len)
+    return None
+EPC=epcot_outline() if 'epcot.osm' in SRCS else None
+if EPC:
+    xs=[q[0] for q in EPC];ys=[q[1] for q in EPC];M=70
+    REGIONS.append((min(xs)-M,min(ys)-M,max(xs)+M,max(ys)+M))
+    W=max(W,int(max(xs)+M+40));H=max(H,int(max(ys)+M+40))
+    print('Epcot region',[round(v) for v in REGIONS[1]],'map',W,'x',H)
+def inreg(x,y,m=0): return any(r[0]-m<=x<=r[2]+m and r[1]-m<=y<=r[3]+m for r in REGIONS)
+def clip_box(p,m=60): return any(inreg(x,y,m) for x,y in p)
+def runs(p,m=30):
+    """split a line into the pieces that lie inside the regions"""
+    out_=[[]]
+    for q in p:
+        if inreg(q[0],q[1],m): out_[-1].append(q)
+        elif out_[-1]: out_.append([])
+    return [r for r in out_ if len(r)>=2]
+def clip_poly(poly,rect):
+    """Sutherland-Hodgman: the part of a polygon inside a rectangle"""
+    x0,y0,x1,y1=rect;P=list(poly)
+    for edge in range(4):
+        if not P: break
+        Q=[];inside_=lambda q:(q[0]>=x0,q[1]>=y0,q[0]<=x1,q[1]<=y1)[edge]
+        def cut(a,b):
+            if edge in(0,2): X=(x0,0,x1)[edge];t=(X-a[0])/((b[0]-a[0]) or 1e-9);return (X,a[1]+(b[1]-a[1])*t)
+            Y=(0,y0,0,y1)[edge];t=(Y-a[1])/((b[1]-a[1]) or 1e-9);return (a[0]+(b[0]-a[0])*t,Y)
+        for i in range(len(P)):
+            a=P[i-1];b=P[i]
+            if inside_(b):
+                if not inside_(a): Q.append(cut(a,b))
+                Q.append(b)
+            elif inside_(a): Q.append(cut(a,b))
+        P=Q
+    return P
+def regionize(o):
+    """a polygon, kept whole when it lies in one region, otherwise cut to each region it reaches"""
+    for r in REGIONS:
+        if all(r[0]<=x<=r[2] and r[1]<=y<=r[3] for x,y in o): return [o]
+    return [c for c in (clip_poly(o,r) for r in REGIONS) if len(c)>=3]
 out=collections.defaultdict(list)
 # ---------------- areas & buildings from ways ----------------
 AREA_KIND=lambda t:('water' if t.get('natural')=='water' or t.get('water') else 'forest' if t.get('landuse')=='forest' or t.get('natural')=='wood' else
@@ -119,12 +174,15 @@ for wid,w in WAYS.items():
     if not clip_box(p): continue
     closed=ids[0]==ids[-1]
     if 'building' in t and closed:
+        c_=centroid(p[:-1]) if len(p)>3 else p[0]
+        if not inreg(*c_): continue
         out['buildings'].append({'p':[R1(q) for q in simplify(p[:-1],.25)],'h':bheight(t),'k':t.get('building'),'n':t.get('name',''),
           'a':t.get('attraction') or ('attraction' if t.get('tourism')=='attraction' else ''),'c':t.get('roof:colour') or t.get('building:colour') or ''})
         continue
     k=AREA_KIND(t)
     if k and closed:
-        out['areas'].append({'k':k,'o':[R1(q) for q in simplify(p[:-1],.3)],'i':[]});continue
+        for o_ in regionize(p[:-1]): out['areas'].append({'k':k,'o':[R1(q) for q in simplify(o_,.3)],'i':[]})
+        continue
 # multipolygons
 for rl in RELS:
     t=rl['t']
@@ -133,7 +191,7 @@ for rl in RELS:
     ro=rings_from(outer);ri=rings_from(inner)
     if 'building' in t:
         for o in ro:
-            if clip_box(o): out['buildings'].append({'p':[R1(q) for q in simplify(o[:-1] if o[0]==o[-1] else o,.25)],'h':bheight(t),'k':t.get('building'),'n':t.get('name',''),'a':'','c':''})
+            if clip_box(o) and inreg(*centroid(o[:-1] if o[0]==o[-1] else o)): out['buildings'].append({'p':[R1(q) for q in simplify(o[:-1] if o[0]==o[-1] else o,.25)],'h':bheight(t),'k':t.get('building'),'n':t.get('name',''),'a':'','c':''})
         continue
     k=AREA_KIND(t)
     if not k:
@@ -143,8 +201,10 @@ for rl in RELS:
     if not k: continue
     for o in ro:
         if not clip_box(o): continue
-        ins=[[R1(q) for q in simplify(i,.3)] for i in ri if inside(i[0],o)]
-        out['areas'].append({'k':k,'o':[R1(q) for q in simplify(o,.3)],'i':ins,'n':t.get('name','')})
+        ins=[i for i in ri if inside(i[0],o)]
+        for o_ in regionize(o):
+            ins_=[[R1(q) for q in simplify(i,.3)] for i in ins if any(inside(q,o_) for q in i[::max(1,len(i)//8)])]
+            out['areas'].append({'k':k,'o':[R1(q) for q in simplify(o_,.3)],'i':ins_,'n':t.get('name','')})
 # ---------------- lines ----------------
 LINES=collections.defaultdict(list)
 ROAD={'motorway':1,'trunk':1,'primary':1,'secondary':1,'motorway_link':2,'secondary_link':2,'tertiary':2,'tertiary_link':2,'unclassified':2,'residential':2,'service':3}
@@ -163,7 +223,7 @@ for wid,w in WAYS.items():
     elif t.get('man_made') in('bridge','pier') and w['ids'][0]==w['ids'][-1]: out['areas'].append({'k':'pier' if t.get('man_made')=='pier' else 'bridge','o':[R1(q) for q in p[:-1]],'i':[]})
     elif t.get('man_made')=='pier': LINES['pier'].append(p)
     elif t.get('barrier') in('hedge',): LINES['hedge'].append(p)
-for k,v in LINES.items(): out['lines'].append({'k':k,'p':[[R1(q) for q in simplify(l,.3)] for l in v]})
+for k,v in LINES.items(): out['lines'].append({'k':k,'p':[[R1(q) for q in simplify(r_,.3)] for l in v for r_ in runs(l)]})
 # ---------------- walkways (art) + graph ----------------
 WALK={'footway':4.0,'pedestrian':9.0,'living_street':13.0,'path':3.0,'steps':3.5}
 # park boundary for the guest graph: the railroad loop, plus the entrance plaza south of the station out to the
@@ -183,7 +243,7 @@ for wid,w in WAYS.items():
     closed=w['ids'][0]==w['ids'][-1] and len(w['ids'])>3
     if not clip_box(p): continue
     queue='queue' in name.lower() or 'exit' in name.lower() or t.get('attraction')=='queue'
-    paths.append({'w':round(WALK[hw]*S*(.45 if queue else 1),1),'p':[R1(q) for q in simplify(p,.3)],'a':1 if closed and t.get('area')=='yes' else 0,'q':1 if queue else 0})
+    for r_ in runs(p): paths.append({'w':round(WALK[hw]*S*(.45 if queue else 1),1),'p':[R1(q) for q in simplify(r_,.3)],'a':1 if closed and t.get('area')=='yes' and len(r_)==len(p) else 0,'q':1 if queue else 0})
     if queue or t.get('access') in('private','no'): continue
     ids=w['ids']
     for a,b in zip(ids,ids[1:]):
@@ -249,8 +309,8 @@ def place(name):
     if not b: print('  MISSING',name);return None
     return b
 out['nodes']=NODES;out['edges']=EDGES
-out['trees']=[R1(ND[i]) for i,t in NT.items() if t.get('natural')=='tree' and in_park(ND[i]) or t.get('natural')=='tree' and clip_box([ND[i]],0)]
-out['lamps']=[R1(ND[i]) for i,t in NT.items() if t.get('highway')=='street_lamp']
+out['trees']=[R1(ND[i]) for i,t in NT.items() if t.get('natural')=='tree' and in_park(ND[i]) or t.get('natural')=='tree' and inreg(*ND[i])]
+out['lamps']=[R1(ND[i]) for i,t in NT.items() if t.get('highway')=='street_lamp' and inreg(*ND[i])]
 # routes
 def rel_chain(name,typ=None):
     rl=next((x for x in RELS if x['t'].get('name')==name and (typ is None or x['t'].get('type')==typ)),None)
@@ -272,7 +332,7 @@ for k,v in out['routes'].items(): print('route',k,len(v),'pts', v[0] if v else N
 # beams to paint: every monorail way except the stretch inside the Contemporary (tunnel=yes)
 mono=[w for w in WAYS.values() if w['t'].get('railway')=='monorail' and w['t'].get('tunnel')!='yes']
 monopts=[p for p in (pts(w['ids']) for w in mono) if clip_box(p)]
-out['monoLines']=[[R1(q) for q in simplify(p,.5)] for p in monopts]
+out['monoLines']=[[R1(q) for q in simplify(r_,.5)] for p in monopts for r_ in runs(p)]
 json.dump(out,open('osm_raw.json','w'))
 # names for the simulator
 PLACES={}
@@ -358,15 +418,23 @@ ferry=from_mk(out['routes']['ferry']);launch=from_mk(out['routes']['launch'])
 print('ferry',len(ferry),ferry[0],ferry[-1],'launch',len(launch),launch[0] if launch else None,launch[-1] if launch else None)
 # buses: the real road from the edge of the map to the Magic Kingdom bus loop (from a bus route relation)
 bs=PLACES.get('busstation')
-bus=[q for q in rel_chain('Pop Century → Magic Kingdom') if -40<q[0]<W+40 and -40<q[1]<H+40]
+R0=REGIONS[0];bus=[q for q in rel_chain('Pop Century → Magic Kingdom') if R0[0]-40<q[0]<R0[2]+40 and R0[1]-40<q[1]<R0[3]+40]
 if bus and math.dist(bus[0],bs)<math.dist(bus[-1],bs): bus=bus[::-1]
-runs=[[]]
+bruns=[[]]
 for a_,b_ in zip(bus,bus[1:]+bus[-1:]):
-    runs[-1].append(a_)
-    if math.dist(a_,b_)>150: runs.append([])
-bus=[R1(q) for q in simplify(runs[-1],.6)] if bus else [[W+40,bs[1]-6],[bs[0]+30,bs[1]-6],[bs[0],bs[1]]]
+    bruns[-1].append(a_)
+    if math.dist(a_,b_)>150: bruns.append([])
+bus=[R1(q) for q in simplify(bruns[-1],.6)] if bus else [[R0[2]+40,bs[1]-6],[bs[0]+30,bs[1]-6],[bs[0],bs[1]]]
 print('bus path',len(bus),bus[0],bus[-1],'station',bs)
-data_extra={'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
+# Epcot: its outline, its middle, and Spaceship Earth
+if EPC:
+    PLACES['epcot']=R1(centroid(EPC));out['epcot']=[R1(q) for q in simplify(EPC,.8)]
+    se=next((w for w in WAYS.values() if w['t'].get('name')=='Spaceship Earth' and w['ids'][0]==w['ids'][-1]),None)
+    if se: PLACES['sse']=R1(centroid(pts(se['ids'])[:-1]))
+    wsl=next((w for w in WAYS.values() if 'world showcase lagoon' in w['t'].get('name','').lower()),None)
+    if wsl: PLACES['wslagoon']=R1(centroid(pts(wsl['ids'])[:-1]))
+    print('epcot places',PLACES.get('epcot'),PLACES.get('sse'),PLACES.get('wslagoon'))
+data_extra={'regions':[[round(v) for v in r] for r in REGIONS],'epcot':out.get('epcot'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
  'keys':{'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
 # compact JS
 data={'W':W,'H':H,'S':S,'areas':out['areas'],'buildings':out['buildings'],'lines':out['lines'],'paths':out['paths'],'trees':out['trees'],'lamps':out['lamps'],'routes':out['routes'],'monoLines':out['monoLines'],'nodes':NODES,'edges':EDGES,**data_extra}

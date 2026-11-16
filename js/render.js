@@ -19,7 +19,8 @@ function resize(){const r=cv.parentElement.getBoundingClientRect(),touch=matchMe
 // Portrait screens start closer in, like a phone map.
 const VW=1000,VH=940;
 const baseZ=()=>{const fit=Math.min(cw/VW,ch/VH);return cw<ch?Math.max(fit,Math.min(cw/VW*1.7,ch/VH)):fit};
-const minM=()=>Math.min(1,Math.min(cw/W,ch/H)/baseZ()); // furthest out: the whole resort area on screen
+const minM=()=>Math.min(1,Math.min(cw/W,ch/H)/baseZ()); // furthest out: the whole map on screen (Magic Kingdom and Epcot)
+const fitM=r=>Math.min(1,Math.min(cw/(r[2]-r[0]),ch/(r[3]-r[1]))/baseZ()); // the zoom that just fits a region
 const zf=()=>baseZ()*cam.m;
 /* map point → screen, exactly in step with the map, so callouts and pins glide with it */
 const toS=(x,y)=>{const z=zf();return[(x-cam.x)*z+cw/2,(y-cam.y)*z+ch/2]};
@@ -41,14 +42,14 @@ function frame(rdt){
  cx.setTransform(1,0,0,1,0,0);cx.fillStyle='#9fc46e';cx.fillRect(0,0,cv.width,cv.height);
  cx.setTransform(dpr*z,0,0,dpr*z,dpr*(cw/2-cam.x*z),dpr*(ch/2-cam.y*z)); /* not snapped to whole pixels: a slow pan then glides instead of stepping */
  const vis=d=>d.base&&z*dpr>MAP.mss*1.15&&d.x<cam.x+cw/2/z&&d.x+d.w>cam.x-cw/2/z&&d.y<cam.y+ch/2/z&&d.y+d.h>cam.y-ch/2/z; // sharper close-up layers, once painted
- cx.drawImage(MAP.base,0,0,W,H);for(const d of MAP.detail)if(vis(d))cx.drawImage(d.base,d.x,d.y,d.w,d.h);
+ for(const L of MAP.layers)cx.drawImage(L.base,L.x,L.y,L.w,L.h);for(const d of MAP.detail)if(vis(d))cx.drawImage(d.base,d.x,d.y,d.w,d.h);
  drawLive(now);
  if(MAP.castleImg){const[bx,by,bw,bh]=MAP.castleBox;cx.drawImage(CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:MAP.castle,bx,by,bw,bh)} /* the castle again on top, from the original image so it lines up exactly with the one in the background */ // keep rides behind the castle hidden
  // daylight → sunset → night
  cx.globalCompositeOperation='multiply';const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t),col=mix(mix([255,255,255],[255,214,170],gf),[60,74,135],nf);
  cx.fillStyle=`rgb(${col.map(Math.round)})`;cx.fillRect(0,0,W,H);
  cx.globalCompositeOperation='lighter';const la=Math.min(1,nf*1.3+gf*.15);
- if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}cx.drawImage(MAP.glow,0,0,W,H);cx.restore();for(const d of dv)cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.globalAlpha=la*.32;for(const[x,y]of MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
+ if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}for(const L of MAP.layers)cx.drawImage(L.glow,L.x,L.y,L.w,L.h);cx.restore();for(const d of dv)cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.globalAlpha=la*.32;for(const[x,y]of MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
@@ -178,8 +179,10 @@ function drawOverlays(z,now){BUB=[];const c=cx;c.setTransform(dpr,0,0,dpr,0,0);c
   // resorts and the Ticket Center (teal pills), and the lagoon's name on the water
   if(VIEW.layer!=='transport')for(const k in RESORTS){if(k==='mk')continue;const n=z<.9?RESORTS[k].n.replace('Disney’s ','').replace(/ Resort.*/,'').replace('Transportation and Ticket Center','Ticket Center'):RESORTS[k].n.replace('Disney’s ',''),[sx,sy]=toS(RESORTS[k].c[0],RESORTS[k].c[1]-22);const tw=c.measureText(n).width+18;
    c.fillStyle=sel&&sel.k==='r'&&sel.i===k?'rgba(26,143,214,.92)':'rgba(18,96,110,.8)';c.beginPath();c.roundRect(sx-tw/2,sy-11,tw,22,11);c.fill();c.fillStyle='#fff';c.fillText(n,sx,sy+.5)}
+  if(EPCOT){const[ex,ey]=toS(EPCOT.sse[0],EPCOT.sse[1]-75);if(ex>-200&&ex<cw+200&&ey>-60&&ey<ch+60){c.font='800 15px "Nunito Sans",Figtree,system-ui,sans-serif';const tw=c.measureText('EPCOT').width+26;c.fillStyle='rgba(60,40,110,.8)';c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText('EPCOT',ex,ey+.5)}
+   c.font='700 12px "Nunito Sans",Figtree,system-ui,sans-serif';if(z>.9)for(const p of EPCOT.pav){const[sx,sy]=toS(p.x,p.y-30);if(sx<-80||sx>cw+80||sy<-20||sy>ch+20)continue;const tw=c.measureText(p.n).width+18;c.fillStyle='rgba(40,46,66,.66)';c.beginPath();c.roundRect(sx-tw/2,sy-11,tw,22,11);c.fill();c.fillStyle='#fff';c.fillText(p.n,sx,sy+.5)}}
   c.font='italic 700 '+Math.max(12,Math.min(22,z*26))+'px "Nunito Sans",Figtree,system-ui,sans-serif';c.strokeStyle='rgba(30,90,120,.45)';c.lineWidth=3;
-  for(const[n,p]of[['Seven Seas Lagoon',LAGOON],['Bay Lake',BAYLAKE],['Discovery Island',P_.disc&&z>.7?[P_.disc[0],P_.disc[1]]:null]]){if(!p)continue;const[sx,sy]=toS(...p);c.fillStyle='rgba(255,255,255,.85)';c.strokeText(n,sx,sy);c.fillText(n,sx,sy)}}
+  for(const[n,p]of[['Seven Seas Lagoon',LAGOON],['Bay Lake',BAYLAKE],['Discovery Island',P_.disc&&z>.7?[P_.disc[0],P_.disc[1]]:null],['World Showcase Lagoon',EPCOT?EPCOT.c:null]]){if(!p)continue;const[sx,sy]=toS(...p);c.fillStyle='rgba(255,255,255,.85)';c.strokeText(n,sx,sy);c.fillText(n,sx,sy)}}
  const isSel=(k,i)=>sel&&sel.k===k&&sel.i===i;
  if(document.body.classList.contains('idle')&&!(typeof TV!=='undefined'&&TV.on))return; /* full screen with controls faded: no callouts over the show */
  if(VIEW.layer==='wait'&&!VIEW.fwWaits&&fireEv()&&fireEv().ph==='live'){} // wait times stay out of the way during the fireworks (Filter turns them back on)

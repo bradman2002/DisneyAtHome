@@ -288,11 +288,15 @@ function paintMap(rx,ry,rw,rh,mss){
  const base=document.createElement('canvas'),glow=document.createElement('canvas'),blk=document.createElement('canvas');
  base.width=Math.round(rw*mss);base.height=Math.round(rh*mss);glow.width=Math.round(rw*mss*GLOWK);glow.height=Math.round(rh*mss*GLOWK); /* the night lights are soft glows: half the sharpness is plenty and saves the memory */if(!MAP.crowns){blk.width=Math.ceil(W*HS);blk.height=Math.ceil(H*HS)}else blk.width=blk.height=1; /* the tree mask is only needed the first time */
  const c=base.getContext('2d'),e=glow.getContext('2d'),b=blk.getContext('2d');b.scale(HS,HS);c.scale(mss,mss);e.scale(mss*GLOWK,mss*GLOWK);for(const q of[c,e])q.translate(-rx,-ry);c.lineJoin=c.lineCap='round';
+ /* After the first paint (which also builds the whole-map masks), only what reaches this rectangle is drawn: a close-up
+    is a small patch of a big map, and walking everything made each one take seconds and freeze the page. */
+ const cull=!!MAP.crowns,MG=70,vis=bb=>!cull||bb[2]>rx-MG&&bb[0]<rx+rw+MG&&bb[3]>ry-MG&&bb[1]<ry+rh+MG*1.6,bbOf=o=>o._bb||(o._bb=bbox(o)),lp=l=>l.p.filter(q=>vis(bbOf(q)));
+ const RA_=rw*rh/94e4; /* this rectangle's size relative to the park alone: sets how many sparkles and speckles */
  const r=seeded(4242),S2=OSM.S*.78,AREA=W*H/94e4; // S2: height foreshortening for the 3/4 view; AREA: map size relative to the park alone
  /* painterly grass */
  {let g=MAP._grass;if(!g){const gs=Math.min(.5,HS*.6),gw=W*gs|0,gh=H*gs|0;g=MAP._grass=document.createElement('canvas');g.width=gw;g.height=gh;const gx=g.getContext('2d'),im=gx.createImageData(gw,gh);
   for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){const n=fbm(x/gs,y/gs),i=(y*gw+x)*4;im.data[i]=118+n*60;im.data[i+1]=170+n*48;im.data[i+2]=72+n*22;im.data[i+3]=255}gx.putImageData(im,0,0)}c.imageSmoothingQuality='high';c.drawImage(g,0,0,W,H)}
- const A=OSM.areas,by=k=>A.filter(a=>a.k===k&&a.o.length>2);
+ const A=OSM.areas,by=k=>A.filter(a=>a.k===k&&a.o.length>2&&vis(bbOf(a.o)));
  b.fillStyle='#000';b.strokeStyle='#000';b.lineCap=b.lineJoin='round'; // mask of where trees may not grow
  /* lawns, scrub, sand, parking, construction */
  for(const a of by('grass')){areaPath(c,a);c.fillStyle='#a6d36c';c.fill('evenodd');c.strokeStyle='rgba(60,110,40,.35)';c.lineWidth=.8;c.stroke()}
@@ -310,40 +314,40 @@ function paintMap(rx,ry,rw,rh,mss){
  for(const a of water){areaPath(c,a);c.strokeStyle='rgba(60,95,45,.35)';c.lineWidth=5;c.stroke();areaPath(b,a);b.fill('evenodd');b.lineWidth=6;b.stroke()}
  for(const a of water){c.save();areaPath(c,a);c.clip('evenodd');areaPath(c,a);c.fillStyle='#4fb3d0';c.fill('evenodd');
   for(const[w,col]of[[26,'#5cbcd6'],[14,'#6fcbe0'],[7,'#9fe0e8'],[2.4,'#d8f3f2']]){c.strokeStyle=col;c.lineWidth=w;areaPath(c,a);c.stroke()}c.restore()}
- for(const l of OSM.lines.filter(l=>l.k==='stream'))for(const p of l.p){c.strokeStyle='#8fd8e6';c.lineWidth=3;pathOf(c,p);c.stroke()}
- const onWater=(x,y)=>water.some(a=>ptIn(x,y,a.o)&&!(a.i||[]).some(q=>ptIn(x,y,q)));
- c.strokeStyle='rgba(255,255,255,.4)';c.lineWidth=.5;for(let i=0;i<1500*AREA;i++){const x=r()*W,y=r()*H;if(!onWater(x,y))continue;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+2,y-1,x+4,y);c.stroke()}
+ for(const l of OSM.lines.filter(l=>l.k==='stream'))for(const p of lp(l)){c.strokeStyle='#8fd8e6';c.lineWidth=3;pathOf(c,p);c.stroke()}
+ const onWater=(x,y)=>water.some(a=>{const q=bbOf(a.o);return x>=q[0]&&x<=q[2]&&y>=q[1]&&y<=q[3]&&ptIn(x,y,a.o)&&!(a.i||[]).some(h=>ptIn(x,y,h))});
+ c.strokeStyle='rgba(255,255,255,.4)';c.lineWidth=.5;for(let i=0;i<1500*RA_;i++){const x=rx+r()*rw,y=ry+r()*rh;if(!onWater(x,y))continue;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+2,y-1,x+4,y);c.stroke()}
  /* roads (real alignments): resort drives, service roads; bus loops */
  {const RW={road1:8.5,road2:6.5,road3:3.8},roads=OSM.lines.filter(l=>RW[l.k]).sort((p,q)=>RW[p.k]-RW[q.k]);
-  for(const pass of[0,1])for(const l of roads)for(const p of l.p){c.strokeStyle=pass?(l.k==='road3'?'#c3c5cb':'#b3b7c0'):'rgba(90,96,104,.55)';c.lineWidth=RW[l.k]+(pass?0:1.3);pathOf(c,p);c.stroke();if(!pass){b.lineWidth=RW[l.k]+5;pathOf(b,p);b.stroke()}}
-  c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=.45;c.setLineDash([3,3.5]);for(const l of roads)if(l.k!=='road3')for(const p of l.p){pathOf(c,p);c.stroke()}c.setLineDash([])}
+  for(const pass of[0,1])for(const l of roads)for(const p of lp(l)){c.strokeStyle=pass?(l.k==='road3'?'#c3c5cb':'#b3b7c0'):'rgba(90,96,104,.55)';c.lineWidth=RW[l.k]+(pass?0:1.3);pathOf(c,p);c.stroke();if(!pass){b.lineWidth=RW[l.k]+5;pathOf(b,p);b.stroke()}}
+  c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=.45;c.setLineDash([3,3.5]);for(const l of roads)if(l.k!=='road3')for(const p of lp(l)){pathOf(c,p);c.stroke()}c.setLineDash([])}
  /* paved plazas and walkways */
  const PAVE='#ede1d6',EDGE='#cdbcae';
  for(const a of by('ped')){areaPath(c,a);c.strokeStyle=EDGE;c.lineWidth=1.4;c.stroke();c.fillStyle=PAVE;c.fill('evenodd');areaPath(b,a);b.fill('evenodd')}
- for(const p of OSM.paths.filter(p=>p.a)){c.fillStyle=PAVE;pathOf(c,p.p,1);c.fill();pathOf(b,p.p,1);b.fill()}
- const paths=OSM.paths.filter(p=>!p.a);
+ for(const p of OSM.paths.filter(p=>p.a&&vis(bbOf(p.p)))){c.fillStyle=PAVE;pathOf(c,p.p,1);c.fill();pathOf(b,p.p,1);b.fill()}
+ const paths=OSM.paths.filter(p=>!p.a&&vis(bbOf(p.p)));
  for(const pass of[0,1])for(const p of paths){c.strokeStyle=pass?(p.q?'#e3d6c8':PAVE):EDGE;c.lineWidth=p.w+(pass?0:1.2);pathOf(c,p.p);c.stroke();if(!pass){b.lineWidth=p.w+6;pathOf(b,p.p);b.stroke()}}
- for(let i=0;i<5000*AREA;i++){const x=r()*W,y=r()*H;c.fillStyle=r()<.5?'rgba(170,140,120,.10)':'rgba(255,255,255,.12)';c.fillRect(x,y,.6,.6)}
+ for(let i=0;i<5000*RA_;i++){const x=rx+r()*rw,y=ry+r()*rh;c.fillStyle=r()<.5?'rgba(170,140,120,.10)':'rgba(255,255,255,.12)';c.fillRect(x,y,.6,.6)}
  /* gardens: lawn beds with flower borders */
  for(const a of by('garden')){areaPath(c,a);c.fillStyle='#93c862';c.fill('evenodd');c.save();areaPath(c,a);c.clip('evenodd');c.strokeStyle='#5f9e45';c.lineWidth=1.6;areaPath(c,a);c.stroke();
   const L=a.o.length;for(let i=0;i<L;i++){const p=a.o[i],q=a.o[(i+1)%L],d=Math.hypot(q[0]-p[0],q[1]-p[1]);for(let t=0;t<d;t+=1.1){const x=p[0]+(q[0]-p[0])*t/d,y=p[1]+(q[1]-p[1])*t/d;c.fillStyle=['#e8455f','#f6c445','#ff8fc8','#ffffff','#e84a3c','#b06ae8'][hsh(i*31+(t*7|0))%6];c.beginPath();c.arc(x,y,.75,0,7);c.fill()}}c.restore();areaPath(b,a);b.fill('evenodd')}
  for(const a of[...by('bridge'),...by('pier')]){areaPath(c,a);c.fillStyle=a.k==='pier'?'#b98e5e':'#dccbb4';c.fill();c.strokeStyle=a.k==='pier'?'#8a6a45':'#b9a68d';c.lineWidth=.6;c.stroke()}
- for(const l of OSM.lines.filter(l=>l.k==='pier'))for(const p of l.p){c.strokeStyle='#b98e5e';c.lineWidth=2.5;pathOf(c,p);c.stroke()}
- for(const l of OSM.lines.filter(l=>l.k==='hedge'))for(const p of l.p){c.strokeStyle='#3f7a35';c.lineWidth=2.2;pathOf(c,p);c.stroke();b.lineWidth=4;pathOf(b,p);b.stroke()}
+ for(const l of OSM.lines.filter(l=>l.k==='pier'))for(const p of lp(l)){c.strokeStyle='#b98e5e';c.lineWidth=2.5;pathOf(c,p);c.stroke()}
+ for(const l of OSM.lines.filter(l=>l.k==='hedge'))for(const p of lp(l)){c.strokeStyle='#3f7a35';c.lineWidth=2.2;pathOf(c,p);c.stroke();b.lineWidth=4;pathOf(b,p);b.stroke()}
  /* railroad (real alignment), streetcar tracks, Speedway */
  const rail=OSM.routes.rail;c.strokeStyle='#8a7357';c.lineWidth=3.6;pathOf(c,rail);c.stroke();
  {const R_=mkPath(rail);c.strokeStyle='#5d4a36';c.lineWidth=.6;for(let d=0;d<R_.L;d+=2.4){const[x,y,a]=R_.at(d),nx=-Math.sin(a)*2.1,ny=Math.cos(a)*2.1;c.beginPath();c.moveTo(x-nx,y-ny);c.lineTo(x+nx,y+ny);c.stroke()}
   c.strokeStyle='#cfc8bc';c.lineWidth=.45;for(const off of[-1,1]){c.beginPath();for(let d=0;d<R_.L;d+=3){const[x,y,a]=R_.at(d);const px=x-Math.sin(a)*off,py=y+Math.cos(a)*off;d?c.lineTo(px,py):c.moveTo(px,py)}c.stroke()}}
  b.lineWidth=10;pathOf(b,rail);b.stroke();
- for(const l of OSM.lines.filter(l=>l.k==='rail'))for(const p of l.p){c.strokeStyle='#8a7357';c.lineWidth=3;pathOf(c,p);c.stroke()}
+ for(const l of OSM.lines.filter(l=>l.k==='rail'))for(const p of lp(l)){c.strokeStyle='#8a7357';c.lineWidth=3;pathOf(c,p);c.stroke()}
  {const T_=mkPath(OSM.routes.tram);c.strokeStyle='#8b8e94';c.lineWidth=.35;for(const off of[-.7,.7]){c.beginPath();for(let d=0;d<T_.L;d+=2){const[x,y,a]=T_.at(d);d?c.lineTo(x-Math.sin(a)*off,y+Math.cos(a)*off):c.moveTo(x-Math.sin(a)*off,y+Math.cos(a)*off)}c.stroke()}}
  const race=OSM.lines.filter(l=>l.k==='race');
- for(const[col,w]of[['rgba(30,40,30,.25)',7],['#5d636d',5],['#ffffff',.4]]){c.strokeStyle=col;c.lineWidth=w;if(w<1)c.setLineDash([2,2]);for(const l of race)for(const p of l.p){pathOf(c,p);c.stroke()}c.setLineDash([])}
- for(const l of race)for(const p of l.p){b.lineWidth=9;pathOf(b,p);b.stroke()}
+ for(const[col,w]of[['rgba(30,40,30,.25)',7],['#5d636d',5],['#ffffff',.4]]){c.strokeStyle=col;c.lineWidth=w;if(w<1)c.setLineDash([2,2]);for(const l of race)for(const p of lp(l)){pathOf(c,p);c.stroke()}c.setLineDash([])}
+ for(const l of race)for(const p of lp(l)){b.lineWidth=9;pathOf(b,p);b.stroke()}
  /* buildings, rockwork and trees, painted north-to-south so nearer things overlap farther ones */
  const{b:tronB,cv:tronCv}=tronParts();
  const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle');
- for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbox(q.p);b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);
+ for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbOf(q.p);if(!cull)b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);if(!vis(bb))continue;
   const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,land=epLand(cx_,cy_)||landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
@@ -377,7 +381,7 @@ function paintMap(rx,ry,rw,rh,mss){
  // Space Mountain on its real footprint
  {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p),rx=(bb[2]-bb[0])/2;B.push({y:bb[3],f:()=>spaceDome(c,e,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,rx)})}}
  // details OpenStreetMap doesn't model: flume mountain, mine mountain, treehouse, TRON canopy
- for(const a of AT){if(!['mtn2','mtn3','tree'].includes(a.k)&&!(a.k==='tron'&&!tronB))continue; /* TRON has its own art on its real outlines, when the map data has them */const f=attractionArt(c,e,a);if(!f)continue;const S=a.k==='tron'?1.6:1.25;
+ for(const a of AT){if(!['mtn2','mtn3','tree'].includes(a.k)&&!(a.k==='tron'&&!tronB)||!vis([a.x-40,a.y-40,a.x+40,a.y+40]))continue; /* TRON has its own art on its real outlines, when the map data has them */const f=attractionArt(c,e,a);if(!f)continue;const S=a.k==='tron'?1.6:1.25;
   B.push({y:a.y+12,f:()=>{for(const ctx of[c,e]){ctx.save();ctx.translate(a.x,a.y);ctx.scale(S,S);ctx.translate(-a.x,-a.y)}f();c.restore();e.restore()}})}
  /* trees: every mapped tree, plus canopy filling the real forests (worked out once, reused by the close-up layers) */
  if(!MAP.crowns){const BW=blk.width,BH=blk.height,bd=b.getImageData(0,0,BW,BH).data,free=(x,y)=>{if(!(x>1&&y>1&&x<W-1&&y<H-1)||!inRegion(x,y))return false;return bd[((y*HS|0)*BW+(x*HS|0))*4+3]<10};

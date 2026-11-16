@@ -103,7 +103,8 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   (three shots) and cuts, rather than glides, between the parks. Tree/shadow masks are kept at reduced scale `HS`.
   To fill in the gap later: add a region (or widen one) in `osm_extract.py` and download that area.
 - Memory (owner asked to cut browser RAM, 16 Nov 2026): close-up map layers are painted on demand and freed after
-  90 s away (`detailTick` in `map-art.js`; the park's own close-up stays); night-light (glow) canvases are half the
+  90 s away (`detailTick` in `map-art.js`; the park's own close-up stays). `paintMap` culls to its rectangle after the
+  first paint (`cull`/`vis`), so a close-up takes ~50–150 ms instead of ~12 s — keep new map art culled the same way; night-light (glow) canvases are half the
   base sharpness (`GLOWK`); long music streams via `streamUrl` (`audio.js`) when the server answers byte ranges, else it
   is fetched whole as before, and a whole-fetched ride track is freed after it fades out. The Mac launchers use
   `tools/serve.py` (no-cache + byte ranges); `tools/serve.ps1` already did ranges. Map canvases went ~404 → ~179 MB.

@@ -8,22 +8,8 @@ PORT=8000
 while lsof -i :$PORT >/dev/null 2>&1; do PORT=$((PORT+1)); done
 URL="http://localhost:$PORT/?tv&v=$(date +%s)"
 
-# the same tiny no-cache web server as Start Simulator.command, in the background
-python3 - "$PORT" <<'PY' &
-import http.server, sys
-class NoCache(http.server.SimpleHTTPRequestHandler):
-    def end_headers(self):
-        self.send_header('Cache-Control', 'no-store, must-revalidate')
-        self.send_header('Expires', '0')
-        super().end_headers()
-    def log_message(self, *a): pass
-class Server(http.server.ThreadingHTTPServer):
-    allow_reuse_address = True
-    request_queue_size = 64
-    daemon_threads = True
-with Server(('127.0.0.1', int(sys.argv[1])), NoCache) as s:
-    s.serve_forever()
-PY
+# the same tiny web server as Start Simulator.command (tools/serve.py), in the background
+python3 tools/serve.py "$PORT" &
 SERVER=$!
 trap 'kill $SERVER 2>/dev/null' EXIT
 caffeinate -dis -w $$ &          # keep the Mac and its screen awake while this is running

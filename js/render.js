@@ -41,7 +41,7 @@ function frame(rdt){
  const z=zf(),now=performance.now();
  cx.setTransform(1,0,0,1,0,0);cx.fillStyle='#9fc46e';cx.fillRect(0,0,cv.width,cv.height);
  cx.setTransform(dpr*z,0,0,dpr*z,dpr*(cw/2-cam.x*z),dpr*(ch/2-cam.y*z)); /* not snapped to whole pixels: a slow pan then glides instead of stepping */
- const vis=d=>d.base&&z*dpr>MAP.mss*1.15&&d.x<cam.x+cw/2/z&&d.x+d.w>cam.x-cw/2/z&&d.y<cam.y+ch/2/z&&d.y+d.h>cam.y-ch/2/z; // sharper close-up layers, once painted
+ detailTick(z);const vis=d=>d.base&&z*dpr>MAP.mss*1.15&&d.x<cam.x+cw/2/z&&d.x+d.w>cam.x-cw/2/z&&d.y<cam.y+ch/2/z&&d.y+d.h>cam.y-ch/2/z; // sharper close-up layers, once painted
  for(const L of MAP.layers)cx.drawImage(L.base,L.x,L.y,L.w,L.h);for(const d of MAP.detail)if(vis(d))cx.drawImage(d.base,d.x,d.y,d.w,d.h);
  drawLive(now);
  if(MAP.castleImg){const[bx,by,bw,bh]=MAP.castleBox;cx.drawImage(CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:MAP.castle,bx,by,bw,bh)} /* the castle again on top, from the original image so it lines up exactly with the one in the background */ // keep rides behind the castle hidden

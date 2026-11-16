@@ -2,7 +2,8 @@
    A painted, 3/4 bird's-eye illustration of the park and the resort area around Seven Seas Lagoon, built into cached canvases:
    MAP.base  – ground, water, roads, paths, trees and buildings (daylight colours), the whole map at a modest resolution
    MAP.glow  – lit windows and lamps, added on top at night
-   MAP.detail – sharper copies of the busy places (the park, each resort, the Ticket Center), painted just after start-up
+   MAP.detail – sharper copies of the busy places (the park, each resort, the Ticket Center, EPCOT), painted when you zoom in near one
+                and let go after a while away (detailTick)
                 and drawn over the base when you zoom in. paintMap() makes every layer from the same data, so they line up.
    MAP.castle – the castle on its own (used as a mask for show projections)
    Coordinates are the simulator's map units (W×H). "Up" on screen is north; buildings show their roof
@@ -266,7 +267,15 @@ function buildMap(){
   box(P.poly[0]-260,P.poly[1]-280,P.poly[0]+260,P.poly[1]+190,MSS-.5),box(P.gf[0]-200,P.gf[1]-280,P.gf[0]+300,P.gf[1]+230,MSS-.5)];
  if(P.epcot&&OSM.epcot){const e=bbox(OSM.epcot);MAP.detail.push(box(e[0]-40,e[1]-40,e[2]+40,e[3]+40,MSS-.5))} /* Epcot close up */
  if(P.wl)MAP.detail.push(box(P.wl[0]-230,P.wl[1]-260,P.wl[0]+260,P.wl[1]+200,MSS-.5));if(P.fw)MAP.detail.push(box(P.fw[0]-220,P.fw[1]-130,P.fw[0]+230,P.fw[1]+330,MSS-.5));
- let i=0;const next=()=>{const d=MAP.detail[i++];if(!d)return;Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));setTimeout(next,80)};setTimeout(next,400)}
+ setTimeout(()=>{const d=MAP.detail[0];if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k))},400)} /* the park itself is wanted almost at once */
+/* Close-up layers are painted only when you zoom in near one, and let go again after a while away, so only the ones
+   in use take memory (each is tens of MB). Checked a few times a second; one is painted at a time. */
+function detailTick(z){const now=performance.now();if(now-(MAP.dtAt||0)<300)return;MAP.dtAt=now;
+ const want=z*dpr>MAP.mss*1.15||cam.tm*baseZ()*dpr>MAP.mss*1.15,views=[[cam.x,cam.y],[cam.tx,cam.ty]],hw=cw/2/z*1.6+150,hh=ch/2/z*1.6+150;
+ for(const d of MAP.detail){const near=want&&views.some(([x,y])=>d.x<x+hw&&d.x+d.w>x-hw&&d.y<y+hh&&d.y+d.h>y-hh);
+  if(near)d.seen=now;
+  if(near&&!d.base&&!MAP.dtBusy){MAP.dtBusy=true;setTimeout(()=>{if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0)}
+  else if(d.base&&!near&&now-(d.seen||0)>90e3&&d!==MAP.detail[0]){for(const k of['base','glow']){d[k].width=d[k].height=0;d[k]=null}}}} /* away for 90 s: let it go (the park's own stays) */
 /* Paint the rectangle (rx,ry,rw,rh) of the map at `mss` pixels per map unit. Every call walks the same data in the same
    order with the same random seed, so a close-up layer is the same picture as the base, just sharper. */
 /* Working masks (where trees may grow, the forests, the soft shadows) are kept at a reduced scale HS on a big map, so
@@ -274,10 +283,11 @@ function buildMap(){
 const HS=Math.min(1,Math.sqrt(8e6/(W*H)));
 // the parts of the map that have content: Magic Kingdom and its resorts, and Epcot (the land between is left blank for now)
 const REGIONS=OSM.regions||[[0,0,W,H]],inRegion=(x,y)=>REGIONS.some(r=>x>=r[0]&&y>=r[1]&&x<=r[2]&&y<=r[3]);
+const GLOWK=.5;
 function paintMap(rx,ry,rw,rh,mss){
  const base=document.createElement('canvas'),glow=document.createElement('canvas'),blk=document.createElement('canvas');
- base.width=glow.width=Math.round(rw*mss);base.height=glow.height=Math.round(rh*mss);if(!MAP.crowns){blk.width=Math.ceil(W*HS);blk.height=Math.ceil(H*HS)}else blk.width=blk.height=1; /* the tree mask is only needed the first time */
- const c=base.getContext('2d'),e=glow.getContext('2d'),b=blk.getContext('2d');b.scale(HS,HS);for(const q of[c,e]){q.scale(mss,mss);q.translate(-rx,-ry)}c.lineJoin=c.lineCap='round';
+ base.width=Math.round(rw*mss);base.height=Math.round(rh*mss);glow.width=Math.round(rw*mss*GLOWK);glow.height=Math.round(rh*mss*GLOWK); /* the night lights are soft glows: half the sharpness is plenty and saves the memory */if(!MAP.crowns){blk.width=Math.ceil(W*HS);blk.height=Math.ceil(H*HS)}else blk.width=blk.height=1; /* the tree mask is only needed the first time */
+ const c=base.getContext('2d'),e=glow.getContext('2d'),b=blk.getContext('2d');b.scale(HS,HS);c.scale(mss,mss);e.scale(mss*GLOWK,mss*GLOWK);for(const q of[c,e])q.translate(-rx,-ry);c.lineJoin=c.lineCap='round';
  const r=seeded(4242),S2=OSM.S*.78,AREA=W*H/94e4; // S2: height foreshortening for the 3/4 view; AREA: map size relative to the park alone
  /* painterly grass */
  {let g=MAP._grass;if(!g){const gs=Math.min(.5,HS*.6),gw=W*gs|0,gh=H*gs|0;g=MAP._grass=document.createElement('canvas');g.width=gw;g.height=gh;const gx=g.getContext('2d'),im=gx.createImageData(gw,gh);

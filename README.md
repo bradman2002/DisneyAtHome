@@ -71,7 +71,7 @@ click, tap or key press starts everything.
 ## Area music
 
 Each land's background music plays as you look at it: put your copies at `audio/area-ms.mp3` (Main Street,
-which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area-fan.mp3` and `area-tom.mp3`.
+which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area-fan.mp3`, `area-tom.mp3`, and `area-ep.mp3` (plays anywhere over EPCOT).
 Neighbouring lands blend at their edges, the music fades as you zoom out over the lakes, it drops right down
 while a parade, the fireworks or the water pageant plays its own music, and it stops after closing. The Main
 Street view always plays Main Street. "Area music" in the ☰ menu sets its volume. These files are Disney's

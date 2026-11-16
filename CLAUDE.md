@@ -102,6 +102,11 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   (`ep_*` in `LANDSTYLE`), Spaceship Earth is drawn as a sphere, Mexico gets its pyramid. TV mode visits Epcot
   (three shots) and cuts, rather than glides, between the parks. Tree/shadow masks are kept at reduced scale `HS`.
   To fill in the gap later: add a region (or widen one) in `osm_extract.py` and download that area.
+- Memory (owner asked to cut browser RAM, 16 Nov 2026): close-up map layers are painted on demand and freed after
+  90 s away (`detailTick` in `map-art.js`; the park's own close-up stays); night-light (glow) canvases are half the
+  base sharpness (`GLOWK`); long music streams via `streamUrl` (`audio.js`) when the server answers byte ranges, else it
+  is fetched whole as before, and a whole-fetched ride track is freed after it fades out. The Mac launchers use
+  `tools/serve.py` (no-cache + byte ranges); `tools/serve.ps1` already did ranges. Map canvases went ~404 → ~179 MB.
 - OpenStreetMap has no usable heights for the resort landmarks, so `HEIGHTS` in `osm_extract.py` sets them.
   Misspelled names in the live data are handled with `ALIAS` there.
 - Exaggerations, like the official guide map: the castle image is drawn ~1.6× its OSM footprint width;

@@ -430,7 +430,7 @@ function syncTrack(o,a,d,moveMusic){
  if(d>0&&d<900){if(d>2){CATCHUP=true;seek(T+d,false);CATCHUP=false}else T+=d}  // simulation behind: catch it up
  else if(d<0&&d>-2)T+=d          // music slightly behind (buffering): let the simulation wait a moment
  else moveMusic()}               // anything else: put the music where the show is
-function loadTrack(audio,path){fetch(path).then(r=>r.ok?r.blob():Promise.reject(r.status)).then(b=>{audio.src=URL.createObjectURL(b);audio.load()}).catch(()=>{audio.src=path;audio.load()})}
+function loadTrack(audio,path){streamUrl(path).then(u=>{audio.src=u||path;audio.load()})} /* streamed when the server allows it (see streamUrl in audio.js); a missing file still errors, so the saved-folder copy takes over */
 function heaInit(){HEA.name=HEA_FILE;HEA.src='folder';loadTrack(HEA.audio,HEA_FILE);
  HEA.audio.addEventListener('error',()=>{if(HEA.src==='folder'){HEA.src='none';HEA.name='';HEA.ready=false;svBadge();heaLoadSaved()}})}
 heaInit();

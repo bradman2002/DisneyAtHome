@@ -86,11 +86,12 @@ function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(
    the fireworks or the water pageant has its own music playing, and stops after the park closes.
    The files are long (25 to 60 minutes) and simply loop; each keeps its place while it is silent. A missing file is
    skipped. */
-const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3'};
+const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT */
 const AM={el:{},vol:{},bad:{}};
 function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(T<OPEN*3600-1800||T>CLOSE*3600+900)return t;
  if(SV.on){t.ms=1;return t}
+ if(typeof EPCOT!=='undefined'&&EPCOT&&cam.x>EPR[0]-250&&cam.x<EPR[2]+250&&cam.y>EPR[1]-250&&cam.y<EPR[3]+250){t.ep=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over EPCOT: its one loop, fading as you zoom out */
  /* nearness of each land's centre to the middle of the screen; the nearest dominates, and everything fades as you zoom out */
  const zoom=Math.max(0,Math.min(1,(cam.m-.55)/.9)),w={};let sum=0,top=0;
  for(const k in AREA){const L=LANDS[k];if(!L)continue;let d=Math.hypot(cam.x-L[1],cam.y-L[2]);if(k==='ms'&&LANDS.hub)d=Math.min(d,Math.hypot(cam.x-LANDS.hub[1],cam.y-LANDS.hub[2])*.8); /* the hub in front of the castle plays Main Street's music, as in the park */
@@ -162,17 +163,27 @@ function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monor
  let top=null;for(const k in t)if(t[k]>.02&&(!top||t[k]>t[top]))top=k;for(const k in t)if(k!==top)t[k]=0;return t}
 /* One shared player for all ride audio (only one ride is heard at a time anyway). iPhones only let a page start an audio
    player in response to a tap, so this one player is unlocked on your first tap (unlockRide) and then reused for every
-   ride and the monorail by swapping in each recording. Each recording is fetched whole once (so it can start anywhere);
+   ride and the monorail by swapping in each recording. Each recording streams (or, where the server cannot stream, is fetched whole and let go after it fades out);
    switching rides fades the current one out first, then the next one fades in from where it was (or, the first time or
    after ten minutes away, from a random point). */
+/* Long music is streamed when the server allows it (it answers byte-range requests, as GitHub Pages and the launchers'
+   tools/serve.py do): the player reads it straight from the server and can jump anywhere, without the whole file sitting in
+   memory. Otherwise the whole file is fetched once into memory (a blob), which also lets it start anywhere. Resolves to
+   the URL to play, or null when the file isn't there. */
+const STREAMS={};
+async function streamUrl(path){if(STREAMS[path])return path;try{const r=await fetch(path,{headers:{Range:'bytes=0-1'},cache:'no-store'});
+  if(r.status===206){STREAMS[path]=1;try{r.body&&r.body.cancel()}catch(e){}return path}if(r.ok)return URL.createObjectURL(await r.blob())}catch(e){}return null}
 const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
-RA.pos={};RA.url={};RA.cur=null;RA.lvl=0;RA.loading=null;
+RA.pos={};RA.url={};RA.tmp={};RA.cur=null;RA.lvl=0;RA.loading=null;
 function rideEl(){if(!RA.one){const a=RA.one=new Audio();a.loop=true;a.preload='auto'}return RA.one}
 function unlockRide(){const a=rideEl();if(RA.cur||RA.unlocked)return;try{a.src=SILENT;const p=a.play();if(p&&p.then)p.then(()=>{RA.unlocked=true;if(!RA.cur)a.pause()}).catch(()=>{})}catch(e){}}
-async function rideUrl(k){if(RA.url[k])return RA.url[k];try{const r=await fetch('audio/ride-'+k+'.mp3');if(!r.ok)throw 0;RA.url[k]=URL.createObjectURL(await r.blob())}catch(e){const b=await rideSaved(k);if(b)RA.url[k]=URL.createObjectURL(b);else RA.bad[k]=1}return RA.url[k]}
+async function rideUrl(k){if(RA.url[k])return RA.url[k];const u=await streamUrl('audio/ride-'+k+'.mp3');
+ if(u){RA.url[k]=u;if(u.startsWith('blob:'))RA.tmp[k]=1}else{const b=await rideSaved(k);if(b){RA.url[k]=URL.createObjectURL(b);RA.tmp[k]=1}else RA.bad[k]=1}return RA.url[k]}
+/* a ride recording held whole in memory is let go once it has faded out (it is fetched again next time); streamed ones cost nothing to keep */
+function rideFree(k){if(!RA.tmp[k])return;URL.revokeObjectURL(RA.url[k]);delete RA.url[k];delete RA.tmp[k];const a=rideEl();a.src=SILENT}
 function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id)),
   base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?.25:1);let top=null;for(const k in t)if(t[k]>0&&!RA.bad[k])top=k;const a=rideEl();
- if(RA.cur&&RA.cur!==top){RA.lvl*=.85;if(RA.lvl<.01){RA.pos[RA.cur]=a.currentTime;RA.heard[RA.cur]=Date.now();a.pause();RA.cur=null;RA.lvl=0}} /* fade the old one out first */
+ if(RA.cur&&RA.cur!==top){RA.lvl*=.85;if(RA.lvl<.01){RA.pos[RA.cur]=a.currentTime;RA.heard[RA.cur]=Date.now();a.pause();rideFree(RA.cur);RA.cur=null;RA.lvl=0}} /* fade the old one out first */
  else if(!RA.cur&&top&&RA.loading!==top){const k=top;RA.loading=k;rideUrl(k).then(u=>{if(RA.loading!==k)return;RA.loading=null;if(!u||RA.cur)return;
    const fresh=!(k in RA.pos)||Date.now()-(RA.heard[k]||0)>10*60e3;a.src=u;RA.cur=k;RA.lvl=0;setVol(a,0);
    a.addEventListener('loadedmetadata',()=>{if(RA.cur!==k)return;a.currentTime=fresh&&isFinite(a.duration)?Math.random()*a.duration:RA.pos[k]||0;a.play().catch(()=>{})},{once:true})})}

@@ -43,6 +43,8 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   land (the hub counts as Main Street), ducked under show music, volume `AU.v.music`.
   Always set a music player's level with `setVol(a,v)`, never `a.volume`: iPhones ignore `volume`, so `setVol`
   routes the player through a Web Audio gain node.
+- Ride audio uses ONE shared audio element (`RA.one`), unlocked on the first tap (`unlockRide`, called from `soundKick`
+  and `tvStart`), because iPhones only allow players started from a tap. Only one ride plays at a time.
 - Ride audio (`RIDEAUD`, `rideTick` in `audio.js`): `audio/ride-<key>.mp3` fades in when the camera is zoomed in close to
   that ride (TV mode has shots for them) or its sheet is open, only while it runs; area music steps aside via
   `rideLevel`. Files are the owner's copies, git-ignored like the other Disney audio. `ride-monorail.mp3` is the monorail's

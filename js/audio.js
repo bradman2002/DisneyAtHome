@@ -123,7 +123,7 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
   else if(nm==='let-the-magic-begin.mp3'){key='welcome';use=()=>{WELC.a.src='picked';WELC.a.audio.src=URL.createObjectURL(f);WELC.a.audio.load()}}
   else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
   else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.id;use=()=>parUse(P,f,f.name)}
-   else if(/^ride-(\w+)\.mp3$/.test(nm)){const k=/^ride-(\w+)\.mp3$/.exec(nm)[1];key='ride-'+k;use=()=>{const a=RA.el[k];RA.bad[k]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}
+   else if(/^ride-(\w+)\.mp3$/.test(nm)){const k=/^ride-(\w+)\.mp3$/.exec(nm)[1];key='ride-'+k;use=()=>{RA.bad[k]=0;RA.url[k]=URL.createObjectURL(f)}}
    else{const m=/^area-(\w+)\.mp3$/.exec(nm);if(m&&AREA[m[1]]){key='area-'+m[1];use=()=>{const a=AM.el[m[1]];AM.bad[m[1]]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}}}
   if(!key)continue;st(`Saving ${f.name}…`);try{await saveFile(key,f);use();n++}catch(e){miss++;console.warn('Could not keep',f.name,e)}}
  st(n?`${n} file${n>1?'s':''} kept in this browser${miss?` · ${miss} could not be saved (not enough space?)`:''}.`:'No matching audio files in that folder.');toast(n?'Audio saved in this browser':'No matching audio files found')}
@@ -133,7 +133,7 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
    anywhere, with a small reminder on screen until then. */
 function soundRunning(){return AU.ctx&&AU.ctx.state==='running'}
 function soundHint(){const h=$('#sndHint');if(h)h.hidden=soundRunning()||AU.mute}
-function soundKick(){if(!AU.ctx){auInit();return}AU.ctx.resume().then(soundHint);for(const k in AM.el){const a=AM.el[k];if(a&&a.volume>.004&&a.paused)a.play().catch(()=>{})}}
+function soundKick(){unlockRide();if(!AU.ctx){auInit();return}AU.ctx.resume().then(soundHint);for(const k in AM.el){const a=AM.el[k];if(a&&a.volume>.004&&a.paused)a.play().catch(()=>{})}}
 function soundAuto(){auInit();setTimeout(soundHint,1500);
  const once=()=>{soundKick();if(soundRunning()||AU.ctx)setTimeout(()=>{if(soundRunning()){for(const e of['pointerdown','keydown','touchend'])removeEventListener(e,once,true)}soundHint()},300)};
  for(const e of['pointerdown','keydown','touchend'])addEventListener(e,once,true)}
@@ -145,7 +145,7 @@ function soundAuto(){auInit();setTimeout(soundHint,1500);
    plays while the ride is running. Each track keeps its place, but starts from the top if it hasn't been heard for ten
    minutes, when it jumps to a random spot, so you drop in partway through as if walking up to the ride. To add a ride, put its file in audio/ and add a line to RIDEAUD. */
 const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirates','"it\'s a small world"':'smallworld','Space Mountain':'spacemtn','Tomorrowland Transit Authority PeopleMover':'peoplemover'};
-const RA={el:{},vol:{},bad:{},heard:{}};let rideLevel=0;
+const RA={bad:{},heard:{}};let rideLevel=0;
 const rideAt=a=>a&&RIDEAUD[a.osm];
 async function rideSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('ride-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 let MONOHOVER=false; /* the mouse is over a monorail (set in ui.js) */
@@ -160,13 +160,23 @@ function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monor
  /* only one ride (or the monorail) is heard at a time: the one you're closest to, or tapped. Neighbouring rides
     (Haunted Mansion and small world are next door to each other) would otherwise play over each other */
  let top=null;for(const k in t)if(t[k]>.02&&(!top||t[k]>t[top]))top=k;for(const k in t)if(k!==top)t[k]=0;return t}
+/* One shared player for all ride audio (only one ride is heard at a time anyway). iPhones only let a page start an audio
+   player in response to a tap, so this one player is unlocked on your first tap (unlockRide) and then reused for every
+   ride and the monorail by swapping in each recording. Each recording is fetched whole once (so it can start anywhere);
+   switching rides fades the current one out first, then the next one fades in from where it was (or, the first time or
+   after ten minutes away, from a random point). */
+const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+RA.pos={};RA.url={};RA.cur=null;RA.lvl=0;RA.loading=null;
+function rideEl(){if(!RA.one){const a=RA.one=new Audio();a.loop=true;a.preload='auto'}return RA.one}
+function unlockRide(){const a=rideEl();if(RA.cur||RA.unlocked)return;try{a.src=SILENT;const p=a.play();if(p&&p.then)p.then(()=>{RA.unlocked=true;if(!RA.cur)a.pause()}).catch(()=>{})}catch(e){}}
+async function rideUrl(k){if(RA.url[k])return RA.url[k];try{const r=await fetch('audio/ride-'+k+'.mp3');if(!r.ok)throw 0;RA.url[k]=URL.createObjectURL(await r.blob())}catch(e){const b=await rideSaved(k);if(b)RA.url[k]=URL.createObjectURL(b);else RA.bad[k]=1}return RA.url[k]}
 function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id)),
-  base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?.25:1);let top=0;
- for(const k in t){if(RA.bad[k])continue;const want=t[k]*base,v=RA.vol[k]=(RA.vol[k]||0)+(want-(RA.vol[k]||0))*.06;top=Math.max(top,t[k]);let a=RA.el[k];
-  if(v>.006){if(!a){a=RA.el[k]=new Audio();a.loop=true;a.preload='auto';loadTrack(a,'audio/ride-'+k+'.mp3'); /* fetched whole, so it can jump to any point even on a simple local server */a.addEventListener('loadedmetadata',()=>{if(isFinite(a.duration)&&!a.dataset.placed){a.dataset.placed=1;a.currentTime=Math.random()*a.duration}}); /* first time: start somewhere random */
-     
-     a.addEventListener('error',()=>{if(a.dataset.saved){RA.bad[k]=1;return}a.dataset.saved=1;rideSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else RA.bad[k]=1})})}
-   if(a.paused){if(RA.heard[k]&&Date.now()-RA.heard[k]>10*60e3&&a.readyState>0&&isFinite(a.duration))a.currentTime=Math.random()*a.duration;a.play().catch(()=>{})} /* back after a while: a fresh random spot */setVol(a,v);RA.heard[k]=Date.now()}
-  else if(a&&!a.paused){setVol(a,0);a.pause()}}
- rideLevel+=(top-rideLevel)*.06} /* how much the land music should step aside */
+  base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?.25:1);let top=null;for(const k in t)if(t[k]>0&&!RA.bad[k])top=k;const a=rideEl();
+ if(RA.cur&&RA.cur!==top){RA.lvl*=.85;if(RA.lvl<.01){RA.pos[RA.cur]=a.currentTime;RA.heard[RA.cur]=Date.now();a.pause();RA.cur=null;RA.lvl=0}} /* fade the old one out first */
+ else if(!RA.cur&&top&&RA.loading!==top){const k=top;RA.loading=k;rideUrl(k).then(u=>{if(RA.loading!==k)return;RA.loading=null;if(!u||RA.cur)return;
+   const fresh=!(k in RA.pos)||Date.now()-(RA.heard[k]||0)>10*60e3;a.src=u;RA.cur=k;RA.lvl=0;setVol(a,0);
+   a.addEventListener('loadedmetadata',()=>{if(RA.cur!==k)return;a.currentTime=fresh&&isFinite(a.duration)?Math.random()*a.duration:RA.pos[k]||0;a.play().catch(()=>{})},{once:true})})}
+ else if(RA.cur&&RA.cur===top){RA.lvl+=(t[top]*base-RA.lvl)*.06;if(a.paused&&a.readyState>0)a.play().catch(()=>{});RA.heard[top]=Date.now()}
+ if(RA.cur)setVol(a,RA.lvl);
+ rideLevel+=((top?t[top]:0)-rideLevel)*.06} /* how much the land music should step aside */
 setInterval(rideTick,120);

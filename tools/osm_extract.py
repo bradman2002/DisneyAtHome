@@ -260,6 +260,13 @@ out['routes']={'rail':[R1(q) for q in simplify(RRP,.4)],'parade':[R1(q) for q in
  'tram':[R1(q) for q in simplify(rel_chain('Horse Drawn Street Car'),.4)],
  'ferry':[R1(q) for q in simplify(chain([wid for wid,w in WAYS.items() if w['t'].get('name')=='Magic Kingdom - TTC' and w['t'].get('route')=='ferry']),.5)],
  'launch':[R1(q) for q in simplify(chain([wid for wid,w in WAYS.items() if w['t'].get('name','').startswith('Magic Kingdom - Grand Floridian') and w['t'].get('route')=='ferry']),.5)]}
+# the Jungle Cruise boats' own route: an unnamed ferry route lying inside the Jungle Cruise river
+jr=next((rl for rl in RELS if rl['t'].get('name')=='Jungle Cruise' and rl['t'].get('natural')=='water'),None)
+if jr:
+    rings=rings_from([ref for ty,ref,role in jr['m'] if ty=='way' and role in('outer','')]);outer=max(rings,key=len) if rings else []
+    jw=[wid for wid,w in WAYS.items() if w['t'].get('route')=='ferry' and not w['t'].get('name') and len(w['ids'])>4 and outer and sum(inside(ND[i],outer) for i in w['ids'])>.8*len(w['ids'])]
+    out['routes']['jungle']=[R1(q) for q in simplify(chain(jw),.3)]
+    print('jungle cruise route ways',jw,len(out['routes']['jungle']),'pts')
 for k,v in out['routes'].items(): print('route',k,len(v),'pts', v[0] if v else None, v[-1] if v else None)
 # monorail: the line through Magic Kingdom station (choose the two long ways and join through the station)
 # beams to paint: every monorail way except the stretch inside the Contemporary (tunnel=yes)

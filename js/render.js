@@ -21,9 +21,8 @@ const VW=1000,VH=940;
 const baseZ=()=>{const fit=Math.min(cw/VW,ch/VH);return cw<ch?Math.max(fit,Math.min(cw/VW*1.7,ch/VH)):fit};
 const minM=()=>Math.min(1,Math.min(cw/W,ch/H)/baseZ()); // furthest out: the whole resort area on screen
 const zf=()=>baseZ()*cam.m;
-/* map point → screen, in step with the map's whole-pixel camera, and itself rounded to a whole device pixel, so the
-   callouts, pins and labels move with the map instead of shimmering between pixels */
-const toS=(x,y)=>{const z=zf(),d=dpr||1,ox=Math.round(d*(cw/2-cam.x*z)),oy=Math.round(d*(ch/2-cam.y*z));return[Math.round(x*z*d+ox)/d,Math.round(y*z*d+oy)/d]};
+/* map point → screen, exactly in step with the map, so callouts and pins glide with it */
+const toS=(x,y)=>{const z=zf();return[(x-cam.x)*z+cw/2,(y-cam.y)*z+ch/2]};
 const toW=(sx,sy)=>{const z=zf();return[(sx-cw/2)/z+cam.x,(sy-ch/2)/z+cam.y]};
 function clampCam(){const z=zf(),hw=cw/2/z,hh=ch/2/z;for(const k of['x','tx']){cam[k]=hw*2>=W?W/2:Math.max(hw,Math.min(W-hw,cam[k]))}for(const k of['y','ty']){cam[k]=hh*2>=H?H/2:Math.max(hh,Math.min(H-hh,cam[k]))}}
 /* glow sprite */
@@ -40,7 +39,7 @@ function frame(rdt){
  heaSync();
  const z=zf(),now=performance.now();
  cx.setTransform(1,0,0,1,0,0);cx.fillStyle='#9fc46e';cx.fillRect(0,0,cv.width,cv.height);
- cx.setTransform(dpr*z,0,0,dpr*z,Math.round(dpr*(cw/2-cam.x*z)),Math.round(dpr*(ch/2-cam.y*z))); /* snapped to whole pixels, so a slowly drifting camera doesn't make the picture shimmer */
+ cx.setTransform(dpr*z,0,0,dpr*z,dpr*(cw/2-cam.x*z),dpr*(ch/2-cam.y*z)); /* not snapped to whole pixels: a slow pan then glides instead of stepping */
  const vis=d=>d.base&&z*dpr>MAP.mss*1.15&&d.x<cam.x+cw/2/z&&d.x+d.w>cam.x-cw/2/z&&d.y<cam.y+ch/2/z&&d.y+d.h>cam.y-ch/2/z; // sharper close-up layers, once painted
  cx.drawImage(MAP.base,0,0,W,H);for(const d of MAP.detail)if(vis(d))cx.drawImage(d.base,d.x,d.y,d.w,d.h);
  drawLive(now);
@@ -79,13 +78,17 @@ const TRONP=(()=>{const{cv}=tronParts();if(!cv)return null;
  return pts.length>3?mkPath(pts):null})();
 const PMP=mkPath(OSM.routes.pm),RACEP=mkPath(OSM.routes.race),TRAMP=mkPath(OSM.routes.tram);
 // Jungle Cruise: boats follow the river, a little inside its outer bank
-const JCP=(()=>{const a=OSM.areas.find(q=>q.k==='water'&&q.n==='Jungle Cruise');if(!a)return null;const[cx0,cy0]=polyC(a.o);return mkPath([...a.o,a.o[0]].map(([x,y])=>[x+(cx0-x)*.14,y+(cy0-y)*.14]))})();
+const JCP=OSM.routes.jungle&&OSM.routes.jungle.length>3?mkPath(OSM.routes.jungle):(()=>{const a=OSM.areas.find(q=>q.k==='water'&&q.n==='Jungle Cruise');if(!a)return null;const[cx0,cy0]=polyC(a.o);return mkPath([...a.o,a.o[0]].map(([x,y])=>[x+(cx0-x)*.14,y+(cy0-y)*.14]))})();
 /* Where each ride's queue is drawn: along its real queue path when the map data has one by the entrance, otherwise back
    along the walkway from the entrance. Two abreast. */
 const QLINE=AT.map(a=>{let best=null,bd=40*40;for(const p of OSM.paths){if(!p.q||p.a||p.p.length<2)continue;for(const e of[0,p.p.length-1]){const d=(p.p[e][0]-a.dx)**2+(p.p[e][1]-a.dy)**2;if(d<bd){bd=d;best=e?p.p.slice().reverse():p.p}}}
  if(best){const L=mkPath(best);if(L.L>12)return L}
  const pts=[N[a.nd]];let prev=-1,cur=a.nd;for(let h=0;h<4;h++){const nx=ADJ[cur].filter(([v])=>v!==prev).sort((p,q)=>q[1]-p[1])[0];if(!nx)break;prev=cur;cur=nx[0];pts.push(N[cur])}
  return mkPath(pts.length>1?pts:[N[a.nd],[N[a.nd][0]+20,N[a.nd][1]]])});
+/* the Town Square flagpole and its flag; drawn after the guests so the crowd at its foot doesn't hide it */
+function drawFlag(now){const fp=P_.flagpole||[P_.townsq[0],P_.townsq[1]-6],x=fp[0],y=fp[1],up=flagUp(); /* the Town Square flagpole: the flag flies all day and comes down during the anthem at the Flag Retreat */
+   cx.fillStyle='rgba(30,40,30,.25)';cx.fillRect(x+.4,y,5,.8);cx.fillStyle='#e9e9ee';cx.fillRect(x-.3,y-26,.6,26);cx.fillStyle='#f2c444';cx.beginPath();cx.arc(x,y-26.4,.8,0,7);cx.fill();
+   if(up>0){const fy=y-26+(1-up)*20,wv=Math.sin(now/260)*.6;cx.fillStyle='#c8323a';cx.beginPath();cx.moveTo(x+.3,fy);cx.lineTo(x+8,fy+.6+wv);cx.lineTo(x+8,fy+4.6+wv);cx.lineTo(x+.3,fy+4);cx.fill();cx.fillStyle='#fff';cx.fillRect(x+.3,fy+1.2,7.4,.8);cx.fillRect(x+.3,fy+2.8,7.4,.8);cx.fillStyle='#2f4f9a';cx.fillRect(x+.3,fy,3.2,2)}}
 function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600;
  // spinning rides
  for(const a of SPIN){const run=aStat(a)==='Operating'&&a.ri.length>0,ang=run?t*1.4:0;for(let i=0;i<8;i++){const q=ang+i/8*6.283,x=a.x+Math.cos(q)*12,y=a.y+Math.sin(q)*5.5-(run?4:0);
@@ -119,17 +122,14 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
    cx.fillStyle='#223';if(k===0)cx.fillRect(1.6,-2.2,2.4,3.2);else if(k===5)cx.fillRect(-4,-2.2,2.4,3.2);else cx.fillRect(-3.2,-2,6.4,1.5);cx.restore()}}
  drawPageant(now,0);
  // resort launches
- if(h>8.5&&h<23)for(const b of LAUNCH){const R=BOATR[b.r],[x,y,an]=R.p.at(Math.min(b.x,R.p.L-.01));cx.save();cx.translate(x,y);cx.rotate(an+(b.dir<0&&!R.loop?Math.PI:0));if(b.tm<=0){cx.fillStyle='rgba(255,255,255,.5)';cx.beginPath();cx.moveTo(-6,0);cx.lineTo(-18,-3);cx.lineTo(-18,3);cx.fill()}
+ if(h>8.5&&h<23)for(const b of LAUNCH){const R=BOATR[b.r];let[x,y,an]=R.p.at(Math.min(b.x,R.p.L-.01));if(!R.loop){const o=b.dir*5*Math.sin(Math.PI*b.x/R.p.L);x-=Math.sin(an)*o;y+=Math.cos(an)*o} /* boats going opposite ways keep to their own side */cx.save();cx.translate(x,y);cx.rotate(an+(b.dir<0&&!R.loop?Math.PI:0));if(b.tm<=0){cx.fillStyle='rgba(255,255,255,.5)';cx.beginPath();cx.moveTo(-6,0);cx.lineTo(-18,-3);cx.lineTo(-18,3);cx.fill()}
    cx.fillStyle='#fbf8f0';cx.beginPath();cx.moveTo(-7,-2.6);cx.lineTo(5,-2.6);cx.lineTo(8,0);cx.lineTo(5,2.6);cx.lineTo(-7,2.6);cx.fill();cx.fillStyle=R.col;cx.fillRect(-5,-2.6,9,5.2);cx.fillStyle='#f4e7b8';cx.fillRect(-4,-1.6,7,3.2);cx.restore()}
- for(const f of FERRY){const[x,y,an]=FER.at(f.p*FER.L);cx.save();cx.translate(x,y);cx.rotate(an+(f.dir<0?Math.PI:0));if(f.st==='run'){cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.moveTo(-16,0);cx.lineTo(-44,-6);cx.lineTo(-44,6);cx.fill()}
+ for(const f of FERRY){const[x,y,an]=ferXY(f);cx.save();cx.translate(x,y);cx.rotate(an+(f.dir<0?Math.PI:0));if(f.st==='run'){cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.moveTo(-16,0);cx.lineTo(-44,-6);cx.lineTo(-44,6);cx.fill()}
   cx.fillStyle='#fbf8f0';cx.beginPath();cx.moveTo(-18,-6);cx.lineTo(14,-6);cx.lineTo(20,0);cx.lineTo(14,6);cx.lineTo(-18,6);cx.fill();cx.fillStyle='#3a7bd5';cx.fillRect(-18,3,32,2);cx.fillStyle='#fff';cx.fillRect(-10,-4,18,7);cx.fillStyle='#c9463d';cx.fillRect(-3,-7,3,5);cx.restore()}
  for(const b of BUS){const[bx,by2,ba]=busXY(b);cx.save();cx.translate(bx,by2);cx.rotate(ba);cx.fillStyle='#fff';cx.fillRect(-8,-2.6,16,5.2);cx.fillStyle='#3a7bd5';cx.fillRect(-8,1,16,1.2);cx.fillStyle='#9fd0ff';for(let i=0;i<4;i++)cx.fillRect(-6.5+i*3.4,-1.8,2.4,1.6);cx.restore()}
  {const w=EV.find(e=>e.id==='welcome'),fl=EV.find(e=>e.id==='flag');
   if(w&&w.ph==='live'){const s=OSM.S*2.1;WELCOME_CAST.forEach((who,i)=>drawChar(cx,s,(P_.stage[0]+(i-(WELCOME_CAST.length-1)/2)*7)/s,(P_.stage[1]+2)/s,who,t)); // the welcome show: the characters on the castle stage,
    if(w.p>.9&&w._pop!==w.key){w._pop=w.key;for(let i=0;i<7;i++)launch([0,i%2?'peony':'chrys',(i-3)/3.4,.35+Math.random()*.4,[45,200,330,120][i%4],.8])}} // and a burst of daytime fireworks as the park opens
-  {const fp=P_.flagpole||[P_.townsq[0],P_.townsq[1]-6],x=fp[0],y=fp[1],up=flagUp(); /* the Town Square flagpole: the flag flies all day and comes down during the anthem at the Flag Retreat */
-   cx.fillStyle='rgba(30,40,30,.25)';cx.fillRect(x+.4,y,5,.8);cx.fillStyle='#e9e9ee';cx.fillRect(x-.3,y-26,.6,26);cx.fillStyle='#f2c444';cx.beginPath();cx.arc(x,y-26.4,.8,0,7);cx.fill();
-   if(up>0){const fy=y-26+(1-up)*20,wv=Math.sin(now/260)*.6;cx.fillStyle='#c8323a';cx.beginPath();cx.moveTo(x+.3,fy);cx.lineTo(x+8,fy+.6+wv);cx.lineTo(x+8,fy+4.6+wv);cx.lineTo(x+.3,fy+4);cx.fill();cx.fillStyle='#fff';cx.fillRect(x+.3,fy+1.2,7.4,.8);cx.fillRect(x+.3,fy+2.8,7.4,.8);cx.fillStyle='#2f4f9a';cx.fillRect(x+.3,fy,3.2,2)}}
   if(fl&&fl.ph==='live'){const fp=P_.flagpole||P_.townsq;for(let i=0;i<6;i++){cx.fillStyle=i%2?'#c0392b':'#f4f0e6';cx.fillRect(fp[0]-13+i*4.4,fp[1]+9+Math.sin(now/180+i)*.8,2.4,3)}}} /* the band, in front of the flagpole */
  if(EV[2].ph==='live')for(let i=0;i<6;i++){cx.fillStyle=i%2?'#c0392b':'#f4f0e6';cx.fillRect(P_.townsq[0]-13+i*4.4,P_.townsq[1]+Math.sin(now/180+i)*.8,2.4,3)}
  // guests
@@ -147,6 +147,7 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
   const d=lod?Math.max(2.2,2/z):1.7;
   if(!lod){cx.fillStyle='rgba(30,40,30,.25)';for(const b of GB)for(let i=0;i<b.length;i+=2)cx.fillRect(b[i]-.35,b[i+1]+.45,d+.5,.8)}
   for(let c=0;c<6;c++){cx.fillStyle=SHIRT[c];const b=GB[c];for(let i=0;i<b.length;i+=2)cx.fillRect(b[i]-d/2,b[i+1]-d/2-.6,d,d)}}
+ drawFlag(now);
  // parade: floats and performers on the real route, above the crowd
  drawParadeMap(now)}
 /* ---------- screen-space overlays: land labels, callouts, pins ---------- */
@@ -203,5 +204,5 @@ function drawOverlays(z,now){BUB=[];const c=cx;c.setTransform(dpr,0,0,dpr,0,0);c
    if(it.k==='r'){const n=RESORTS[it.i].n.replace('Disney’s ','').replace(/ Resort.*/,'').replace('Transportation and Ticket Center','Ticket Center').replace(' Station','');c.font='700 11px "Nunito Sans",Figtree,system-ui,sans-serif';c.strokeStyle='rgba(20,30,50,.75)';c.lineWidth=3;c.strokeText(n,sx,sy+31);c.fillStyle='#fff';c.fillText(n,sx,sy+31)}}}
  // selection ring on the map
  if(sel&&(sel.k==='l'||sel.k==='m'||sel.k==='f'||sel.k==='r'||sel.k==='w'||sel.k==='g')){const p=selPos(sel);if(p){const[sx,sy]=toS(p[0],p[1]);c.strokeStyle='#1a8fd6';c.lineWidth=2.5;c.beginPath();c.arc(sx,sy,18+2*Math.sin(now/250),0,7);c.stroke()}}}
-function vehPos(s){if(s.k==='g')return s.g.st===7?null:[s.g.x,s.g.y];if(s.k==='w')return ewpCentre()||(EWP.spot&&EWP.spot[(ewpNext()||EWP.shows[0]).k])||null;if(s.k==='parade'){const u=paradeUnits();return u.length?[u[0].x,u[0].y]:PR.at(0).slice(0,2)}if(s.k==='m')return monoXY(MONO[s.i]).slice(0,2);if(s.k==='f')return FER.at(FERRY[s.i].p*FER.L).slice(0,2);return null}
+function vehPos(s){if(s.k==='g')return s.g.st===7?null:[s.g.x,s.g.y];if(s.k==='w')return ewpCentre()||(EWP.spot&&EWP.spot[(ewpNext()||EWP.shows[0]).k])||null;if(s.k==='parade'){const u=paradeUnits();return u.length?[u[0].x,u[0].y]:PR.at(0).slice(0,2)}if(s.k==='m')return monoXY(MONO[s.i]).slice(0,2);if(s.k==='f')return ferXY(FERRY[s.i]).slice(0,2);return null}
 function selPos(s){if(s.k==='a')return[AT[s.i].x,AT[s.i].y];if(s.k==='v')return[VN[s.i].x,VN[s.i].y];if(s.k==='l')return[LANDS[s.i][1],LANDS[s.i][2]];if(s.k==='r')return RESORTS[s.i].c;if(s.k==='e')return EVPOS[s.i];return vehPos(s)}

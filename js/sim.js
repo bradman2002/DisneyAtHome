@@ -89,6 +89,9 @@ const DWELL=s=>s==='mk'?45:s==='ttc'?60:35;
 // trains heading for a station, soonest first: [{m, t seconds}]
 function monoEta(stop){const out=[];for(const m of MONO){const l=MLINE[m.l],si=l.stops.indexOf(stop),L=l.p.L;if(si<0)continue;if(m.st==='dwell'&&m.at===si){out.push({m,t:0});continue}
   const gap=((l.sd[si]-m.x)%L+L)%L;let t=(m.st==='dwell'?m.tm:0)+gap/MSPEED;l.sd.forEach((d,j)=>{const g=((d-m.x)%L+L)%L;if(j!==si&&g>.5&&g<gap)t+=DWELL(l.stops[j])});out.push({m,t})}return out.sort((a,b)=>a.t-b.t)}
+/* where a ferry is drawn: on the route, but out to its own side (keeping right) in mid-lagoon, so two boats
+   crossing in opposite directions pass each other instead of sailing through one another */
+function ferXY(f){const[x,y,an]=FER.at(f.p*FER.L),o=f.dir*9*Math.sin(Math.PI*f.p);return[x-Math.sin(an)*o,y+Math.cos(an)*o,an]}
 const MSPEED=14,monoXY=(m,off)=>{const l=MLINE[m.l].p;return l.at((((m.x+(off||0))%l.L)+l.L)%l.L)};
 /* Resort boats (shown only; no guests modelled), each on its real route: the launch that circles Magic Kingdom, the Grand
    Floridian and the Polynesian; the boats from Magic Kingdom to Fort Wilderness and to Wilderness Lodge; and the launch
@@ -190,7 +193,7 @@ function spot0(ev,g){ // [x, y, (walk-graph node, filled in by spot), distance a
    for(let i=0;i<4;i++){const d=PR.L*(.08+.88*R()**.75);if(d<head)continue;const[x,y,a]=PR.at(d),dd=(x-g.x)**2+(y-g.y)**2;if(dd<bd){bd=dd;best=[d,x,y,a]}}
    if(!best)return null;const[d,x,y,a]=best,o=(R()<.5?-1:1)*(6.5+rr(0,1.2+4.8*f));return near(x-Math.sin(a)*o,y+Math.cos(a)*o,d)}
   case'castle':case'welcome':return near(P_.stage[0]+rr(-34,34),P_.stage[1]+rr(14,22+26*f));
-  case'flag':{const fp=P_.flagpole||P_.townsq,k=.4+.6*f;return near(fp[0]+rr(-20,20)*k,fp[1]+rr(-8,18)*k)}
+  case'flag':{const fp=P_.flagpole||P_.townsq,a=rr(0,6.283),d=7+rr(0,14)*(.4+.6*f);return near(fp[0]+Math.cos(a)*d,fp[1]+Math.sin(a)*d*.8+3)} /* around the pole, leaving it clear */
   case'band':{const k=.4+.6*f;return near(P_.townsq[0]+rr(-22,22)*k,P_.townsq[1]+rr(-14,14)*k)}
   default:{const k=.35+.65*f;if(R()<.55)return near(P_.hub[0]+rr(-55,55)*k,P_.hub[1]+rr(-40,45)*k);const d=rr(0,1)*Math.min(1,.25+f);return near(P_.hub[0]+rr(-11,11),P_.hub[1]+50+d*(P_.townsq[1]-P_.hub[1]-60))}}}
 // a guest's moment to head for the show has come

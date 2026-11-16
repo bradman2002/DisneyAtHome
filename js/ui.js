@@ -110,7 +110,7 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{const s=b.dat
 let drag=null;const ptr=new Map();
 function hitMap(x,y){const z=zf(),r=16/Math.min(z,2);let b=null,bd=r;for(const a of AT){const d=Math.hypot(a.x-x,a.y-y);if(d<bd){bd=d;b={k:'a',i:a.i}}}for(const v of VN){const d=Math.hypot(v.x-x,v.y-y);if(d<Math.min(bd,12)){bd=d;b={k:'v',i:v.i}}}
  for(const k in RESORTS){const c=RESORTS[k].c;if(!b&&Math.hypot(c[0]-x,c[1]-y)<Math.max(26,20/z))b={k:'r',i:k}}
- MONO.forEach((m,i)=>{const p=monoXY(m);if(Math.hypot(p[0]-x,p[1]-y)<30)b={k:'m',i}});FERRY.forEach((f,i)=>{const p=FER.at(f.p*FER.L);if(Math.hypot(p[0]-x,p[1]-y)<26)b={k:'f',i}});
+ MONO.forEach((m,i)=>{const p=monoXY(m);if(Math.hypot(p[0]-x,p[1]-y)<30)b={k:'m',i}});FERRY.forEach((f,i)=>{const p=ferXY(f);if(Math.hypot(p[0]-x,p[1]-y)<26)b={k:'f',i}});
  {const st=ewpState(T);if(st)for(let i=0;i<EWP.N;i++){const p=ewpBarge(st,i);if(p&&Math.hypot(p[0]-x,p[1]-4-y)<9)b={k:'w',i:0}}}
  if(!b&&z>1.5){let bd=4.5;for(const g of guests){if(g.st===1||g.st===2||g.st===3)continue;const d=Math.hypot(g.x-x,g.y-y);if(d<bd){bd=d;b={k:'g',g}}}} /* zoomed in: tap a party to see what they are up to */
  if(!b){let d0=110;for(const k in LANDS){const L=LANDS[k],d=Math.hypot(L[1]-x,L[2]-y);if(d<d0&&k!=='hub'){d0=d;b={k:'l',i:k}}}}return b}

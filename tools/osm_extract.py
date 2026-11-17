@@ -3,7 +3,8 @@ loop, the Transportation and Ticket Center, the monorail resorts, and Bay Lake w
 Island and the Fort Wilderness marina) into js/park-osm.js for the simulator.
 Map units: metres * S on a W x H canvas (north up, x east, y south).
 
-Input: map.osm in the current folder, plus epcot.osm for Epcot if present (Overpass bbox 28.3590,-81.5620,28.3810,-81.5360).
+Input: map.osm in the current folder, plus epcot.osm for Epcot if present (Overpass bbox 28.3590,-81.5620,28.3810,-81.5360),
+and gap.osm for all the land between and around them (bbox 28.3645,-81.5905,28.4240,-81.5450).
 The map has two filled-in regions, the Magic Kingdom resort area and Epcot; everything between them is left out (blank)
 for now: areas are clipped to the regions, lines are cut where they leave them.
 Input details: the area is too big The area is too big for openstreetmap.org's Export button; fetch it
@@ -13,7 +14,8 @@ Run from the site folder:  python3 tools/osm_extract.py"""
 import xml.etree.ElementTree as ET, math, json, collections, heapq
 
 import os
-SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else []); OUT='js/park-osm.js'
+SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else []);  # gap.osm: everything between (bbox 28.3645,-81.5905,28.4240,-81.5450)
+OUT='js/park-osm.js'
 # The projection is pinned to a fixed corner (not the file's bounds), so coordinates stay put when the data is refreshed.
 # OX/OY place that corner on the canvas: the park sits in the north, the lagoon and resorts to the south, west and east.
 S=1.02; OX=470; OY=62; W=3090; H=2290
@@ -50,10 +52,15 @@ def centroid(p):
         x1,y1=p[i];x2,y2=p[(i+1)%len(p)];f=x1*y2-x2*y1;cx+=(x1+x2)*f;cy+=(y1+y2)*f
     return (cx/(6*a),cy/(6*a))
 def simplify(p,tol):
+    # between the parks (once that land is filled in) shapes are kept coarser: it is seen from further out, and it keeps the data small
+    if FULL and p and not any(inpark(*q) for q in p[::max(1,len(p)//6)]): tol*=3
+    return _simplify(p,tol)
+FULL=False;inpark=lambda x,y:True
+def _simplify(p,tol):
     if len(p)<3: return p
     if len(p)>4 and math.dist(p[0],p[-1])<1e-6:  # closed ring: split at the farthest point so the ends aren't degenerate
         far=max(range(len(p)),key=lambda i:math.dist(p[0],p[i]))
-        return simplify(p[:far+1],tol)[:-1]+simplify(p[far:],tol)
+        return _simplify(p[:far+1],tol)[:-1]+_simplify(p[far:],tol)
     def rdp(a,b):
         x1,y1=p[a];x2,y2=p[b];L=math.hypot(x2-x1,y2-y1) or 1e-9;best=-1;bi=-1
         for i in range(a+1,b):
@@ -107,6 +114,10 @@ if EPC:
     REGIONS.append((min(xs)-M,min(ys)-M,max(xs)+M,max(ys)+M))
     W=max(W,int(max(xs)+M+40));H=max(H,int(max(ys)+M+40))
     print('Epcot region',[round(v) for v in REGIONS[1]],'map',W,'x',H)
+PARKS=list(REGIONS)
+def inpark(x,y): return any(r[0]<=x<=r[2] and r[1]<=y<=r[3] for r in PARKS)
+if EPC and 'gap.osm' in SRCS:  # the land between the parks is filled in too: content everywhere on the map
+    FULL=True;REGIONS.append((0,0,W,H));print('filled in: whole map',W,'x',H)
 def inreg(x,y,m=0): return any(r[0]-m<=x<=r[2]+m and r[1]-m<=y<=r[3]+m for r in REGIONS)
 def clip_box(p,m=60): return any(inreg(x,y,m) for x,y in p)
 def runs(p,m=30):
@@ -409,6 +420,18 @@ def loop(name,order):
     idx=[near(STN[o]) for o in order];assert idx==sorted(idx),(name,idx)
     return [R1(q) for q in simplify(p+[p[0]],.4)]
 MONO={'express':loop('Magic Kingdom Express Monorail',['ttc','cont','mk']),'resort':loop('Bay Lake Resort Monorail',['ttc','poly','gf','mk','cont'])}
+# EPCOT line (once EPCOT and the land between are on the map): Ticket Center -> round over Future World -> EPCOT station
+# -> back to the Ticket Center. Run it the way that makes the trip in the long one (the loop over the park comes first).
+if FULL:
+    ep=rel_chain('Epcot Monorail');esi=next((i for i,t in NT.items() if t.get('name')=='EPCOT' and t.get('railway')=='station'),None)
+    if ep and esi:
+        STN['epst']=ND[esi];print('Epcot Monorail points',len(ep),'closing gap',round(math.dist(ep[0],ep[-1]),1))
+        if math.dist(ep[0],ep[-1])<1e-6: ep=ep[:-1]
+        near=lambda q:min(range(len(ep)),key=lambda i:math.dist(ep[i],q))
+        k=near(STN['ttc']);ep=ep[k:]+ep[:k]
+        if near(STN['epst'])<len(ep)/2: ep=[ep[0]]+ep[:0:-1]  # TTC to EPCOT should be the longer leg
+        MONO['epcot']=[R1(q) for q in simplify(ep+[ep[0]],.4)]
+        print('  TTC->EPCOT share of the loop',round(near(STN['epst'])/len(ep),2))
 tun=[q for l in LINES['monoIn'] for q in l]
 monoIn=[round(min(q[0] for q in tun)-3,1),round(min(q[1] for q in tun)-3,1),round(max(q[0] for q in tun)+3,1),round(max(q[1] for q in tun)+3,1)] if tun else None
 for k,v in STN.items(): PLACES[k]=R1(v)

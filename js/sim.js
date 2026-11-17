@@ -84,10 +84,13 @@ const RR=mkPath(OSM.routes.rail);
 const FER=mkPath(OSM.ferryPath),BUSP=mkPath(OSM.busPath);
 /* Monorail: the two real passenger loops around Seven Seas Lagoon. Trains only run forward, in the order of `stops`;
    `sd` is each station's distance along the loop. Train names are the real fleet's stripe colours. */
-const STOPNAME={ttc:'Ticket and Transportation Center',poly:'Polynesian Village',gf:'Grand Floridian',mk:'Magic Kingdom',cont:'Contemporary'};
+const STOPNAME={epst:'EPCOT',ttc:'Ticket and Transportation Center',poly:'Polynesian Village',gf:'Grand Floridian',mk:'Magic Kingdom',cont:'Contemporary'};
 const MLINE={express:{n:'Express',stops:['ttc','mk'],cap:25,trains:[['Red','#d6453b'],['Coral','#f08a7a'],['Orange','#ee8a2c']]},
  resort:{n:'Resort',stops:['ttc','poly','gf','mk','cont'],cap:10,trains:[['Blue','#3a7bd5'],['Green','#3f9a55'],['Gold','#d9a520']]}};
-for(const k in MLINE){const l=MLINE[k];l.k=k;l.p=mkPath(OSM.mono[k]);l.sd=l.stops.map(s=>l.p.proj(...P_[s]))}
+/* the EPCOT line (when the land between the parks is on the map): from the Ticket Center round over Future World into
+   EPCOT's station and straight back. Its trains carry scenery passengers only: EPCOT's guests start at its gate. */
+if(OSM.mono.epcot&&P_.epst)MLINE.epcot={n:'EPCOT',stops:['ttc','epst'],cap:25,trains:[['Teal','#1f9e95'],['Lime','#8cc63f'],['Peach','#f4a582'],['Silver','#9aa3ad']]};
+for(const k in MLINE){const l=MLINE[k];l.k=k;l.p=mkPath(OSM.mono[k]);l.sd=l.stops.map(s=>l.p.proj(...P_[s])).map(d=>d>=l.p.L-20?0:d)} /* a station at the loop's start/end counts as its start */
 /* Places around the lagoon: every monorail station, with the resort it serves */
 const RESORTS={mk:{n:'Magic Kingdom Station',t:'Monorail station at the park entrance',c:P_.mk},cont:{n:'Disney’s Contemporary Resort',t:'Monorail resort · the Resort line runs through the tower',c:P_.cont},
  ttc:{n:'Transportation and Ticket Center',t:'Monorail hub, ferry dock and parking',c:P_.ttc},poly:{n:'Disney’s Polynesian Village Resort',t:'Monorail resort on the south shore',c:P_.poly},gf:{n:'Disney’s Grand Floridian Resort & Spa',t:'Monorail resort on the west shore',c:P_.gf}};
@@ -102,7 +105,7 @@ const GEYSER={first:7,last:22,up:20,full:140,down:40};
 function geyserNow(t){if(!P_.geyser)return 0;t=t??T;const h=Math.floor(t/3600),s=t-h*3600;if(h<GEYSER.first||h>GEYSER.last)return 0;const G=GEYSER;
  if(s<G.up)return .15+.25*(s/G.up)*(.6+.4*Math.sin(s*3));if(s<G.up+G.full)return 1;if(s<G.up+G.full+G.down)return 1-(s-G.up-G.full)/G.down;return 0}
 const geyserNext=()=>{const h=Math.floor(T/3600)+(T%3600>GEYSER.up+GEYSER.full+GEYSER.down?1:0),n=Math.max(h,GEYSER.first);return n<=GEYSER.last?n*3600:null};
-const DWELL=s=>s==='mk'?45:s==='ttc'?60:35;
+const DWELL=s=>s==='mk'?45:s==='ttc'||s==='epst'?60:35;
 // trains heading for a station, soonest first: [{m, t seconds}]
 function monoEta(stop){const out=[];for(const m of MONO){const l=MLINE[m.l],si=l.stops.indexOf(stop),L=l.p.L;if(si<0)continue;if(m.st==='dwell'&&m.at===si){out.push({m,t:0});continue}
   const gap=((l.sd[si]-m.x)%L+L)%L;let t=(m.st==='dwell'?m.tm:0)+gap/MSPEED;l.sd.forEach((d,j)=>{const g=((d-m.x)%L+L)%L;if(j!==si&&g>.5&&g<gap)t+=DWELL(l.stops[j])});out.push({m,t})}return out.sort((a,b)=>a.t-b.t)}
@@ -252,7 +255,8 @@ function transport(dt){
   const gap=((l.sd[m.nx]-m.x)%L+L)%L;
   if(gap>MSPEED*dt){m.x=(m.x+MSPEED*dt)%L;continue}
   m.x=l.sd[m.nx];m.st='dwell';m.at=m.nx;const stop=l.stops[m.at];m.tm=DWELL(stop);
-  if(stop==='mk'){unload(0,P_.monostation[0],P_.monostation[1]-6,l.cap);m.ld=board(0,l.cap)}   // arrivals step off, departures board
+  if(l.k==='epcot')m.ld=Math.round(l.cap*rr(.25,.9)); /* EPCOT's trains: a load of guests each way */
+  else if(stop==='mk'){unload(0,P_.monostation[0],P_.monostation[1]-6,l.cap);m.ld=board(0,l.cap)}   // arrivals step off, departures board
   else if(stop==='ttc'||l.stops.indexOf('mk')>m.at)m.ld=Math.min(Math.floor(pend[0]),l.cap); // heading for the park: the guests who will get off there
   else m.ld=Math.floor(m.ld/2)}                                                                // after the park: some get off at each resort
  for(const b of LAUNCH){if(b.tm>0){b.tm-=dt;continue}const R=BOATR[b.r],L=R.p.L,stp=2.6*dt;

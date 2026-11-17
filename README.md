@@ -118,9 +118,11 @@ from 7 AM to 10 PM, about 120 feet high, as the real one does.
 ## EPCOT
 
 EPCOT is on the map at its real place, south-east of the Magic Kingdom (scroll or zoom out to find it; TV mode
-visits it too). For now it is the park itself, drawn from OpenStreetMap: Spaceship Earth, the Future World
-pavilions and each World Showcase country in its own colours, with plain ground between the two parks (to be
-filled in later). EPCOT has its own guests and wait times for its 18 main rides, in four neighbourhoods (World
+visits it too), drawn from OpenStreetMap: Spaceship Earth, the Future World pavilions and each World Showcase
+country in its own colours. All the land between and around the two parks is on the map too: the Ticket Center's
+parking, World Drive and the highways, the EPCOT monorail line (four trains run it: from the Ticket Center round over
+Future World into EPCOT's station and back, about 17 minutes a lap), golf courses, lakes and miles of forest (drawn as a
+canopy of tree tops, painted as you look at it). EPCOT has its own guests and wait times for its 18 main rides, in four neighbourhoods (World
 Celebration, Discovery, Nature and Showcase) you can filter like the Magic Kingdom's lands. Its guests arrive at the
 main entrance and stay in EPCOT; it keeps its own hours (9 AM to 9 PM, or today's real hours when live), and with live
 data on, its waits and closures are the real ones too.

@@ -259,8 +259,13 @@ function buildMap(){
  const phone=Math.min(screen.width,screen.height)<700,P=OSM.places,box=(x0,y0,x1,y1,k)=>({x:Math.max(0,x0),y:Math.max(0,y0),w:Math.min(W,x1)-Math.max(0,x0),h:Math.min(H,y1)-Math.max(0,y0),k,base:null,glow:null});
  MSS=phone?2:3;const R0=REGIONS[0];MAP.mss=Math.min(MSS,Math.sqrt((phone?8e6:16e6)/((R0[2]-R0[0])*(R0[3]-R0[1]))));
  /* one layer per region at the same sharpness (Magic Kingdom first, then Epcot); the blank land between them isn't painted */
- MAP.layers=REGIONS.map(R=>{const L={x:Math.max(0,R[0]),y:Math.max(0,R[1])};L.w=Math.min(W,R[2])-L.x;L.h=Math.min(H,R[3])-L.y;return Object.assign(L,paintMap(L.x,L.y,L.w,L.h,MAP.mss))});
+ MAP.layers=PARKR.map(R=>{const L={x:Math.max(0,R[0]),y:Math.max(0,R[1])};L.w=Math.min(W,R[2])-L.x;L.h=Math.min(H,R[3])-L.y;return Object.assign(L,paintMap(L.x,L.y,L.w,L.h,MAP.mss))});
+ if(FULL)for(const L of MAP.layers)for(const q of[L.base,L.glow]){const c=q.getContext('2d'),s=q.width/L.w,F=50*s;c.globalCompositeOperation='destination-out'; /* fade each park's edges into the land around it */
+  const side=(x0,y0,x1,y1,gx0,gy0,gx1,gy1)=>{const g=c.createLinearGradient(gx0,gy0,gx1,gy1);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x0,y0,x1-x0,y1-y0)};
+  if(L.x>0)side(0,0,F,q.height,0,0,F,0);if(L.y>0)side(0,0,q.width,F,0,0,0,F);if(L.x+L.w<W-1)side(q.width-F,0,q.width,q.height,q.width,0,q.width-F,0);if(L.y+L.h<H-1)side(0,q.height-F,q.width,q.height,0,q.height,0,q.height-F);c.globalCompositeOperation='source-over'}
  MAP.base=MAP.layers[0].base;MAP.glow=MAP.layers[0].glow;
+ /* the land between the parks: tiles, painted when they come into view and let go after a while away (detailTick) */
+ MAP.tiles=[];if(FULL){const TS=1100,k=MAP.mss*.6;for(let y=0;y<H;y+=TS)for(let x=0;x<W;x+=TS){const w=Math.min(TS,W-x),h=Math.min(TS,H-y);if(PARKR.some(R=>x>=R[0]&&y>=R[1]&&x+w<=R[2]&&y+h<=R[3]))continue;MAP.tiles.push({x,y,w,h,k,base:null,glow:null})}}
  // close-up layers: the park (the railroad loop plus the entrance), then each stop on the monorail loop
  const rr=bbox(OSM.routes.rail);
  MAP.detail=[box(rr[0]-70,rr[1]-60,rr[2]+70,P.monostation[1]+90,MSS),box(P.cont[0]-230,P.cont[1]-230,P.cont[0]+300,P.cont[1]+200,MSS-.5),box(P.ttc[0]-230,P.ttc[1]-190,P.ttc[0]+250,P.ttc[1]+200,MSS-.5),
@@ -275,7 +280,11 @@ function detailTick(z){const now=performance.now();if(now-(MAP.dtAt||0)<300)retu
  for(const d of MAP.detail){const near=want&&views.some(([x,y])=>d.x<x+hw&&d.x+d.w>x-hw&&d.y<y+hh&&d.y+d.h>y-hh);
   if(near)d.seen=now;
   if(near&&!d.base&&!MAP.dtBusy){MAP.dtBusy=true;setTimeout(()=>{if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0)}
-  else if(d.base&&!near&&now-(d.seen||0)>90e3&&d!==MAP.detail[0]){for(const k of['base','glow']){d[k].width=d[k].height=0;d[k]=null}}}} /* away for 90 s: let it go (the park's own stays) */
+  else if(d.base&&!near&&now-(d.seen||0)>90e3&&d!==MAP.detail[0]){for(const k of['base','glow']){d[k].width=d[k].height=0;d[k]=null}}}
+ const vw=cw/2/z+60,vh=ch/2/z+60;
+ for(const d of MAP.tiles||[]){const near=views.some(([x,y])=>d.x<x+vw&&d.x+d.w>x-vw&&d.y<y+vh&&d.y+d.h>y-vh);if(near)d.seen=now;
+  if(near&&!d.base&&!MAP.dtBusy){MAP.dtBusy=true;setTimeout(()=>{if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0)}
+  else if(d.base&&!near&&now-(d.seen||0)>90e3){for(const k of['base','glow']){d[k].width=d[k].height=0;d[k]=null}}}} /* away for 90 s: let it go (the park's own stays) */
 /* Paint the rectangle (rx,ry,rw,rh) of the map at `mss` pixels per map unit. Every call walks the same data in the same
    order with the same random seed, so a close-up layer is the same picture as the base, just sharper. */
 /* Working masks (where trees may grow, the forests, the soft shadows) are kept at a reduced scale HS on a big map, so
@@ -283,6 +292,17 @@ function detailTick(z){const now=performance.now();if(now-(MAP.dtAt||0)<300)retu
 const HS=Math.min(1,Math.sqrt(8e6/(W*H)));
 // the parts of the map that have content: Magic Kingdom and its resorts, and Epcot (the land between is left blank for now)
 const REGIONS=OSM.regions||[[0,0,W,H]],inRegion=(x,y)=>REGIONS.some(r=>x>=r[0]&&y>=r[1]&&x<=r[2]&&y<=r[3]);
+/* With the land between the parks filled in, OSM.regions has a third entry (the whole map). The two park areas are still
+   painted as before; the land between is painted as tiles when it comes into view, and its forests are a canopy texture
+   rather than one tree at a time (there are square kilometres of them). */
+const PARKR=REGIONS.slice(0,2),FULL=REGIONS.length>2,inParkR=(x,y,m=0)=>PARKR.some(r=>x>=r[0]-m&&y>=r[1]-m&&x<=r[2]+m&&y<=r[3]+m);
+function canopy(c){if(!MAP._canopy){const U=120,K=4,t=document.createElement('canvas');t.width=t.height=U*K;const x=t.getContext('2d');x.scale(K,K);x.fillStyle='#2a5a28';x.fillRect(0,0,U,U);const r=seeded(99),pts=[];
+  for(let i=0;i<1700;i++)pts.push([r()*U,r()*U,3+r()*2.4,(r()*CROWN.length)|0]);pts.sort((p,q)=>p[1]-q[1]);
+  const all=[];for(const[px,py,rd,v]of pts)for(const ox of[-U,0,U])for(const oy of[-U,0,U]){const X=px+ox,Y=py+oy;if(X>-8&&X<U+8&&Y>-8&&Y<U+8)all.push([X,Y,rd,v])}
+  x.fillStyle='rgba(20,45,20,.22)';for(const[X,Y,rd]of all){x.beginPath();x.ellipse(X+rd*.6,Y-rd*.4,rd*1.2,rd*.85,0,0,7);x.fill()} /* the shadows first, then the tree tops nearest-last, so it tiles without seams */
+  all.sort((p,q)=>p[1]-q[1]);for(const[X,Y,rd,v]of all)x.drawImage(CROWN[v],X-rd*1.25,Y-rd*2.2,rd*2.5,rd*2.5)
+  MAP._canopy=t}
+ const p=c.createPattern(MAP._canopy,'repeat');p.setTransform(new DOMMatrix().scale(1/4));return p}
 const GLOWK=.5;
 function paintMap(rx,ry,rw,rh,mss){
  const base=document.createElement('canvas'),glow=document.createElement('canvas'),blk=document.createElement('canvas');
@@ -309,6 +329,8 @@ function paintMap(rx,ry,rw,rh,mss){
   c.strokeStyle='#5f6b62';c.lineWidth=1.2;c.setLineDash([3,1.5]);areaPath(c,a);c.stroke();c.setLineDash([]);areaPath(b,a);b.fill('evenodd');MAP.construction=a}
  /* forest floor */
  const forest=by('forest');for(const a of forest){areaPath(c,a);c.fillStyle='#4a8238';c.fill('evenodd')}
+ if(FULL&&forest.length&&PARKR.some(R=>!(rx>=R[0]&&ry>=R[1]&&rx+rw<=R[2]&&ry+rh<=R[3]))){c.save();c.beginPath();c.rect(rx,ry,rw,rh);for(const R of PARKR)c.rect(R[0],R[1],R[2]-R[0],R[3]-R[1]);c.clip('evenodd'); /* outside the parks: a canopy of tree tops */
+  const pat=canopy(c);for(const a of forest){areaPath(c,a);c.fillStyle=pat;c.fill('evenodd')}c.restore()}
  /* water: bank shadow, pale rim, turquoise, deeper centre */
  const water=by('water');
  for(const a of water){areaPath(c,a);c.strokeStyle='rgba(60,95,45,.35)';c.lineWidth=5;c.stroke();areaPath(b,a);b.fill('evenodd');b.lineWidth=6;b.stroke()}
@@ -390,7 +412,7 @@ function paintMap(rx,ry,rw,rh,mss){
   const PALM={adv:.6,poly:.55,gf:.25,cont:.2,ttc:.3},kind=(x,y,f)=>{const l=landOf(x,y)||resortOf(x,y),q=r();return q<(PALM[l]||0)*f?'palm':(l==='fr'||l==='lib'||l==='wl'||l==='fw'||(!l&&f<1))&&q<(l==='wl'||l==='fw'?.55:f<1?.22:.3)?'pine':'crown'};
   MAP.crowns=[];
   for(const[x,y]of OSM.trees)if(!onWater(x,y))MAP.crowns.push([x,y,2.8+r()*1.6,kind(x,y,1),(r()*CROWN.length)|0,inForest(x,y)]);
-  for(let y=3;y<H;y+=3.6)for(let x=3+((y/3.6|0)%2)*1.8;x<W;x+=3.6){const jx=x+(r()-.5)*2,jy=y+(r()-.5)*2;if(!free(jx,jy)||!free(jx,jy-3))continue;
+  for(let y=3;y<H;y+=3.6)for(let x=3+((y/3.6|0)%2)*1.8;x<W;x+=3.6){const jx=x+(r()-.5)*2,jy=y+(r()-.5)*2;if(FULL&&!inParkR(jx,jy)){const d=Math.min(...PARKR.map(R=>Math.hypot(Math.max(R[0]-jx,0,jx-R[2]),Math.max(R[1]-jy,0,jy-R[3]))));if(d>70||r()<d/70)continue} /* between the parks: the canopy texture instead; the park's own trees thin out over it for a little way, so the two blend */if(!free(jx,jy)||!free(jx,jy-3))continue;
    const inF=inForest(jx,jy);if(!inF&&r()>.012)continue;MAP.crowns.push([jx,jy,inF?3+r()*2.4:3+r()*1.6,kind(jx,jy,.75),(r()*CROWN.length)|0,inF])}
   /* soft shadows (light from the upper left) */
   const sh=document.createElement('canvas');sh.width=BW;sh.height=BH;const sx=sh.getContext('2d');sx.scale(HS,HS);sx.fillStyle='#000';

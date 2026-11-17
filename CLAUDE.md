@@ -96,7 +96,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - Epcot (owner, 16 Nov 2026: "For now just the park. Just add in a blank space between magic kingdom for now, we
   will fill that in later"). `epcot.osm` (git-ignored, bbox in the extractor) is merged in; the map now has two
   filled regions, `OSM.regions` = [Magic Kingdom area (= `MKR`), Epcot (= `EPR`)], at their real positions, and
-  W×H grew to 4847×6577. Everything between them is cut out by the extractor and painted as plain ground. Each
+  W×H grew to 4847×6577. Each
   region is its own base/glow layer (`MAP.layers`) at the old sharpness, plus an Epcot close-up layer. Epcot is
   simulated too (owner, 16 Nov 2026: "Add guests and wait times to Epcot"): guests and rides carry a park `pk` (0 MK,
   1 EPCOT; lands wc/wd/wn/ws via `parkOf`), EPCOT has its own hours `EOPEN/ECLOSE` (`setHoursEP`), gate `EPGATE`, arrivals
@@ -109,7 +109,14 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   (`lumNear`). Art: `EPCOT` in `map-art.js` has the pavilion anchors and styles
   (`ep_*` in `LANDSTYLE`), Spaceship Earth is drawn as a sphere, Mexico gets its pyramid. TV mode visits Epcot
   (three shots) and cuts, rather than glides, between the parks. Tree/shadow masks are kept at reduced scale `HS`.
-  To fill in the gap later: add a region (or widen one) in `osm_extract.py` and download that area.
+  The land between was filled in (owner, 16 Nov 2026: "Fill in the space between epcot and magic kingdom now"): `gap.osm`
+  (git-ignored, bbox in the extractor) adds a third region = the whole map, so nothing is clipped; outside the parks
+  shapes are simplified 3× coarser. In `map-art.js` (`FULL`, `PARKR`) the two park layers stay as they were (their
+  edges faded into the land around them), the rest is `MAP.tiles` (1100-unit tiles at 0.6× sharpness, painted when in
+  view and freed after 90 s, via `detailTick`), and forests outside the parks are a canopy pattern (`canopy()`), not
+  individual crowns (the park's crowns thin out over it near the edges). Map data ~3.5 MB; startup canvases ~144 MB.
+  The EPCOT monorail is `MLINE.epcot` (stops `ttc`, `epst`; from the 'Epcot Monorail' relation, run so the loop over
+  Future World comes on the way in); its loads are scenery only, EPCOT's guests still start at its gate.
 - Memory (owner asked to cut browser RAM, 16 Nov 2026): close-up map layers are painted on demand and freed after
   90 s away (`detailTick` in `map-art.js`; the park's own close-up stays). `paintMap` culls to its rectangle after the
   first paint (`cull`/`vis`), so a close-up takes ~50–150 ms instead of ~12 s — keep new map art culled the same way; night-light (glow) canvases are half the

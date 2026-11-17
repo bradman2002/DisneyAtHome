@@ -151,6 +151,14 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   loudness (`env`) and beats; the ending's fireworks are its beats after 1555 s. A different recording (another length)
   falls back to `FM_SCENES` fractions. Guests sit in the
   seats (`spot0` 'fmic'; `spot()` skips the pavement test there). Start it by hand from Entertainment or its sheet.
+- Mobile app (owner, 17 Nov 2026: "make it so it can act more like an app on mobile"): `manifest.webmanifest` (name
+  "Magic Kingdom Simulator", short "Park Sim", standalone, relative start_url/scope so GitHub Pages works), icons in `images/`
+  (an original castle-and-fireworks drawing, made in code; no Disney artwork), iOS meta tags, and `sw.js`: network first for
+  the site's own files with a cached copy for offline, never storing `audio/` or byte-range requests (the owner's music stays
+  off it). It registers 3 s after start-up, not on the load event (streaming music can hold that off). ☰ has "Install as an
+  app" (`installApp`: Chrome's prompt, or the Share → Add to Home Screen hint on iPhone). App-feel CSS: no tap flash,
+  no long-press selection, `touch-action:manipulation` on buttons; a pinch outside the map doesn't zoom the page on iPhone.
+  The Mac server sends `.webmanifest` as application/manifest+json (`tools/serve.py`, and `serve.ps1` on Windows).
 - The monorail recording's silent station stops are skipped when its audio starts (`RIDEGAP`/`rideSkip` in `audio.js`,
   measured from the owner's 672 s file; another file length is left alone).
 - Memory (owner asked to cut browser RAM, 16 Nov 2026): close-up map layers are painted on demand and freed after

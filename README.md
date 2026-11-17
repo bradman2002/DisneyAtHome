@@ -10,6 +10,10 @@ ones when "Live" is on (see below); guests, crowds and vehicles are always simul
 Getting around the map: drag to move, scroll or pinch to zoom, double-click or double-tap to zoom in on a spot
 (Shift + double-click zooms out), tap anything for its details.
 
+On a phone it works like an app: open ☰ → "Install as an app" (on iPhone and iPad: Safari's Share button → "Add to Home
+Screen"). It gets its own icon, opens full screen without the browser's bars, and still opens with no signal once it has been
+used (the live data and sounds need a connection; everything else is simulated anyway).
+
 ## Live: the real park
 
 When the page opens it fetches Magic Kingdom's current wait times, ride closures, today's show times and

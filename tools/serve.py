@@ -6,6 +6,7 @@ file into memory first."""
 import http.server, os, re, sys
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    extensions_map={**http.server.SimpleHTTPRequestHandler.extensions_map,'.webmanifest':'application/manifest+json','.js':'text/javascript','.mjs':'text/javascript'}
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store, must-revalidate')
         self.send_header('Expires', '0')

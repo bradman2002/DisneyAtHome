@@ -17,7 +17,7 @@ $listener = [System.Net.HttpListener]::new()
 $listener.Prefixes.Add($prefix)
 $listener.Start()
 
-$types = @{ '.html'='text/html; charset=utf-8'; '.js'='text/javascript; charset=utf-8'; '.css'='text/css; charset=utf-8';
+$types = @{ '.webmanifest'='application/manifest+json'; '.html'='text/html; charset=utf-8'; '.js'='text/javascript; charset=utf-8'; '.css'='text/css; charset=utf-8';
   '.json'='application/json'; '.png'='image/png'; '.jpg'='image/jpeg'; '.svg'='image/svg+xml'; '.ico'='image/x-icon';
   '.mp3'='audio/mpeg'; '.m4a'='audio/mp4'; '.ogg'='audio/ogg'; '.wav'='audio/wav'; '.txt'='text/plain; charset=utf-8' }
 

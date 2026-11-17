@@ -14,7 +14,8 @@ Run from the site folder:  python3 tools/osm_extract.py"""
 import xml.etree.ElementTree as ET, math, json, collections, heapq
 
 import os
-SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else []);  # gap.osm: everything between (bbox 28.3645,-81.5905,28.4240,-81.5450)
+SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
+  # gap.osm: everything between (bbox 28.3645,-81.5905,28.4240,-81.5450)
 OUT='js/park-osm.js'
 # The projection is pinned to a fixed corner (not the file's bounds), so coordinates stay put when the data is refreshed.
 # OX/OY place that corner on the canvas: the park sits in the north, the lagoon and resorts to the south, west and east.
@@ -26,11 +27,13 @@ tags=lambda e:{x.get('k'):x.get('v') for x in e.findall('tag')}
 roots=[ET.parse(f).getroot() for f in SRCS]
 for r in roots:
     for n in r.findall('node'):
+        if n.get('id') in ND: continue
         ND[n.get('id')]=proj(float(n.get('lon')),float(n.get('lat')))
         t={x.get('k'):x.get('v') for x in n.findall('tag')}
         if t: NT[n.get('id')]=t
 for r in roots:
     for w in r.findall('way'):
+        if w.get('id') in WAYS: continue  # the first file's copy wins, so newer overlapping downloads don't reshape what is already mapped
         WAYS[w.get('id')]={'ids':[x.get('ref') for x in w.findall('nd') if x.get('ref') in ND],'t':tags(w)}
     for rl in r.findall('relation'):
         if rl.get('id') in seen_rel: continue
@@ -98,13 +101,13 @@ def chain(way_ids):
     return pts(cur)
 # ---------------- regions: the Magic Kingdom area, and Epcot (from its theme-park outline) ----------------
 REGIONS=[(0,0,W,H)]
-def epcot_outline():
+def epcot_outline(key='epcot'):
     for wid,w in WAYS.items():
         t=w['t']
-        if t.get('tourism')=='theme_park' and 'epcot' in t.get('name','').lower() and len(w['ids'])>3: return pts(w['ids'])
+        if t.get('tourism')=='theme_park' and key in t.get('name','').lower() and len(w['ids'])>3: return pts(w['ids'])
     for rl in RELS:
         t=rl['t']
-        if t.get('tourism')=='theme_park' and 'epcot' in t.get('name','').lower():
+        if t.get('tourism')=='theme_park' and key in t.get('name','').lower():
             rg=rings_from([ref for ty,ref,role in rl['m'] if ty=='way' and role in('outer','')])
             if rg: return max(rg,key=len)
     return None
@@ -114,9 +117,17 @@ if EPC:
     REGIONS.append((min(xs)-M,min(ys)-M,max(xs)+M,max(ys)+M))
     W=max(W,int(max(xs)+M+40));H=max(H,int(max(ys)+M+40))
     print('Epcot region',[round(v) for v in REGIONS[1]],'map',W,'x',H)
+HSC=epcot_outline('hollywood studios') if 'hs.osm' in SRCS else None
+if HSC:  # Hollywood Studios: a third park region, south-west of EPCOT past the Swan and Dolphin
+    xs=[q[0] for q in HSC];ys=[q[1] for q in HSC];M=70
+    REGIONS.append((min(xs)-M,min(ys)-M,max(xs)+M,max(ys)+M))
+    W=max(W,int(max(xs)+M+40));H=max(H,int(max(ys)+M+40))
+    print('Hollywood Studios region',[round(v) for v in REGIONS[-1]],'map',W,'x',H)
 PARKS=list(REGIONS)
 def inpark(x,y): return any(r[0]<=x<=r[2] and r[1]<=y<=r[3] for r in PARKS)
 if EPC and 'gap.osm' in SRCS:  # the land between the parks is filled in too: content everywhere on the map
+    H=max(H,6730)  # a little further south than Epcot needs, so the Swan and the Swan Reserve fit whole
+    if HSC: H=max(H,int(proj(-81.56,28.3490)[1]))  # down to the bottom of the Hollywood Studios data
     FULL=True;REGIONS.append((0,0,W,H));print('filled in: whole map',W,'x',H)
 def inreg(x,y,m=0): return any(r[0]-m<=x<=r[2]+m and r[1]-m<=y<=r[3]+m for r in REGIONS)
 def clip_box(p,m=60): return any(inreg(x,y,m) for x,y in p)
@@ -157,7 +168,12 @@ AREA_KIND=lambda t:('water' if t.get('natural')=='water' or t.get('water') else 
  'parking' if t.get('amenity') in('parking',) else 'construction' if t.get('landuse')=='construction' else 'ped' if (t.get('highway') in('pedestrian','footway','living_street') and t.get('area')=='yes') or t.get('area:highway') in('pedestrian','footway') or t.get('place')=='square' else None)
 # OpenStreetMap has no usable heights for the resort landmarks (the Contemporary is tagged 0.1 levels), so these are set here, in metres
 HEIGHTS={"Disney's Contemporary Resort":56,"Bay Lake Tower at Disney's Contemporary Resort":46,'Contemporary Convention Center':12,"Disney's Grand Floridian Resort & Spa":24,
- "The Villas at Disney's Grand Floridian Resort & Spa":20,"Disney's Wilderness Lodge":24,"The Villas at Disney's Wilderness Lodge":18,'Pioneer Hall':9,'Grand Floridian Convention Center':12,'Disney Polynesian Village Resort':13,'The Grand Floridian Station':9,'The Polynesian Village Station':9}
+ "The Villas at Disney's Grand Floridian Resort & Spa":20,"Disney's Wilderness Lodge":24,"The Villas at Disney's Wilderness Lodge":18,'Pioneer Hall':9,'Grand Floridian Convention Center':12,'Disney Polynesian Village Resort':13,'The Grand Floridian Station':9,'The Polynesian Village Station':9,
+ # the Epcot resorts on Crescent Lake: the Dolphin's triangle tower and the Swan's arched centre block are drawn taller on top of these (map-art.js)
+ 'The Twilight Zone Tower of Terror':20,'Rock ’n’ Roller Coaster Starring The Muppets':16,'Star Wars: Rise of the Resistance':18,'Fantasmic':12,  # Hollywood Studios (the Tower's 61 m tower is drawn on top in map-art.js)
+ 'Walt Disney World Dolphin Resort':30,'Walt Disney World Swan Resort':26,'Walt Disney World Swan Reserve':44,'Walt Disney World Dolphin Convention Center':13,'Walt Disney World Swan Convention Center':12,
+ "Disney's Yacht Club Resort":21,"Disney's Beach Club Resort":21,"Disney's Beach Club Villas":18,'Disney Yacht & Beach Club Convention Center':13,
+ "Disney's BoardWalk Inn":19,"Disney's BoardWalk Villas":17,"Disney's BoardWalk Convention Center":13}
 def bheight(t):
     if t.get('name') in HEIGHTS: return HEIGHTS[t['name']]
     if 'height' in t:
@@ -245,7 +261,7 @@ print('railroad chain points',len(RRP),'closed gap',round(math.dist(RRP[0],RRP[-
 st_main=proj(-81.58122,28.41665) # placeholder, replaced below
 def in_park(q):
     x,y=q
-    return inside(q,RRP) or (OX+300*S<x<OX+800*S and OY+650*S<y<OY+856*S) or bool(EPC and inside(q,EPC))  # EPCOT: inside its park outline
+    return inside(q,RRP) or (OX+300*S<x<OX+800*S and OY+650*S<y<OY+856*S) or bool(EPC and inside(q,EPC)) or bool(HSC and inside(q,HSC))  # EPCOT, Hollywood Studios: inside their park outlines
 paths=[];G=collections.defaultdict(set)
 for wid,w in WAYS.items():
     t=w['t'];hw=t.get('highway')
@@ -274,6 +290,18 @@ comps.sort(key=len,reverse=True);main=set(comps[0])
 if EPC:  # EPCOT's own walkways: its largest connected piece (the two parks aren't joined by a walk)
     epc=next((c for c in comps if inside(ND[c[0]],EPC)),None)
     if epc: main|=set(epc);print('EPCOT walk graph',len(epc),'nodes')
+if HSC:  # and Hollywood Studios' own
+    hsc=next((c for c in comps if inside(ND[c[0]],HSC)),None)
+    if hsc:
+        main|=set(hsc);print('Hollywood Studios walk graph',len(hsc),'nodes')
+        # pieces of the Studios' walkways that the map data leaves unjoined (the Fantasmic! amphitheater's): join each to the
+        # main network at the closest pair of points, when they are within a short step of each other
+        left=[c_ for c_ in comps if c_ is not hsc and len(c_)>=12 and inside(ND[c_[0]],HSC)];grew=True
+        while grew:  # repeat, so a piece can join through another that joined before it
+            grew=False
+            for c_ in left[:]:
+                best=min(((math.dist(ND[a],ND[b]),a,b) for a in c_[::2] for b in hsc[::3]),default=None)
+                if best and best[0]<60: G[best[1]].add(best[2]);G[best[2]].add(best[1]);main|=set(c_);hsc=hsc+c_;left.remove(c_);grew=True;print('  joined a piece of',len(c_),'nodes, gap',round(best[0],1))
 print('walk graph',len(G),'nodes; components',[len(c) for c in comps[:6]])
 # collapse degree-2 chains, keeping a node every ~14 units so walking follows the curves
 keep={u for u in main if len(G[u])!=2}
@@ -330,9 +358,12 @@ out['nodes']=NODES;out['edges']=EDGES
 out['trees']=[R1(ND[i]) for i,t in NT.items() if t.get('natural')=='tree' and in_park(ND[i]) or t.get('natural')=='tree' and inreg(*ND[i])]
 out['lamps']=[R1(ND[i]) for i,t in NT.items() if t.get('highway')=='street_lamp' and inreg(*ND[i])]
 # routes
-def rel_chain(name,typ=None):
+def rel_chain(name,typ=None,box=None):
     rl=next((x for x in RELS if x['t'].get('name')==name and (typ is None or x['t'].get('type')==typ)),None)
-    return chain([ref for ty,ref,role in rl['m'] if ty=='way']) if rl else []
+    if not rl: return []
+    ws=[ref for ty,ref,role in rl['m'] if ty=='way']
+    if box: ws=[w for w in ws if w in WAYS and any(box[0]<=ND[i][0]<=box[2] and box[1]<=ND[i][1]<=box[3] for i in WAYS[w]['ids'])]  # only the part of a long route near here
+    return chain(ws)
 out['routes']={'rail':[R1(q) for q in simplify(RRP,.4)],'parade':[R1(q) for q in simplify(rel_chain('Festival of Fantasy Parade'),.5)],
  'pm':[R1(q) for q in simplify(rel_chain('Tomorrowland Transit Authority PeopleMover'),.4)],'race':[R1(q) for q in simplify(rel_chain('Tomorrowland Speedway','circuit'),.4)],
  'tram':[R1(q) for q in simplify(rel_chain('Horse Drawn Street Car'),.4)],
@@ -369,7 +400,14 @@ EP_ATTR=['Spaceship Earth','Guardians Of The Galaxy: Cosmic Rewind','Test Track'
 EP_VEN=['Sunshine Seasons','Regal Eagle Smokehouse: Craft Drafts & Barbecue','Katsura Grill','Les Halles Boulangerie & Pâtisserie','Via Napoli Ristorante e Pizzeria','La Cantina de San Angel','Lotus Blossom Cafe',
  'Yorkshire County Fish Shop','Space 220 Restaurant','Sommerfest','Tangierine Cafe','Kringla Bakeri Og Kafe']
 if EPC: ATTR=ATTR+EP_ATTR
-VEN=(EP_VEN if EPC else [])+['Emporium','Main Street Confectionery',"Casey's Corner",'The Plaza Restaurant','The Crystal Palace','Agrabah Bazaar','Columbia Harbor House','Pecos Bill Tale Tale Inn and Café','Frontier Trading Post','Be Our Guest Restaurant','Storybook Treats',"Cosmic Ray's Starlight Café","Mickey's Star Traders"]
+# Hollywood Studios: its rides and theatre shows, restaurants and shops (names as in OpenStreetMap)
+HS_ATTR=['The Twilight Zone Tower of Terror','Rock ’n’ Roller Coaster Starring The Muppets',"Mickey and Minnie's Runaway Railway",'Star Wars: Rise of the Resistance','Millennium Falcon: Smugglers Run',
+ 'Star Tours: The Adventures Continue','Slinky Dog Dash','Toy Story Mania!','Alien Swirling Saucers','Indiana Jones Epic Stunt Spectacular!','Theater of the Stars','Voyage of the Little Mermaid',
+ 'Hyperion Theater','Walt Disney Presents','Mickey Shorts Theater','Disney Junior Dance Party!','The Magic of Disney Animation']
+HS_VEN=["50's Prime Time Cafe",'Hollywood and Vine','The Hollywood Brown Derby','ABC Commissary','Roundup Rodeo BBQ','Sci-Fi Dine-In Theater','Docking Bay 7 Food and Cargo','Ronto Roasters',"Woody's Lunch Box",
+ 'Backlot Express',"Oga's Cantina","Min and Bill's Dockside Diner","Rosie's All-American Café","Catalina Eddie's","Mickey's of Hollywood",'Tower Hotel Gifts','Dok-Ondar’s Den of Antiquities','Celebrity 5 & 10']
+if HSC: ATTR=ATTR+HS_ATTR
+VEN=(HS_VEN if HSC else [])+(EP_VEN if EPC else [])+['Emporium','Main Street Confectionery',"Casey's Corner",'The Plaza Restaurant','The Crystal Palace','Agrabah Bazaar','Columbia Harbor House','Pecos Bill Tale Tale Inn and Café','Frontier Trading Post','Be Our Guest Restaurant','Storybook Treats',"Cosmic Ray's Starlight Café","Mickey's Star Traders"]
 POS={}
 for n in ATTR+VEN:
     b=place(n)
@@ -388,10 +426,18 @@ epgate=None
 if EPC:  # EPCOT's main entrance: just inside the ticket booths, south of the monorail station
     tb=[centroid(pts(w['ids'])[:-1]) for w in WAYS.values() if w['t'].get('name')=='Epcot Ticket Booths' and len(w['ids'])>3]
     if tb: c_=(sum(q[0] for q in tb)/len(tb),sum(q[1] for q in tb)/len(tb)+14);epgate=nearest(c_);print('EPCOT gate node',epgate,NODES[epgate])
+hsgate=None
+if HSC:  # Hollywood Studios' entrance: just inside its ticket booths (toward the park's middle)
+    b_=place('Hollywood Studios Ticket Booths')
+    if b_:
+        hc=centroid(HSC);bx,by=b_[1];d_=math.dist((bx,by),hc) or 1;ux,uy=(hc[0]-bx)/d_,(hc[1]-by)/d_
+        hsgate=nearest((bx+ux*16,by+uy*16));PLACES['hsout']=[round(-ux,3),round(-uy,3)];PLACES['hsbooth']=R1(b_[1]);print('Hollywood Studios gate node',hsgate,NODES[hsgate],'outward',PLACES['hsout'])
 landnodes={k:nearest(PLACES[k]) for k in('adv','fr','lib','fan','tom') if k in PLACES}
 json.dump({'places':PLACES,'pos':POS,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,'land':landnodes},open('osm_places.json','w'),indent=0)
 # land boundaries (place=locality polygons named after the lands)
-LANDNAMES={'Main Street, U.S.A.':'ms','Adventureland':'adv','Frontierland':'fr','Liberty Square':'lib','Fantasyland':'fan','Tomorrowland':'tom'}
+LANDNAMES={'Main Street, U.S.A.':'ms','Adventureland':'adv','Frontierland':'fr','Liberty Square':'lib','Fantasyland':'fan','Tomorrowland':'tom',
+ # Hollywood Studios' areas (Commissary Lane and Pixar Place are folded into their neighbours)
+ 'Hollywood Boulevard':'hb','Echo Lake':'el','Grand Avenure':'ga','Grand Avenue':'ga','Star Wars: Galaxy’s Edge':'sw',"Star Wars: Galaxy's Edge":'sw','Toy Story Land':'ts','Animation Courtyard':'ac','Sunset Boulevard':'sb'}
 LANDS={}
 for wid,w in WAYS.items():
     t=w['t']
@@ -459,13 +505,14 @@ ferry=from_mk(out['routes']['ferry']);launch=from_mk(out['routes']['launch'])
 print('ferry',len(ferry),ferry[0],ferry[-1],'launch',len(launch),launch[0] if launch else None,launch[-1] if launch else None)
 # buses: the real road from the edge of the map to the Magic Kingdom bus loop (from a bus route relation)
 bs=PLACES.get('busstation')
-R0=REGIONS[0];bus=[q for q in rel_chain('Pop Century → Magic Kingdom') if R0[0]-40<q[0]<R0[2]+40 and R0[1]-40<q[1]<R0[3]+40]
+R0=REGIONS[0];bus=[q for q in rel_chain('Pop Century → Magic Kingdom',box=(R0[0]-40,R0[1]-40,R0[2]+40,R0[3]+40)) if R0[0]-40<q[0]<R0[2]+40 and R0[1]-40<q[1]<R0[3]+40]
 if bus and math.dist(bus[0],bs)<math.dist(bus[-1],bs): bus=bus[::-1]
 bruns=[[]]
 for a_,b_ in zip(bus,bus[1:]+bus[-1:]):
     bruns[-1].append(a_)
     if math.dist(a_,b_)>150: bruns.append([])
-bus=[R1(q) for q in simplify(bruns[-1],.6)] if bus else [[R0[2]+40,bs[1]-6],[bs[0]+30,bs[1]-6],[bs[0],bs[1]]]
+brun=max((r_ for r_ in bruns if len(r_)>1),key=lambda r_:(-round(math.dist(r_[-1],bs)/20),len(r_)),default=bruns[-1])  # the stretch that arrives at the Magic Kingdom bus station (more of the route is mapped once Hollywood Studios is on)
+bus=[R1(q) for q in simplify(brun,.6)] if bus else [[R0[2]+40,bs[1]-6],[bs[0]+30,bs[1]-6],[bs[0],bs[1]]]
 print('bus path',len(bus),bus[0],bus[-1],'station',bs)
 # Epcot: its outline, its middle, and Spaceship Earth
 if EPC:
@@ -475,8 +522,24 @@ if EPC:
     wsl=next((w for w in WAYS.values() if 'world showcase lagoon' in w['t'].get('name','').lower()),None)
     if wsl: PLACES['wslagoon']=R1(centroid(pts(wsl['ids'])[:-1]))
     print('epcot places',PLACES.get('epcot'),PLACES.get('sse'),PLACES.get('wslagoon'))
-data_extra={'regions':[[round(v) for v in r] for r in REGIONS],'epcot':out.get('epcot'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
- 'keys':{'epgate':epgate,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
+if HSC:  # Hollywood Studios: its outline and its middle, and the Millennium Falcon parked in Galaxy's Edge (its outline)
+    PLACES['hs']=R1(centroid(HSC));out['hs']=[R1(q) for q in simplify(HSC,.8)]
+    f_=find_named('Millenium Falcon') or find_named('Millennium Falcon',('tourism',))
+    if f_ and len(f_[2])>3: out['falcon']=[R1(q) for q in simplify(f_[2],.3)];print('Millennium Falcon outline',len(out['falcon']))
+# the Epcot resorts on Crescent Lake: the BoardWalk's outline and the lake (to lay the boardwalk's planks along the shore),
+# Stormalong Bay and the Beach/Yacht Club dock (the Yacht Club's lighthouse), for the painted details in map-art.js
+CRES={}
+if FULL:
+    for key,name in {'bw':"Disney's BoardWalk",'lake':'Crescent Lake','storm':'Stormalong Bay','luna':'Luna Park Pool'}.items():
+        b_=place(name)
+        if b_ and len(b_[2])>3: CRES[key]=[R1(q) for q in simplify(b_[2],.6)];PLACES[key]=R1(b_[1])
+    for key,name in {'bydock':'Beach/Yacht Club Dock','bwdock':'Boardwalk Dock','sddock':'Swan/Dolphin Dock'}.items():
+        n_=next((ND[i] for i,t in NT.items() if t.get('name')==name),None)
+        if n_: PLACES[key]=R1(n_)
+    print('crescent lake',{k:len(v) for k,v in CRES.items()},{k:PLACES.get(k) for k in('bydock','bwdock','sddock','storm')})
+out['crescent']=CRES
+data_extra={'crescent':out.get('crescent'),'regions':[[round(v) for v in r] for r in REGIONS],'nparks':len(PARKS),'epcot':out.get('epcot'),'hs':out.get('hs'),'falcon':out.get('falcon'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
+ 'keys':{'epgate':epgate,'hsgate':hsgate,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
 # compact JS
 data={'W':W,'H':H,'S':S,'areas':out['areas'],'buildings':out['buildings'],'lines':out['lines'],'paths':out['paths'],'trees':out['trees'],'lamps':out['lamps'],'routes':out['routes'],'monoLines':out['monoLines'],'nodes':NODES,'edges':EDGES,**data_extra}
 js='/* Magic Kingdom resort-area geometry from OpenStreetMap (© OpenStreetMap contributors, ODbL — openstreetmap.org/copyright).\n   Converted to map units (1 unit = '+str(round(1/S,3))+' m), north up. Generated by osm_extract.py. */\nconst OSM='+json.dumps(data,separators=(',',':'))+';\n'

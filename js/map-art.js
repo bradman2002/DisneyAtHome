@@ -166,6 +166,7 @@ function extrude(c,e,poly,hh,wall,roof,o){o=o||{};const n=poly.length;let A=0;fo
   if(L>3&&hh>3&&!o.noWin){const rows=Math.max(1,Math.floor(hh/3.6)),cols=Math.max(1,Math.floor(L/3.1));for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){const t0=(k+.3)/cols,t1=(k+.7)/cols,v0=hh*(r+.32)/rows,v1=hh*(r+.68)/rows;
     const pts=[[p[0]+(q[0]-p[0])*t0,p[1]+(q[1]-p[1])*t0-v0],[p[0]+(q[0]-p[0])*t1,p[1]+(q[1]-p[1])*t1-v0],[p[0]+(q[0]-p[0])*t1,p[1]+(q[1]-p[1])*t1-v1],[p[0]+(q[0]-p[0])*t0,p[1]+(q[1]-p[1])*t0-v1]];
     poly4(c,pts,tone(o.win||'#4f6f96',sh*.5));if(e&&!o.noGlow&&(hsh(k*7+r*13+(p[0]|0))%10)<7)poly4(e,pts,'rgba(255,200,120,.9)')}}
+  if(o.deco)o.deco(c,p,q,L,hh);
   c.strokeStyle=tone(roof,-.35);c.lineWidth=.35;c.beginPath();c.moveTo(p[0],p[1]-hh);c.lineTo(q[0],q[1]-hh);c.stroke()}
  const top=poly.map(([x,y])=>[x,y-hh]);const bb=bbox(top);
  const g=c.createLinearGradient(bb[0],bb[1],bb[2],bb[3]);g.addColorStop(0,tone(roof,.18));g.addColorStop(1,tone(roof,-.12));poly4(c,top,g);
@@ -250,10 +251,199 @@ function spaceshipEarth(c,e,x,y,R,S2){const yc=y-R*.25-R*S2*1.05;
  c.restore();c.strokeStyle='#66717f';c.lineWidth=Math.max(.3,R*.02);c.beginPath();c.arc(x,yc,R,0,7);c.stroke();
  if(e){const h=e.createRadialGradient(x,yc,R*.2,x,yc,R*1.25);h.addColorStop(0,'rgba(150,110,255,.55)');h.addColorStop(.75,'rgba(80,140,255,.35)');h.addColorStop(1,'rgba(80,140,255,0)');e.fillStyle=h;e.beginPath();e.arc(x,yc,R*1.25,0,7);e.fill();
   e.fillStyle='rgba(235,240,255,.95)';const R2=seeded(77);for(let i=0;i<90;i++){const a=R2()*6.283,r=Math.sqrt(R2())*R*.95;e.fillRect(x+Math.cos(a)*r-.3,yc+Math.sin(a)*r-.3,.6,.6)}}}
-// the Mexico pavilion's stepped pyramid
-function stepPyramid(c,e,bb,hh){const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,w=Math.min(bb[2]-bb[0],bb[3]-bb[1])*.38;
- for(let i=0;i<5;i++){const s=w*(1-i*.17),top=cy_+s*.3-hh*(.4+i*.32),y0=cy_+s*.3-hh*(i*.32);poly4(c,[[cx_-s,y0],[cx_+s,y0],[cx_+s,top],[cx_-s,top]],i%2?'#c98a4b':'#b97a3e');poly4(c,[[cx_-s,top],[cx_+s,top],[cx_+s*.92,top-s*.55],[cx_-s*.92,top-s*.55]],i%2?'#e2b47e':'#d9a066')}
- if(e){e.fillStyle='rgba(255,190,110,.6)';e.fillRect(cx_-w*.6,cy_-hh*.2,w*1.2,1)}}
+/* ---------- the Epcot resorts on Crescent Lake: Yacht Club, Beach Club, BoardWalk, Swan and Dolphin ----------
+   Each takes its real colours: the Yacht Club grey-blue clapboard with white trim, the Beach Club sea-foam clapboard, the
+   BoardWalk's mix of seaside facades under green roofs, and the Swan and Dolphin (Michael Graves) coral and turquoise with
+   their wave bands. The Dolphin gets its triangle tower and two dolphin statues, the Swan its arched centre block with a
+   swan at each end; the Yacht Club its lighthouse, Stormalong Bay its shipwreck, and the BoardWalk its wooden boardwalk. */
+const CRES=(()=>{const C=OSM.crescent;if(!C||!C.lake)return null;const R=[['yc',/Yacht/],['bcv',/Beach Club Villas/],['bc',/Beach Club/],['bwv',/BoardWalk Villas/],['bwi',/BoardWalk|Boardwalk Joe/],['swr',/Swan Reserve/],['swan',/World Swan/],['dol',/Dolphin/]],res=[];
+ for(const q of OSM.buildings){if(!q.n||q.p.length<3)continue;const m=R.find(([k,re])=>re.test(q.n));if(!m)continue;const bb=bbox(q.p);res.push({k:m[0],q,bb,c:[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]})}
+ if(!res.length)return null;let box=[1e9,1e9,-1e9,-1e9];for(const r of res){box=[Math.min(box[0],r.bb[0]),Math.min(box[1],r.bb[1]),Math.max(box[2],r.bb[2]),Math.max(box[3],r.bb[3])]}
+ return{res,box,bw:C.bw,lake:C.lake,storm:C.storm,luna:C.luna}})();
+/* which of those resorts a building belongs to: the one whose footprint it is in, or the nearest one close by */
+function cresOf(x,y){if(!CRES||x<CRES.box[0]-60||y<CRES.box[1]-60||x>CRES.box[2]+60||y>CRES.box[3]+60)return null;
+ for(const r of CRES.res)if(x>=r.bb[0]&&x<=r.bb[2]&&y>=r.bb[1]&&y<=r.bb[3]&&ptIn(x,y,r.q.p))return r.k;
+ let b=null,d0=110;for(const r of CRES.res){const d=Math.hypot(r.c[0]-x,r.c[1]-y);if(d<d0){d0=d;b=r.k}}return b}
+Object.assign(LANDSTYLE,{
+ yc:[['#a9b4bf','#a0acb8','#b3bdc7'],['#5c6671','#66707b','#545e69']],
+ bc:[['#97cfc1','#8cc8ba','#a3d6c9'],['#e4e8ea','#d6dde2']],
+ bcv:[['#bcdfe4','#f1e4b4','#c7e3cf','#f0d2c2'],['#d6dde2','#c3ccd3']],
+ bwi:[['#f0e4c6','#e8d4a6','#efe9da','#c96b52'],['#6f9a72','#5f8b66','#7aa37c']],
+ bwv:[['#c75d4b','#e9c47c','#a3bfcc','#efc6a4','#ece4cf','#8fb59d'],['#6f9a72','#b45a4c','#5f8b66']],
+ dol:[['#f09d84','#ea8e74'],['#f2b3a0','#eaa792']],
+ swan:[['#f7f0e6','#f2e9dc'],['#ef9a80','#38b4ae']],
+ swr:[['#ece9e3','#ddd9d1'],['#8c949c','#7d858d']]});
+/* wall decoration per resort, drawn on each visible wall by extrude(): clapboard lines and white trim, or the Graves wave bands */
+function cresDeco(k){
+ if(k==='yc'||k==='bc'||k==='bcv'||k==='bwi')return(c,p,q,L,hh)=>{c.strokeStyle='rgba(255,255,255,.28)';c.lineWidth=.2;for(let v=1.2;v<hh;v+=1.2){c.beginPath();c.moveTo(p[0],p[1]-v);c.lineTo(q[0],q[1]-v);c.stroke()}
+  c.strokeStyle='#fbfbf8';c.lineWidth=.7;c.beginPath();c.moveTo(p[0],p[1]-hh+.35);c.lineTo(q[0],q[1]-hh+.35);c.stroke();c.lineWidth=.5;c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(p[0],p[1]-hh);c.moveTo(q[0],q[1]);c.lineTo(q[0],q[1]-hh);c.stroke()};
+ if(k==='dol'||k==='swan')return(c,p,q,L,hh)=>{const band=(f,col,w,amp)=>{c.strokeStyle=col;c.lineWidth=w;c.beginPath();const n=Math.max(2,Math.ceil(L/1.5));for(let i=0;i<=n;i++){const t=i/n,x=p[0]+(q[0]-p[0])*t,y=p[1]+(q[1]-p[1])*t-hh*f+Math.sin(t*L/4.5*6.283)*amp;i?c.lineTo(x,y):c.moveTo(x,y)}c.stroke()};
+  band(.9,'#2fa9a3',Math.max(.6,hh*.07),hh*.03);band(.78,k==='swan'?'#ef9a80':'#f7e7d2',Math.max(.4,hh*.04),hh*.025);c.fillStyle='#2fa9a3';poly4(c,[p,q,[q[0],q[1]-hh*.06],[p[0],p[1]-hh*.06]],'#2fa9a3')};
+ return null}
+/* a dolphin statue: head down on its plinth, body arching up to a fanned tail */
+function dolphinStatue(c,x,y,h,flip){const s=flip?-1:1,w=h*.32;c.save();c.translate(x,y);c.scale(s,1);
+ c.fillStyle='#e9ddc8';c.fillRect(-w*.6,-h*.08,w*1.2,h*.08);
+ const g=c.createLinearGradient(-w,0,w,0);g.addColorStop(0,'#5fd0c8');g.addColorStop(1,'#1f8f8a');c.fillStyle=g;
+ c.beginPath();c.moveTo(-w*.15,-h*.08);c.bezierCurveTo(-w*1.1,-h*.35,-w*.9,-h*.8,w*.05,-h*.86);c.bezierCurveTo(w*.35,-h*.7,w*.1,-h*.45,w*.45,-h*.12);c.closePath();c.fill();
+ c.beginPath();c.moveTo(w*.05,-h*.84);c.lineTo(-w*.55,-h*1.02);c.lineTo(-w*.05,-h*.9);c.lineTo(w*.45,-h*1.04);c.closePath();c.fill();
+ c.fillStyle='#173d3b';c.beginPath();c.arc(-w*.05,-h*.2,Math.max(.25,w*.07),0,7);c.fill();c.restore()}
+/* a swan statue: white body, S-curved neck, orange-gold beak */
+function swanStatue(c,x,y,h,flip){const s=flip?-1:1;c.save();c.translate(x,y);c.scale(s,1);const w=h*.55;
+ c.fillStyle='#e9ddc8';c.fillRect(-w*.7,-h*.06,w*1.4,h*.06);
+ c.fillStyle='#fbfaf6';c.beginPath();c.moveTo(-w*.8,-h*.12);c.bezierCurveTo(-w*.7,-h*.5,w*.3,-h*.55,w*.75,-h*.3);c.lineTo(w*.55,-h*.12);c.closePath();c.fill();
+ c.strokeStyle='#fbfaf6';c.lineWidth=Math.max(.5,h*.11);c.lineCap='round';c.beginPath();c.moveTo(-w*.45,-h*.35);c.bezierCurveTo(-w*.95,-h*.6,-w*.1,-h*.8,-w*.45,-h*.98);c.stroke();
+ c.fillStyle='#e9a23b';c.beginPath();c.moveTo(-w*.48,-h*.99);c.lineTo(-w*.82,-h*.93);c.lineTo(-w*.48,-h*.91);c.fill();
+ c.strokeStyle='rgba(120,130,140,.45)';c.lineWidth=Math.max(.2,h*.03);c.beginPath();c.moveTo(-w*.4,-h*.3);c.quadraticCurveTo(0,-h*.42,w*.5,-h*.28);c.stroke();c.restore()}
+/* the Dolphin's triangle tower rising from the middle of its wings, with the turquoise cascade down its face */
+function dolphinTower(c,e,x,y,base,H,dep,wingH){const L=[x-base,y],Rr=[x+base,y],A=[x,y-H],up=p=>[p[0],p[1]-dep];
+ poly4(c,[L,A,up(A),up(L)],'#f6b39d');poly4(c,[A,Rr,up(Rr),up(A)],'#d97b63');
+ c.save();pathOf(c,[L,A,up(A),up(L)],1);c.clip();c.strokeStyle='rgba(47,169,163,.75)';c.lineWidth=H*.03;for(let t=.15;t<1;t+=.22){c.beginPath();c.moveTo(L[0]+(A[0]-L[0])*t,L[1]+(A[1]-L[1])*t);c.lineTo(L[0]+(A[0]-L[0])*t,L[1]+(A[1]-L[1])*t-dep);c.stroke()}c.restore();
+ poly4(c,[L,Rr,A],'#ee9479');
+ c.save();pathOf(c,[L,Rr,A],1);c.clip();for(let r=1;r<H/3.4;r++){const yy=y-r*3.4,hw=base*(1-r*3.4/H);for(let xx=x-hw+1.6;xx<x+hw-1.2;xx+=2.6){if(Math.abs(xx-x)<base*.14)continue;c.fillStyle='#5a6f8c';c.fillRect(xx,yy+1,1.1,1.5);if(e&&hsh((xx*7|0)+r*13)%10<6){e.fillStyle='rgba(255,205,130,.9)';e.fillRect(xx,yy+1,1.1,1.5)}}}c.restore();
+ const cw=base*.13;poly4(c,[[x-cw,y],[x+cw,y],[x+cw*.4,y-H*.82],[x-cw*.4,y-H*.82]],'#33b0aa');
+ c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=.35;for(let yy=y-H*.8;yy<y-1;yy+=2.2){const k=(y-yy)/H;c.beginPath();c.moveTo(x-cw*(.4+.6*(1-k))*.8,yy);c.lineTo(x-cw*(.4+.6*(1-k))*.6,yy+1.4);c.moveTo(x+cw*(.4+.6*(1-k))*.7,yy+.6);c.lineTo(x+cw*(.4+.6*(1-k))*.5,yy+2);c.stroke()}
+ for(let i=0;i<4;i++){const yy=y-H*(.12+i*.17),r=cw*(1.5-i*.22);c.fillStyle='#f4e6cf';c.beginPath();c.arc(x,yy,r,Math.PI,0);c.fill();c.strokeStyle='#2fa9a3';c.lineWidth=.3;for(let a=0;a<5;a++){c.beginPath();c.moveTo(x,yy);c.lineTo(x+Math.cos(Math.PI+a*Math.PI/4)*r,yy+Math.sin(Math.PI+a*Math.PI/4)*r);c.stroke()}}
+ c.fillStyle='#2fa9a3';c.beginPath();c.moveTo(A[0],A[1]-3);c.lineTo(A[0]-1.4,A[1]+1);c.lineTo(A[0]+1.4,A[1]+1);c.fill();
+ if(e){e.fillStyle='rgba(120,240,230,.55)';poly4(e,[[x-cw,y],[x+cw,y],[x+cw*.4,y-H*.82],[x-cw*.4,y-H*.82]],'rgba(120,240,230,.5)')}
+ const sh=H*.38;dolphinStatue(c,x-base*1.22,y-wingH,sh,false);dolphinStatue(c,x+base*1.22,y-wingH,sh,true)}
+/* the Swan's centre block: white with wave bands, its gently arched roof, a swan at each end */
+function swanBlock(c,e,x,y,w,dep,H){const arch=H*.16,top=t=>y-H-Math.sin(t*Math.PI)*arch,n=24;
+ const front=[[x-w,y],[x+w,y]];for(let i=n;i>=0;i--)front.push([x-w+2*w*i/n,top(i/n)]);
+ const roof=[];for(let i=0;i<=n;i++)roof.push([x-w+2*w*i/n,top(i/n)]);for(let i=n;i>=0;i--)roof.push([x-w+2*w*i/n,top(i/n)-dep]);
+ const g=c.createLinearGradient(x,y-H-arch-dep,x,y-H);g.addColorStop(0,'#f3ab93');g.addColorStop(1,'#e28a70');poly4(c,roof,g);
+ c.strokeStyle='rgba(160,80,60,.35)';c.lineWidth=.3;for(let i=1;i<n;i+=2){const xx=x-w+2*w*i/n;c.beginPath();c.moveTo(xx,top(i/n));c.lineTo(xx,top(i/n)-dep);c.stroke()}
+ poly4(c,front,'#f7f0e6');
+ c.save();pathOf(c,front,1);c.clip();for(let r=1;r<H/3.3;r++){const yy=y-r*3.3;for(let xx=x-w+1.5;xx<x+w-1;xx+=2.5){c.fillStyle='#5a6f8c';c.fillRect(xx,yy+.9,1.1,1.5);if(e&&hsh((xx*5|0)+r*11)%10<6){e.fillStyle='rgba(255,205,130,.9)';e.fillRect(xx,yy+.9,1.1,1.5)}}}
+ for(const[f,col,lw]of[[.88,'#2fa9a3',H*.07],[.72,'#ef9a80',H*.045],[.08,'#2fa9a3',H*.05]]){c.strokeStyle=col;c.lineWidth=lw;c.beginPath();for(let i=0;i<=60;i++){const t=i/60,xx=x-w+2*w*t,yy=y-H*f-(f>.5?Math.sin(t*Math.PI)*arch*(f-.5)*2:0)+Math.sin(t*w/5*6.283)*H*.025;i?c.lineTo(xx,yy):c.moveTo(xx,yy)}c.stroke()}c.restore();
+ c.strokeStyle='#d98a72';c.lineWidth=.5;pathOf(c,front,1);c.stroke();
+ const sh=H*.62;swanStatue(c,x-w*.8,top(.1)-dep*.45,sh,false);swanStatue(c,x+w*.8,top(.9)-dep*.45,sh,true)}
+/* the Yacht Club's lighthouse at the end of its dock */
+function lighthouse(c,e,x,y,h){c.fillStyle='rgba(30,50,60,.25)';c.beginPath();c.ellipse(x+h*.25,y+.6,h*.22,h*.08,0,0,7);c.fill();
+ poly4(c,[[x-h*.11,y],[x+h*.11,y],[x+h*.07,y-h*.78],[x-h*.07,y-h*.78]],'#fbfaf6');poly4(c,[[x+h*.02,y],[x+h*.11,y],[x+h*.07,y-h*.78],[x+h*.02,y-h*.78]],'#dfe2e4');
+ c.fillStyle='#3f4a57';c.fillRect(x-h*.1,y-h*.82,h*.2,h*.05);c.fillStyle='#f6e6a8';c.fillRect(x-h*.06,y-h*.93,h*.12,h*.11);c.fillStyle='#3f4a57';c.beginPath();c.moveTo(x-h*.09,y-h*.93);c.lineTo(x,y-h*1.02);c.lineTo(x+h*.09,y-h*.93);c.fill();
+ if(e){const g=e.createRadialGradient(x,y-h*.88,0,x,y-h*.88,h*.8);g.addColorStop(0,'rgba(255,240,180,.95)');g.addColorStop(1,'rgba(255,240,180,0)');e.fillStyle=g;e.beginPath();e.arc(x,y-h*.88,h*.8,0,7);e.fill()}}
+/* Stormalong Bay's shipwreck (the slide), and the Luna Park pool's wooden coaster slide */
+function shipwreck(c,x,y,s){c.fillStyle='rgba(30,50,40,.25)';c.beginPath();c.ellipse(x+s*.3,y+.8,s*.9,s*.25,0,0,7);c.fill();
+ c.fillStyle='#7a5434';c.beginPath();c.moveTo(x-s,y-s*.25);c.quadraticCurveTo(x,y+s*.25,x+s*.9,y-s*.35);c.lineTo(x+s*.6,y-s*.05);c.quadraticCurveTo(x,y+s*.05,x-s*.8,y-s*.05);c.closePath();c.fill();
+ c.fillStyle='#9a6e45';c.fillRect(x-s*.7,y-s*.32,s*1.3,s*.12);c.strokeStyle='#5a3e26';c.lineWidth=Math.max(.35,s*.07);c.beginPath();c.moveTo(x-s*.1,y-s*.2);c.lineTo(x-s*.25,y-s*1.5);c.stroke();
+ c.strokeStyle='rgba(240,235,220,.85)';c.lineWidth=Math.max(.2,s*.03);c.beginPath();c.moveTo(x-s*.25,y-s*1.45);c.lineTo(x-s*.9,y-s*.3);c.moveTo(x-s*.25,y-s*1.45);c.lineTo(x+s*.6,y-s*.3);c.stroke();
+ c.fillStyle='#efe6d2';c.beginPath();c.moveTo(x-s*.22,y-s*1.3);c.quadraticCurveTo(x+s*.25,y-s*1.05,x-s*.18,y-s*.7);c.closePath();c.fill()}
+function coasterSlide(c,x,y,s){c.strokeStyle='#8a6440';c.lineWidth=Math.max(.3,s*.05);for(let i=0;i<=6;i++){const xx=x-s+i*s/3,hh=s*(.35+.25*Math.sin(i*1.3));c.beginPath();c.moveTo(xx,y);c.lineTo(xx,y-hh);c.stroke()}
+ c.strokeStyle='#f2efe6';c.lineWidth=Math.max(.4,s*.09);c.beginPath();for(let i=0;i<=24;i++){const t=i/24,xx=x-s+2*s*t,yy=y-s*(.35+.25*Math.sin(t*6*1.3))-s*.05;i?c.lineTo(xx,yy):c.moveTo(xx,yy)}c.stroke();
+ c.strokeStyle='#d9473f';c.lineWidth=Math.max(.2,s*.04);c.stroke()}
+/* the BoardWalk's boardwalk: walkways inside the BoardWalk's outline and along Crescent Lake's shore are laid in planks */
+function onBoardwalk(x,y){if(!CRES||!CRES.bw||!ptIn(x,y,CRES.bw))return false;const P=CRES.lake;let d=1e9;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy||1)));d=Math.min(d,Math.hypot(a[0]+dx*t-x,a[1]+dy*t-y))}return d<48}
+/* The Land (EPCOT): a low sandstone building whose walls run in layered earth-tone bands, like the strata under the
+   ground, under a great stepped glass roof over the central atrium (the "glass mountain" the pavilion is known for), with
+   the glass entrance facing Future World and the Living with the Land greenhouses' sawtooth glass roofs at the back. */
+const LANDSTRATA=['#c8743f','#d99a55','#b5603a','#e3b878','#a9573a'];
+function strataDeco(c,p,q,L,hh){const n=LANDSTRATA.length;for(let i=0;i<n;i++){const v0=hh*i/n,v1=hh*(i+1)/n,wob=t=>Math.sin(t*L/9+i*1.7)*hh*.04;c.fillStyle=LANDSTRATA[i];c.beginPath();
+  for(let k=0;k<=12;k++){const t=k/12;c.lineTo(p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t-v0-(i?wob(t):0))}for(let k=12;k>=0;k--){const t=k/12;c.lineTo(p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t-v1-(i<n-1?wob(t+.3):0))}c.closePath();c.globalAlpha=.55;c.fill();c.globalAlpha=1}}
+/* a glass frustum/pyramid tier: plan rectangle x0..x1 / y0..y1 at height z0, rising to an inset top at z1 */
+function glassTier(c,e,x0,y0,x1,y1,z0,z1,ins){const P=(x,y,z)=>[x,y-z],a=P(x0,y0,z0),b=P(x1,y0,z0),cc=P(x1,y1,z0),d=P(x0,y1,z0),A=P(x0+ins,y0+ins*.8,z1),Bq=P(x1-ins,y0+ins*.8,z1),C=P(x1-ins,y1-ins*.8,z1),D=P(x0+ins,y1-ins*.8,z1);
+ const face=(pts,c0,c1)=>{const bb_=bbox(pts),g=c.createLinearGradient(bb_[0],bb_[1],bb_[2],bb_[3]);g.addColorStop(0,c0);g.addColorStop(1,c1);poly4(c,pts,g);
+  c.save();pathOf(c,pts,1);c.clip();c.strokeStyle='rgba(255,255,255,.45)';c.lineWidth=.22;const[p0,p1,p2,p3]=pts;for(let t=0;t<=1;t+=1/8){c.beginPath();c.moveTo(p0[0]+(p1[0]-p0[0])*t,p0[1]+(p1[1]-p0[1])*t);c.lineTo(p3[0]+(p2[0]-p3[0])*t,p3[1]+(p2[1]-p3[1])*t);c.stroke()}
+  for(let t=0;t<=1;t+=1/3){c.beginPath();c.moveTo(p0[0]+(p3[0]-p0[0])*t,p0[1]+(p3[1]-p0[1])*t);c.lineTo(p1[0]+(p2[0]-p1[0])*t,p1[1]+(p2[1]-p1[1])*t);c.stroke()}c.restore();
+  if(e&&lit)poly4(e,pts,'rgba(255,214,150,.4)')};let lit=false;
+ c.fillStyle='rgba(40,50,40,.22)';c.beginPath();c.moveTo(b[0],b[1]);c.lineTo(Bq[0]+(z1-z0)*.6,Bq[1]+(z1-z0)*.15);c.lineTo(C[0]+(z1-z0)*.6,C[1]+(z1-z0)*.15+ins*.8);c.lineTo(cc[0],cc[1]);c.closePath();c.fill();
+ face([a,b,Bq,A],'#3f6b7d','#355d6e');face([d,a,A,D],'#d6f1f6','#bfe5ee');face([b,cc,C,Bq],'#4d8196','#41707f');lit=true;face([d,cc,C,D],'#a3d3df','#86bfcf');
+ poly4(c,[A,Bq,C,D],'#eaf8fb');if(e)poly4(e,[A,Bq,C,D],'rgba(255,214,150,.3)');c.strokeStyle='rgba(255,255,255,.85)';c.lineWidth=.35;for(const[u,v]of[[d,D],[cc,C],[a,A],[b,Bq]]){c.beginPath();c.moveTo(...u);c.lineTo(...v);c.stroke()}pathOf(c,[A,Bq,C,D],1);c.stroke();c.strokeStyle='rgba(60,90,100,.5)';c.lineWidth=.3;pathOf(c,[a,b,cc,d],1);c.stroke()}
+/* a glass hall: low glass walls (the south one seen) under a hipped glass roof rising to a ridge */
+function glassHall(c,e,x0,y0,x1,y1,z0,wh,rh){const r=Math.min((y1-y0)/2,(x1-x0)/2),cy=(y0+y1)/2,P=(x,y,z)=>[x,y-z],zt=z0+wh,
+  a=P(x0,y0,zt),b=P(x1,y0,zt),cc=P(x1,y1,zt),d=P(x0,y1,zt),R0=P(x0+r,cy,zt+rh),R1=P(x1-r,cy,zt+rh),grid=(pts,n,m)=>{c.save();pathOf(c,pts,1);c.clip();c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=.22;const bb_=bbox(pts);
+   for(let x=bb_[0];x<bb_[2];x+=(bb_[2]-bb_[0])/n){c.beginPath();c.moveTo(x,bb_[1]);c.lineTo(x,bb_[3]);c.stroke()}for(let y=bb_[1];y<bb_[3];y+=(bb_[3]-bb_[1])/m){c.beginPath();c.moveTo(bb_[0],y);c.lineTo(bb_[2],y);c.stroke()}c.restore()};
+ c.fillStyle='rgba(40,50,40,.22)';pathOf(c,[cc,b,[R1[0]+rh*.7,R1[1]+rh*.4],[cc[0]+rh*.7,cc[1]+rh*.25]],1);c.fill();
+ const sw=[P(x0,y1,z0),P(x1,y1,z0),cc,d];poly4(c,sw,'#6fa8ba');grid(sw,Math.round((x1-x0)/4),2);if(e)poly4(e,sw,'rgba(255,214,150,.6)');
+ const ew=[P(x1,y1,z0),P(x1,y0,z0),b,cc];poly4(c,ew,'#4b7f92');
+ poly4(c,[a,b,R1,R0],'#3e6a7c');poly4(c,[b,cc,R1],'#5b90a4');
+ const sf=[d,cc,R1,R0],g=c.createLinearGradient(0,d[1],0,R0[1]);g.addColorStop(0,'#9fd0dd');g.addColorStop(1,'#d3eef4');poly4(c,sf,g);grid(sf,Math.round((x1-x0)/3.4),4);
+ const wf=[a,R0,d],g2=c.createLinearGradient(a[0],0,R0[0],0);g2.addColorStop(0,'#e3f6f9');g2.addColorStop(1,'#c2e6ee');poly4(c,wf,g2);grid(wf,5,4);
+ if(e){poly4(e,sf,'rgba(255,214,150,.35)');poly4(e,wf,'rgba(255,214,150,.35)')}
+ c.strokeStyle='rgba(255,255,255,.9)';c.lineWidth=.4;c.beginPath();c.moveTo(...R0);c.lineTo(...R1);c.moveTo(...d);c.lineTo(...R0);c.lineTo(...a);c.moveTo(...cc);c.lineTo(...R1);c.moveTo(...d);c.lineTo(...cc);c.stroke()}
+function landPavilion(c,e,q,bb,S2){const hh=11*S2;extrude(c,e,q.p,hh,'#d9a868','#e4d2b0',{noWin:true,deco:strataDeco,ridge:false});
+ /* the greenhouses (Living with the Land) at the back, north-west: rows of sawtooth glass */
+ for(let x=3713;x<3756;x+=4.2){const y0=5525,y1=5551;poly4(c,[[x,y1-hh],[x+4.2,y1-hh],[x+4.2,y0-hh],[x,y0-hh]],'#b8dde4');poly4(c,[[x+2.6,y1-hh-1.6],[x+4.2,y1-hh],[x+4.2,y0-hh],[x+2.6,y0-hh-1.6]],'#7fb0bf');c.strokeStyle='rgba(255,255,255,.6)';c.lineWidth=.2;c.beginPath();c.moveTo(x+2.6,y1-hh-1.6);c.lineTo(x+2.6,y0-hh-1.6);c.stroke();if(e)poly4(e,[[x,y1-hh],[x+4.2,y1-hh],[x+4.2,y0-hh],[x,y0-hh]],'rgba(200,120,255,.35)')}
+ /* the round greenhouse at the west end: a low glass dome */
+ {const x=3716,y=5585-hh,r=17,g=c.createRadialGradient(x-r*.4,y-r*.5,1,x,y,r);g.addColorStop(0,'#e4f5f8');g.addColorStop(1,'#6fa6b8');c.fillStyle=g;c.beginPath();c.ellipse(x,y,r,r*.8,0,0,7);c.fill();
+  c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=.25;for(let a=0;a<12;a++){c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a*.5236)*r,y+Math.sin(a*.5236)*r*.8);c.stroke()}for(const k of[.4,.75]){c.beginPath();c.ellipse(x,y,r*k,r*.8*k,0,0,7);c.stroke()}
+  if(e){e.fillStyle='rgba(200,120,255,.35)';e.beginPath();e.ellipse(x,y,r,r*.8,0,0,7);e.fill()}}
+ /* the great glass roof over the atrium */
+ const cx_=3797,cy_=5603;glassHall(c,e,cx_-46,cy_-34,cx_+46,cy_+34,hh,5*S2,18*S2);
+ /* the glass entrance facing Future World (east): a tall sloped glass front with its canopy */
+ glassHall(c,e,3848,5582,3866,5612,0,hh+2*S2,7*S2);
+ c.fillStyle='#b5603a';c.fillRect(3848,5614,16,1.2)}
+/* The Mexico pavilion: a Mesoamerican stepped pyramid in the style of Teotihuacan, lined up with the building's real
+   footprint (which sits at an angle), its grand staircase facing the World Showcase Lagoon and a small temple on top.
+   The plaza and boat ride are in the plain show building behind it. Each tier slopes (talud) and carries a darker
+   panel band (tablero); faces are lit from the upper left like the rest of the map. */
+function mexicoPyramid(c,e,poly,S2){const P_=[...new Map(poly.map(p=>[p.join(),p])).values()];let mx=0,my=0;for(const[x,y]of P_){mx+=x;my+=y}mx/=P_.length;my/=P_.length;
+ let sxx=0,syy=0,sxy=0;for(const[x,y]of P_){sxx+=(x-mx)**2;syy+=(y-my)**2;sxy+=(x-mx)*(y-my)}const th=.5*Math.atan2(2*sxy,sxx-syy);let U=[Math.cos(th),Math.sin(th)];
+ const lag=EPCOT?EPCOT.c:[mx,my+100];if((lag[0]-mx)*U[0]+(lag[1]-my)*U[1]<0)U=[-U[0],-U[1]];const V=[-U[1],U[0]];
+ let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;for(const[x,y]of P_){const u=(x-mx)*U[0]+(y-my)*U[1],v=(x-mx)*V[0]+(y-my)*V[1];u0=Math.min(u0,u);u1=Math.max(u1,u);v0=Math.min(v0,v);v1=Math.max(v1,v)}
+ const P=(u,v,z)=>[mx+u*U[0]+v*V[0],my+u*U[1]+v*V[1]-z],s=(v1-v0)*.98,uc=u1-s/2,vc=(v0+v1)/2,N=5,Hp=24*S2,
+  sq=(h,z)=>[P(uc+h,vc-h,z),P(uc+h,vc+h,z),P(uc-h,vc+h,z),P(uc-h,vc-h,z)], /* front-left, front-right, back-right, back-left */
+  nrm=[U,V,[-U[0],-U[1]],[-V[0],-V[1]]], /* outward normals of the sides front, right, back, left */
+  shade=n=>{const k=-(n[0]*-.6+n[1]*-.8);return k}; /* how much a side faces away from the light (upper left) */
+ /* the show building behind: a plain flat-roofed block */
+ extrude(c,e,poly,7*S2,'#c9b48e','#a8987a',{noWin:true,ridge:false});
+ c.fillStyle='rgba(40,40,30,.25)';poly4(c,[P(uc+s*.5,vc+s*.5,0),P(uc-s*.5,vc+s*.5,0),P(uc-s*.5+Hp*.5,vc+s*.5+Hp*.6,0),P(uc+s*.5+Hp*.5,vc+s*.5+Hp*.6,0)],'rgba(40,40,30,.22)');
+ for(let i=0;i<N;i++){const hb=s/2*(1-i*.15),ht=hb-s*.04,za=Hp*i/N,zb=Hp*(i+1)/N,B=sq(hb,za),T=sq(ht,zb),order=[0,1,2,3].sort((a,b)=>nrm[a][1]-nrm[b][1]);
+  for(const k of order){const k2=(k+1)%4,f=[B[k],B[k2],T[k2],T[k]],sh=shade(nrm[k]);poly4(c,f,tone('#cdb894',-.05-sh*.22));
+   const mid=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];poly4(c,[mid(B[k],T[k],.45),mid(B[k2],T[k2],.45),mid(B[k2],T[k2],.85),mid(B[k],T[k],.85)],tone('#9c8664',-sh*.2));
+   c.strokeStyle='rgba(90,70,45,.45)';c.lineWidth=.25;c.beginPath();c.moveTo(...T[k]);c.lineTo(...T[k2]);c.stroke()}
+  poly4(c,T,'#e2d3b2')}
+ /* the grand staircase up the front, with its balustrades, and the temple on top */
+ const hT=s/2*(1-(N-1)*.15)-s*.04,w=s*.11,st=[P(uc+s/2+2,vc-w,0),P(uc+s/2+2,vc+w,0),P(uc+hT,vc+w,Hp),P(uc+hT,vc-w,Hp)];poly4(c,st,'#d8c7a2');
+ c.strokeStyle='rgba(110,90,60,.55)';c.lineWidth=.2;for(let t=.04;t<1;t+=.045){const a=[st[0][0]+(st[3][0]-st[0][0])*t,st[0][1]+(st[3][1]-st[0][1])*t],b=[st[1][0]+(st[2][0]-st[1][0])*t,st[1][1]+(st[2][1]-st[1][1])*t];c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke()}
+ c.strokeStyle='#8f7a58';c.lineWidth=.7;c.beginPath();c.moveTo(...st[0]);c.lineTo(...st[3]);c.moveTo(...st[1]);c.lineTo(...st[2]);c.stroke();
+ const tb=hT*.62,tz=Hp,th2=5*S2,Tb=sq(tb,tz),Tt=sq(tb,tz+th2);for(const k of[0,1,2,3].sort((a,b)=>nrm[a][1]-nrm[b][1])){const k2=(k+1)%4;poly4(c,[Tb[k],Tb[k2],Tt[k2],Tt[k]],tone('#d9c9a6',-shade(nrm[k])*.22))}
+ poly4(c,Tt,'#a8473b');{const d0=P(uc+tb,vc-tb*.3,tz),d1=P(uc+tb,vc+tb*.3,tz),d2=P(uc+tb,vc+tb*.3,tz+th2*.6),d3=P(uc+tb,vc-tb*.3,tz+th2*.6);poly4(c,[d0,d1,d2,d3],'#3a2a22');if(e)poly4(e,[d0,d1,d2,d3],'rgba(255,170,90,.9)')}
+ c.strokeStyle='#a8473b';c.lineWidth=.6;c.beginPath();c.moveTo(...Tt[0]);c.lineTo(...Tt[1]);c.stroke();
+ if(e){e.fillStyle='rgba(255,180,100,.5)';for(let t=.1;t<1;t+=.2){const p=[st[0][0]+(st[3][0]-st[0][0])*t,st[0][1]+(st[3][1]-st[0][1])*t],q=[st[1][0]+(st[2][0]-st[1][0])*t,st[1][1]+(st[2][1]-st[1][1])*t];e.beginPath();e.arc(p[0],p[1],.8,0,7);e.arc(q[0],q[1],.8,0,7);e.fill()}}}
+/* ---------- Hollywood Studios ----------
+   Each area keeps its own look: Hollywood and Sunset Boulevards' pastel Art Deco and Spanish-revival storefronts,
+   Echo Lake's California seaside, the plain soundstages of Grand Avenue and Animation Courtyard, Toy Story Land's giant
+   toy colours and Galaxy's Edge's weathered Batuu stone under its petrified spires. Landmarks: the Hollywood Tower Hotel
+   (Tower of Terror), the Chinese Theatre in front of Mickey & Minnie's Runaway Railway, the giant guitar at Rock 'n'
+   Roller Coaster and the Millennium Falcon on its landing pad. */
+const HSL_ART=new Set(['hb','el','ga','sw','ts','ac','sb']);
+Object.assign(LANDSTYLE,{
+ hb:[['#f4e6cf','#f1d6c6','#e4ead8','#f5e3b8','#dce8ec','#efd9e4'],['#c99a6a','#a5836a','#b86c55','#8fa3a8']],
+ sb:[['#f3ddc2','#eed2ba','#f7e8cd','#e6c7aa'],['#b6573a','#a35d3c','#c7764a']],
+ el:[['#eef2f2','#f3e5c6','#d3e4ea','#f0d9c8'],['#5d87a8','#9aa7b2','#c46a4a']],
+ ga:[['#cbb79f','#bba78f','#dacdb8'],['#7e6e5e','#91806d','#6f6458']],
+ ac:[['#ebe5f2','#dde2f1','#f3ecdb'],['#6c76c9','#8a93d6','#9aa0b8']],
+ ts:[['#f3d56c','#ea6a5e','#70aadb','#83c870','#f2efe4'],['#e8605a','#3f7fd0','#f2c24a','#58a85a']],
+ sw:[['#cfb99c','#c0a78a','#d9c8ae','#b9a284'],['#a39279','#93836c','#b3a286']]});
+/* the Hollywood Tower Hotel: a tall block of pink-tan stucco with terracotta trim, Moorish arches along its top, its
+   lightning-split face and the hotel's name in neon */
+function towerHotel(c,e,q,bb,S2){const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,s=.6,P=q.p.map(([x,y])=>[cx_+(x-cx_)*s,cy_-6+(y-cy_)*s]),hh=61*S2,tb=bbox(P);
+ extrude(c,e,q.p,14*S2,'#dcb197','#b4583c',{noWin:true,ridge:false});
+ extrude(c,e,P,hh,'#e2b9a0','#9a4a35',{ridge:false});
+ c.strokeStyle='#b4583c';c.lineWidth=.8;for(const f of[.33,.66,.93]){c.beginPath();c.moveTo(tb[0],tb[3]-hh*f);c.lineTo(tb[2],tb[3]-hh*f);c.stroke()}
+ c.fillStyle='#7a3a2a';for(let x=tb[0]+2;x<tb[2]-2;x+=4){c.beginPath();c.arc(x+1.5,tb[3]-hh+3,1.4,Math.PI,0);c.fill()}
+ c.strokeStyle='rgba(40,30,30,.75)';c.lineWidth=1.1;c.beginPath();c.moveTo((tb[0]+tb[2])/2+3,tb[3]-hh*.98);c.lineTo((tb[0]+tb[2])/2-2,tb[3]-hh*.75);c.lineTo((tb[0]+tb[2])/2+4,tb[3]-hh*.6);c.lineTo((tb[0]+tb[2])/2,tb[3]-hh*.42);c.stroke();
+ c.fillStyle='#3a2e2a';c.fillRect(tb[0]+3,tb[1]-hh-5,tb[2]-tb[0]-6,4);if(e){e.fillStyle='rgba(255,90,70,.95)';e.fillRect(tb[0]+4,tb[1]-hh-4.4,tb[2]-tb[0]-8,2.6)}else{c.fillStyle='#e86a55';c.fillRect(tb[0]+4,tb[1]-hh-4.4,tb[2]-tb[0]-8,1.2)}}
+/* the Chinese Theatre: red columns and two jade-green pagoda roofs, at the building's front toward the Boulevard */
+function chineseTheatre(c,e,bb,S2){const fr=OSM.places.hsbooth||[bb[2],bb[1]],cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,d=Math.hypot(fr[0]-cx_,fr[1]-cy_)||1,ux=(fr[0]-cx_)/d,uy=(fr[1]-cy_)/d,
+  x=cx_+ux*Math.min((bb[2]-bb[0]),(bb[3]-bb[1]))*.48,y=cy_+uy*Math.min((bb[2]-bb[0]),(bb[3]-bb[1]))*.48,w=16,h=14*S2;
+ c.fillStyle='rgba(40,40,30,.25)';c.beginPath();c.ellipse(x+5,y+2,w*1.1,4,0,0,7);c.fill();
+ poly4(c,[[x-w,y],[x+w,y],[x+w,y-h],[x-w,y-h]],'#e9d9bd');c.fillStyle='#b8322a';for(let i=-3;i<=3;i++)c.fillRect(x+i*w/3.6-.8,y-h*.95,1.6,h*.95);
+ const roof=(yb,ww,hh2,col)=>{c.fillStyle=col;c.beginPath();c.moveTo(x-ww-3,yb+1.5);c.quadraticCurveTo(x-ww*.6,yb-hh2*.2,x-ww*.35,yb-hh2);c.lineTo(x+ww*.35,yb-hh2);c.quadraticCurveTo(x+ww*.6,yb-hh2*.2,x+ww+3,yb+1.5);c.closePath();c.fill();c.strokeStyle='#e0b84a';c.lineWidth=.4;c.stroke()};
+ roof(y-h,w,h*.45,'#3f8a6e');poly4(c,[[x-w*.45,y-h*1.4],[x+w*.45,y-h*1.4],[x+w*.45,y-h*1.75],[x-w*.45,y-h*1.75]],'#b8322a');roof(y-h*1.75,w*.6,h*.4,'#357a60');
+ c.fillStyle='#e0b84a';c.fillRect(x-.4,y-h*2.3,.8,h*.2);if(e){e.fillStyle='rgba(255,200,120,.8)';e.fillRect(x-w,y-h*.6,w*2,h*.5)}}
+/* the giant red guitar outside Rock 'n' Roller Coaster */
+function bigGuitar(c,x,y,h){c.save();c.translate(x,y);c.rotate(-.35);c.fillStyle='rgba(30,30,30,.25)';c.beginPath();c.ellipse(h*.2,1,h*.3,h*.08,0,0,7);c.fill();
+ c.fillStyle='#c8232c';c.beginPath();c.ellipse(0,-h*.18,h*.16,h*.2,0,0,7);c.fill();c.beginPath();c.ellipse(0,-h*.42,h*.12,h*.14,0,0,7);c.fill();
+ c.fillStyle='#f2efe6';c.fillRect(-h*.06,-h*.36,h*.12,h*.12);c.fillStyle='#6b4a2a';c.fillRect(-h*.025,-h*1.0,h*.05,h*.5);c.fillStyle='#e8e8e8';c.fillRect(-h*.05,-h*1.06,h*.1,h*.1);c.restore()}
+/* the Millennium Falcon on its outline in the map data: the saucer, its two forward mandibles and the side cockpit */
+function falcon(c,e,o){const b=bbox(o),x=(b[0]+b[2])/2,y=(b[1]+b[3])/2,r=Math.min(b[2]-b[0],b[3]-b[1])*.5,z=2.2;
+ c.fillStyle='rgba(30,40,30,.3)';c.beginPath();c.ellipse(x+3,y+2,r*1.05,r*.95,0,0,7);c.fill();
+ const g=c.createRadialGradient(x-r*.3,y-z-r*.3,1,x,y-z,r);g.addColorStop(0,'#eceae4');g.addColorStop(1,'#a9a69f');c.fillStyle=g;c.beginPath();c.arc(x,y-z,r,0,7);c.fill();
+ c.fillStyle='#b9b6ae';c.fillRect(x+r*.55,y-z-r*.42,r*.75,r*.3);c.fillRect(x+r*.55,y-z+r*.12,r*.75,r*.3);
+ c.strokeStyle='#8a8780';c.lineWidth=.3;for(const k of[.35,.6,.85]){c.beginPath();c.arc(x,y-z,r*k,0,7);c.stroke()}for(let a=0;a<12;a++){c.beginPath();c.moveTo(x,y-z);c.lineTo(x+Math.cos(a*.5236)*r,y-z+Math.sin(a*.5236)*r);c.stroke()}
+ c.fillStyle='#d6d3cc';c.beginPath();c.arc(x,y-z,r*.18,0,7);c.fill();c.fillStyle='#c2bfb8';c.save();c.translate(x-r*.1,y-z+r*.78);c.rotate(.5);c.fillRect(0,-r*.1,r*.45,r*.2);c.fillStyle='#3a4a5a';c.beginPath();c.arc(r*.47,0,r*.11,0,7);c.fill();c.restore();
+ c.fillStyle='#d65a3a';c.fillRect(x-r*.8,y-z-r*.05,r*.15,r*.1);if(e){e.fillStyle='rgba(120,180,255,.9)';e.fillRect(x-r*1.02,y-z-r*.35,r*.12,r*.7)}}
 /* ---------- the build: everything from OpenStreetMap ---------- */
 function buildMap(){
  const phone=Math.min(screen.width,screen.height)<700,P=OSM.places,box=(x0,y0,x1,y1,k)=>({x:Math.max(0,x0),y:Math.max(0,y0),w:Math.min(W,x1)-Math.max(0,x0),h:Math.min(H,y1)-Math.max(0,y0),k,base:null,glow:null});
@@ -265,12 +455,13 @@ function buildMap(){
   if(L.x>0)side(0,0,F,q.height,0,0,F,0);if(L.y>0)side(0,0,q.width,F,0,0,0,F);if(L.x+L.w<W-1)side(q.width-F,0,q.width,q.height,q.width,0,q.width-F,0);if(L.y+L.h<H-1)side(0,q.height-F,q.width,q.height,0,q.height,0,q.height-F);c.globalCompositeOperation='source-over'}
  MAP.base=MAP.layers[0].base;MAP.glow=MAP.layers[0].glow;
  /* the land between the parks: tiles, painted when they come into view and let go after a while away (detailTick) */
- MAP.tiles=[];if(FULL){const TS=1100,k=MAP.mss*.6;for(let y=0;y<H;y+=TS)for(let x=0;x<W;x+=TS){const w=Math.min(TS,W-x),h=Math.min(TS,H-y);if(PARKR.some(R=>x>=R[0]&&y>=R[1]&&x+w<=R[2]&&y+h<=R[3]))continue;MAP.tiles.push({x,y,w,h,k,base:null,glow:null})}}
+ MAP.tiles=[];if(FULL){const TS=1100,k=MAP.mss*.6;for(let y=0;y<H;y+=TS)for(let x=0;x<W;x+=TS){const w=Math.min(TS+3,W-x),h=Math.min(TS+3,H-y); /* each tile reaches a little into the next, so no hairline seam shows where they meet */if(PARKR.some(R=>x>=R[0]&&y>=R[1]&&x+w<=R[2]&&y+h<=R[3]))continue;MAP.tiles.push({x,y,w,h,k,base:null,glow:null})}}
  // close-up layers: the park (the railroad loop plus the entrance), then each stop on the monorail loop
  const rr=bbox(OSM.routes.rail);
  MAP.detail=[box(rr[0]-70,rr[1]-60,rr[2]+70,P.monostation[1]+90,MSS),box(P.cont[0]-230,P.cont[1]-230,P.cont[0]+300,P.cont[1]+200,MSS-.5),box(P.ttc[0]-230,P.ttc[1]-190,P.ttc[0]+250,P.ttc[1]+200,MSS-.5),
   box(P.poly[0]-260,P.poly[1]-280,P.poly[0]+260,P.poly[1]+190,MSS-.5),box(P.gf[0]-200,P.gf[1]-280,P.gf[0]+300,P.gf[1]+230,MSS-.5)];
  if(P.epcot&&OSM.epcot){const e=bbox(OSM.epcot);MAP.detail.push(box(e[0]-40,e[1]-40,e[2]+40,e[3]+40,MSS-.5))} /* Epcot close up */
+ if(OSM.hs){const e=bbox(OSM.hs);MAP.detail.push(box(e[0]-40,e[1]-40,e[2]+40,e[3]+40,MSS-.5))} /* Hollywood Studios close up */
  if(P.wl)MAP.detail.push(box(P.wl[0]-230,P.wl[1]-260,P.wl[0]+260,P.wl[1]+200,MSS-.5));if(P.fw)MAP.detail.push(box(P.fw[0]-220,P.fw[1]-130,P.fw[0]+230,P.fw[1]+330,MSS-.5));
  setTimeout(()=>{const d=MAP.detail[0];if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k))},400)} /* the park itself is wanted almost at once */
 /* Close-up layers are painted only when you zoom in near one, and let go again after a while away, so only the ones
@@ -295,7 +486,7 @@ const REGIONS=OSM.regions||[[0,0,W,H]],inRegion=(x,y)=>REGIONS.some(r=>x>=r[0]&&
 /* With the land between the parks filled in, OSM.regions has a third entry (the whole map). The two park areas are still
    painted as before; the land between is painted as tiles when it comes into view, and its forests are a canopy texture
    rather than one tree at a time (there are square kilometres of them). */
-const PARKR=REGIONS.slice(0,2),FULL=REGIONS.length>2,inParkR=(x,y,m=0)=>PARKR.some(r=>x>=r[0]-m&&y>=r[1]-m&&x<=r[2]+m&&y<=r[3]+m);
+const PARKR=REGIONS.slice(0,OSM.nparks||2),FULL=REGIONS.length>PARKR.length,inParkR=(x,y,m=0)=>PARKR.some(r=>x>=r[0]-m&&y>=r[1]-m&&x<=r[2]+m&&y<=r[3]+m);
 function canopy(c){if(!MAP._canopy){const U=120,K=4,t=document.createElement('canvas');t.width=t.height=U*K;const x=t.getContext('2d');x.scale(K,K);x.fillStyle='#2a5a28';x.fillRect(0,0,U,U);const r=seeded(99),pts=[];
   for(let i=0;i<1700;i++)pts.push([r()*U,r()*U,3+r()*2.4,(r()*CROWN.length)|0]);pts.sort((p,q)=>p[1]-q[1]);
   const all=[];for(const[px,py,rd,v]of pts)for(const ox of[-U,0,U])for(const oy of[-U,0,U]){const X=px+ox,Y=py+oy;if(X>-8&&X<U+8&&Y>-8&&Y<U+8)all.push([X,Y,rd,v])}
@@ -345,10 +536,14 @@ function paintMap(rx,ry,rw,rh,mss){
   c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=.45;c.setLineDash([3,3.5]);for(const l of roads)if(l.k!=='road3')for(const p of lp(l)){pathOf(c,p);c.stroke()}c.setLineDash([])}
  /* paved plazas and walkways */
  const PAVE='#ede1d6',EDGE='#cdbcae';
- for(const a of by('ped')){areaPath(c,a);c.strokeStyle=EDGE;c.lineWidth=1.4;c.stroke();c.fillStyle=PAVE;c.fill('evenodd');areaPath(b,a);b.fill('evenodd')}
+ const WOOD='#cfa978',WEDGE='#94714b',woodA=a=>{if(!CRES)return false;const q=bbOf(a.o);return onBoardwalk((q[0]+q[2])/2,(q[1]+q[3])/2)},woodP=p=>{if(!CRES)return false;const m=p.p[p.p.length>>1];return onBoardwalk(m[0],m[1])};
+ for(const a of by('ped')){const w_=woodA(a);areaPath(c,a);c.strokeStyle=w_?WEDGE:EDGE;c.lineWidth=1.4;c.stroke();c.fillStyle=w_?WOOD:PAVE;c.fill('evenodd');
+  if(w_){const q=bbOf(a.o);c.save();areaPath(c,a);c.clip('evenodd');c.strokeStyle='rgba(110,80,45,.35)';c.lineWidth=.22;for(let x=q[0]-(q[3]-q[1]);x<q[2];x+=1.1){c.beginPath();c.moveTo(x,q[3]);c.lineTo(x+(q[3]-q[1])*.35,q[1]);c.stroke()}c.restore()}
+  areaPath(b,a);b.fill('evenodd')}
  for(const p of OSM.paths.filter(p=>p.a&&vis(bbOf(p.p)))){c.fillStyle=PAVE;pathOf(c,p.p,1);c.fill();pathOf(b,p.p,1);b.fill()}
  const paths=OSM.paths.filter(p=>!p.a&&vis(bbOf(p.p)));
- for(const pass of[0,1])for(const p of paths){c.strokeStyle=pass?(p.q?'#e3d6c8':PAVE):EDGE;c.lineWidth=p.w+(pass?0:1.2);pathOf(c,p.p);c.stroke();if(!pass){b.lineWidth=p.w+6;pathOf(b,p.p);b.stroke()}}
+ for(const pass of[0,1])for(const p of paths){const w_=woodP(p);c.strokeStyle=pass?(w_?WOOD:p.q?'#e3d6c8':PAVE):(w_?WEDGE:EDGE);c.lineWidth=p.w+(pass?0:1.2);pathOf(c,p.p);c.stroke();if(!pass){b.lineWidth=p.w+6;pathOf(b,p.p);b.stroke()}}
+ if(CRES){c.strokeStyle='rgba(110,80,45,.4)';c.setLineDash([.22,.9]);for(const p of paths)if(woodP(p)){c.lineWidth=p.w;pathOf(c,p.p);c.stroke()}c.setLineDash([])} /* the boardwalk's planks */
  for(let i=0;i<5000*RA_;i++){const x=rx+r()*rw,y=ry+r()*rh;c.fillStyle=r()<.5?'rgba(170,140,120,.10)':'rgba(255,255,255,.12)';c.fillRect(x,y,.6,.6)}
  /* gardens: lawn beds with flower borders */
  for(const a of by('garden')){areaPath(c,a);c.fillStyle='#93c862';c.fill('evenodd');c.save();areaPath(c,a);c.clip('evenodd');c.strokeStyle='#5f9e45';c.lineWidth=1.6;areaPath(c,a);c.stroke();
@@ -368,26 +563,42 @@ function paintMap(rx,ry,rw,rh,mss){
  for(const l of race)for(const p of lp(l)){b.lineWidth=9;pathOf(b,p);b.stroke()}
  /* buildings, rockwork and trees, painted north-to-south so nearer things overlap farther ones */
  const{b:tronB,cv:tronCv}=tronParts();
- const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle');
+ const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle'),towerB=OSM.buildings.find(q=>q.n==='The Twilight Zone Tower of Terror');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbOf(q.p);if(!cull)b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);if(!vis(bb))continue;
-  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,land=epLand(cx_,cy_)||landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
+  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_))||ep_||landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
   if(q.n==='Disney’s Contemporary Resort'||q.n==="Disney's Contemporary Resort"){late.push(()=>aframe(c,e,bb,hh));continue} // painted after the monorail beams, which run behind and through it
   if(q.k==='tent'){B.push({y:bb[3],f:()=>tent(c,cx_,bb[3],(bb[2]-bb[0])/2,hh+4,['#d65a8a','#5a8ad6','#e2a321','#7b4fc0'][hs%4])});continue}
+  if(land.startsWith('ep')&&q.n==='The Land'){const qq=q;B.push({y:bb[3],f:()=>landPavilion(c,e,qq,bb,S2)});continue}
+  if(land.startsWith('ep')&&q.k==='greenhouse'&&bb[0]>3650&&bb[2]<3900&&bb[1]>5450&&bb[3]<5700)continue; /* The Land's round greenhouse: part of its painting */
   if(land.startsWith('ep')&&q.n==='Spaceship Earth'){B.push({y:bb[3],f:()=>spaceshipEarth(c,e,cx_,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2,S2)});continue}
-  if(land==='ep_mexico'&&q.n==='Mexico Pavilion'){B.push({y:bb[3],f:()=>{extrude(c,e,q.p,4,'#d9a066','#8d5a3a',{noWin:true});stepPyramid(c,e,bb,hh)}});continue}
+  if(land==='ep_mexico'&&q.n==='Mexico Pavilion'){B.push({y:bb[3],f:()=>mexicoPyramid(c,e,q.p,S2)});continue}
+  if(q.n==='Walt Disney World Dolphin Resort'){const bw_=Math.min((bb[2]-bb[0])*.16,30),qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#f09d84','#f2b3a0',{deco:cresDeco('dol')});dolphinTower(c,e,cx_,cy_+bw_*.4,bw_,78*S2,bw_*.45,hh)}});continue}
+  if(q.n==='Walt Disney World Swan Resort'){const qq=q,sw=Math.min((bb[2]-bb[0])*.2,52);B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#f7f0e6','#ef9a80',{deco:cresDeco('swan')});swanBlock(c,e,cx_,cy_+10,sw,22,46*S2)}});continue}
+  if(q.n==='The Twilight Zone Tower of Terror'){const qq=q;B.push({y:bb[3],f:()=>towerHotel(c,e,qq,bb,S2)});continue}
+  if(towerB&&q!==towerB&&!q.n&&ptIn(cx_,cy_,towerB.p))continue; /* the Tower's own inner outline: part of its painting */
+  if(q.n==="Mickey and Minnie's Runaway Railway"){const qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#d8c9b0','#9d8f7a',{noWin:true,ridge:false});chineseTheatre(c,e,bb,S2)}});continue}
+  if(q.n==='Rock ’n’ Roller Coaster Starring The Muppets'){const qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#3a3d48','#5a5e6a',{noWin:true,ridge:false});const g_=OSM.places.hsbooth||[bb[2],bb[3]];bigGuitar(c,bb[2]-8,bb[3]-4,26)}});continue}
   if(tronB&&q===tronB){B.push({y:bb[3],f:()=>tronBuilding(c,e,q,hh)});continue}
   if(tronCv&&q===tronCv){const qq=q;B.push({y:bb[3]+2,f:()=>tronCanopy(c,e,qq.p,bb)});continue} /* the TRON canopy */
   if(q.k==='roof'){roof=tone(roof,.25);hh=Math.min(hh,3.4)}
   if(/Rapunzel/.test(q.n)){B.push({y:bb[3],f:()=>{extrude(c,e,q.p,26,'#e9d8c6','#7b4fc0',{noWin:true});c.fillStyle='#7b4fc0';c.beginPath();c.moveTo(bb[0]-1,bb[1]-26);c.lineTo(cx_,bb[1]-38);c.lineTo(bb[2]+1,bb[1]-26);c.fill()}});continue}
   if(/train_station/.test(q.k||'')){wall='#c9563f';roof='#9e2f2f'}
+  if(LANDSTYLE[land]&&/^(yc|bc|bcv|bwi|bwv|dol|swan|swr)$/.test(land)&&/Convention/.test(q.n||''))roof='#c6cacd'; /* the resorts' convention halls: plain pale roofs */
   if(land.startsWith('ep')&&/^Project Tomorrow/.test(q.n))hh=Math.min(hh,6*S2); /* Spaceship Earth's low post-show building, not a tower */
-  const qq=q,big=land.startsWith('ep')&&(bb[2]-bb[0])*(bb[3]-bb[1])>1500;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'&&land!=='ep_fw',noWin:big||land==='ep_fw'});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
+  const qq=q,big=(land.startsWith('ep')||HSL_ART.has(land))&&(bb[2]-bb[0])*(bb[3]-bb[1])>1500;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'&&land!=='ep_fw',noWin:big||land==='ep_fw'||/Convention/.test(qq.n||''),deco:cresDeco(land)});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
+ if(OSM.falcon){const fb=bbox(OSM.falcon);if(vis(fb))B.push({y:fb[3]+200,f:()=>falcon(c,e,OSM.falcon)})} /* drawn after Smugglers Run's building, which its pad sits against */
+ /* Crescent Lake details: the Yacht Club's lighthouse, Stormalong Bay's shipwreck, Luna Park's coaster slide */
+ if(CRES){const P2=OSM.places;
+  if(CRES.storm){const sb=bbox(CRES.storm);pathOf(c,CRES.storm,1);c.fillStyle='#8fd8d0';c.fill();c.strokeStyle='#e9dcb8';c.lineWidth=1.4;c.stroke();c.save();pathOf(c,CRES.storm,1);c.clip();c.strokeStyle='rgba(255,255,255,.5)';c.lineWidth=.4;for(let i=0;i<40;i++){const x=sb[0]+hsh(i*7)%1000/1000*(sb[2]-sb[0]),y=sb[1]+hsh(i*13+5)%1000/1000*(sb[3]-sb[1]);c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+1.5,y-.8,x+3,y);c.stroke()}c.restore();
+   if(vis(sb))B.push({y:sb[3]-2,f:()=>shipwreck(c,sb[0]+(sb[2]-sb[0])*.3,(sb[1]+sb[3])/2,11)})}
+  if(P2.bydock&&vis([P2.bydock[0]-10,P2.bydock[1]-20,P2.bydock[0]+10,P2.bydock[1]+5]))B.push({y:P2.bydock[1],f:()=>lighthouse(c,e,P2.bydock[0],P2.bydock[1],20)});
+  if(CRES.luna){const lb=bbox(CRES.luna);if(vis(lb))B.push({y:lb[3],f:()=>coasterSlide(c,lb[2]+4,(lb[1]+lb[3])/2+4,6)})}}
  // rockwork: the real rock areas (Big Thunder, Tiana's, Seven Dwarfs, the Beast's hill) raised into spires
- for(const a of by('rock')){const bb=bbox(a.o),land=landOf((bb[0]+bb[2])/2,(bb[1]+bb[3])/2),col=land==='fr'?['#c9683a','#dd8a4e','#a54b2a']:land==='adv'?['#b9a27a','#d1bd94','#93805c']:['#9c9a92','#b9b6ac','#7f7c74'];b.fillRect(bb[0],bb[1]-20,bb[2]-bb[0],bb[3]-bb[1]+20);
+ for(const a of by('rock')){const bb=bbox(a.o),land=landOf((bb[0]+bb[2])/2,(bb[1]+bb[3])/2),col=land==='fr'?['#c9683a','#dd8a4e','#a54b2a']:land==='adv'?['#b9a27a','#d1bd94','#93805c']:land==='sw'?['#bfa889','#d8c4a4','#8f7a5e']:['#9c9a92','#b9b6ac','#7f7c74'],tall=land==='sw'?2.6:1;b.fillRect(bb[0],bb[1]-20*tall,bb[2]-bb[0],bb[3]-bb[1]+20*tall);
   B.push({y:bb[3],f:()=>{areaPath(c,a);c.fillStyle=col[2];c.fill('evenodd');const R2=seeded(bb[0]*7+bb[1]|0),sp=[];
-   const big=Math.min(1,Math.sqrt((bb[2]-bb[0])*(bb[3]-bb[1]))/45);for(let i=0;i<Math.max(3,(bb[2]-bb[0])*(bb[3]-bb[1])/110);i++){const x=bb[0]+R2()*(bb[2]-bb[0]),y=bb[1]+R2()*(bb[3]-bb[1]);if(ptIn(x,y,a.o))sp.push([x,y,(3+R2()*14)*(.35+.65*big),(2+R2()*4)*(.5+.5*big)])}
+   const big=Math.min(1,Math.sqrt((bb[2]-bb[0])*(bb[3]-bb[1]))/45);for(let i=0;i<Math.max(3,(bb[2]-bb[0])*(bb[3]-bb[1])/110);i++){const x=bb[0]+R2()*(bb[2]-bb[0]),y=bb[1]+R2()*(bb[3]-bb[1]);if(ptIn(x,y,a.o))sp.push([x,y,(3+R2()*14)*(.35+.65*big)*tall,(2+R2()*4)*(.5+.5*big)])}
    sp.sort((u,v)=>u[1]-v[1]);for(const[x,y,h,w]of sp){poly4(c,[[x-w,y],[x-w*.6,y-h*.6],[x-w*.2,y-h],[x+w*.3,y-h*.85],[x+w*.7,y-h*.4],[x+w,y]],col[0]);poly4(c,[[x-w*.2,y-h],[x+w*.3,y-h*.85],[x+w*.1,y-h*.2],[x-w*.4,y-h*.5]],col[1])}}})}
  // Cinderella Castle on its real footprint
  if(castleB){const bb=bbox(castleB.p),k=Math.max((bb[2]-bb[0])/66,58*OSM.S/66)*1.25,cx_=(bb[0]+bb[2])/2,oy=bb[3]-2;MAP.castleAt=[cx_,oy,k];MAP.castleFoot=bb;

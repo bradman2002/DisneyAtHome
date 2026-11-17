@@ -1,6 +1,6 @@
 # Magic Kingdom Simulator — project brief
 
-A personal website: an illustrated, simulated Walt Disney World Magic Kingdom, plus the resort area around
+A personal website: an illustrated, simulated Walt Disney World Magic Kingdom (plus EPCOT and Hollywood Studios), plus the resort area around
 Seven Seas Lagoon and Bay Lake (the monorail loop, the Transportation and Ticket Center, the Contemporary,
 Polynesian Village and Grand Floridian, Wilderness Lodge, Discovery Island and the Fort Wilderness marina), that runs live at any time of day. Aerial map (default) plus a street-level
 Main Street view; guests, rides, wait times, transport (six monorails on the Express and Resort loops,
@@ -28,7 +28,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - These files pack many statements onto one long line. Never add a `//` comment in the middle of such a line: it
   silently comments out everything after it (this has broken the speed button and guest arrivals). Use `/* */`,
   or put the comment on its own line.
-- Load order in index.html matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv.
+- Load order in index.html matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv (luminous.js and fantasmic.js load just before live).
 
 ## Files
 - `js/park-osm.js` — GENERATED geometry for the park and resort area from OpenStreetMap (buildings, walkways,
@@ -107,7 +107,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   owner's audio `audio/luminous.mp3`, git-ignored). Its shells go through the shared fireworks engine (`HEA.rk`); it
   only drives the clock when Happily Ever After isn't playing; each show's volume follows where the map is looking
   (`lumNear`). Art: `EPCOT` in `map-art.js` has the pavilion anchors and styles
-  (`ep_*` in `LANDSTYLE`), Spaceship Earth is drawn as a sphere, Mexico gets its pyramid. TV mode visits Epcot
+  (`ep_*` in `LANDSTYLE`), Spaceship Earth is drawn as a sphere, Mexico gets its pyramid (`mexicoPyramid`: lined up with the building's angled footprint by its main axis, staircase toward the lagoon, temple on top; owner, 16 Nov 2026: "The mexico pavilion looks weird"). TV mode visits Epcot
   (three shots) and cuts, rather than glides, between the parks. Tree/shadow masks are kept at reduced scale `HS`.
   The land between was filled in (owner, 16 Nov 2026: "Fill in the space between epcot and magic kingdom now"): `gap.osm`
   (git-ignored, bbox in the extractor) adds a third region = the whole map, so nothing is clipped; outside the parks
@@ -117,6 +117,37 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   individual crowns (the park's crowns thin out over it near the edges). Map data ~3.5 MB; startup canvases ~144 MB.
   The EPCOT monorail is `MLINE.epcot` (stops `ttc`, `epst`; from the 'Epcot Monorail' relation, run so the loop over
   Future World comes on the way in); its loads are scenery only, EPCOT's guests still start at its gate.
+  The Crescent Lake resorts (owner, 16 Nov 2026: "Make swan and dolphin, beach and yacht club, and boardwalk look more
+  correct"): `CRES`/`cresOf` in `map-art.js` give their buildings the real colours (`yc`, `bc`, `bcv`, `bwi`, `bwv`, `dol`, `swan`,
+  `swr` in `LANDSTYLE`; clapboard trim or Graves wave bands via `extrude`'s `deco` hook); `dolphinTower`, `swanBlock` (with the
+  statues), `lighthouse`, `shipwreck` and `coasterSlide` are drawn by name; the boardwalk's planks are walkways inside the
+  BoardWalk outline near the lake (`onBoardwalk`). The extractor exports `OSM.crescent` (BoardWalk outline, lake, pools) and
+  dock places, sets their heights in `HEIGHTS`, and the map now runs to H=6730 so the Swan and Swan Reserve fit whole.
+  Map tiles overlap by 3 units so no seam shows between them. Art that clips (`c.save();…clip()`) must `c.restore()`: a
+  missed restore hides everything painted after it in that tile.
+  The Land (owner, 16 Nov 2026: "make the land pavilion look correct") is `landPavilion` in `map-art.js`: sandstone walls in
+  earth-tone strata bands (`strataDeco`), a hipped glass roof over the atrium and a glass entrance (`glassHall`), the round
+  greenhouse dome and the Living with the Land greenhouses' sawtooth glass, placed at fixed map positions (the projection is pinned).
+- Hollywood Studios (owner, 17 Nov 2026: "Add Hollywood studios, the land in between and all the rides"): `hs.osm` (git-ignored)
+  is merged from api.openstreetmap.org/api/0.6/map pieces (Overpass kept failing; bbox in the extractor) and covers the park
+  plus the land round it (Caribbean Beach, Pop Century, Art of Animation). It is park 2: `OSM.regions` = [MKR, EPR, HSR, whole
+  map], `OSM.nparks`=3, H=8425. In the extractor, earlier files win for overlapping ways/nodes and `rel_chain(...,box=)` keeps
+  long routes (the Magic Kingdom bus) to the part near here, so the older parks' data didn't move. `sim.js`: lands hb/el/ga/sw/
+  ts/ac/sb (`HSL`, from the map's locality outlines), 17 rides and stage shows and 18 venues, hours `HOPEN/HCLOSE` (`setHoursHS`),
+  gate `HSGATE` (`hsout` = the outside direction), arrivals `spH`/`HSATT`; `decideEP` serves every park other than Magic Kingdom
+  (`PGATE`, `pOpen`, `pClose`). Live data adds `LIVE.hsApi`. Art (`map-art.js`): land palettes, `towerHotel`, `chineseTheatre`
+  (front of Runaway Railway), `bigGuitar`, `falcon` (the Millennium Falcon from its outline), tall sandy Batuu spires. TV mode has
+  five Studios shots. It has no area music, and its daytime stage shows aren't events (they run as attractions).
+  Fantasmic! (owner, 17 Nov 2026: "Yes, add Fantasmic!") is `js/fantasmic.js`, event `fmic` (`pk:2`, `rel:['hclose',-3600]`,
+  real times from the Studios feed as `LIVE.shows.fmic`). The amphitheater comes from the map (`fmGeo`: the lagoon round the
+  'Fantasmic' stage building, the seats' side found from the aisles, `shore(a)` for the seat rows); the extractor joins the
+  amphitheater's walkway pieces to the park's network (they are separate in the data). The show is a fixed running order
+  (`FM_SCENES`, fractions of its length): Sorcerer Mickey, mist screen, fountains (`lumJet`), villains, the dragon and the
+  lagoon on fire, the Steamboat Willie boat with characters, and a finale through the shared fireworks engine (`fmCues`).
+  Optional owner's soundtrack `audio/fantasmic.mp3` (git-ignored) plays in time and sets the length. Guests sit in the
+  seats (`spot0` 'fmic'; `spot()` skips the pavement test there). Start it by hand from Entertainment or its sheet.
+- The monorail recording's silent station stops are skipped when its audio starts (`RIDEGAP`/`rideSkip` in `audio.js`,
+  measured from the owner's 672 s file; another file length is left alone).
 - Memory (owner asked to cut browser RAM, 16 Nov 2026): close-up map layers are painted on demand and freed after
   90 s away (`detailTick` in `map-art.js`; the park's own close-up stays). `paintMap` culls to its rectangle after the
   first paint (`cull`/`vis`), so a close-up takes ~50–150 ms instead of ~12 s — keep new map art culled the same way; night-light (glow) canvases are half the

@@ -52,7 +52,7 @@ function lvl(k,v,tc){const l=AU.L[k];if(!isFinite(v))v=0;if(l)l.g.gain.setTarget
 /* Is a show's music playing where you can hear it? Then the park's own sound (land music, ride audio, nature and the
    general crowd) fades right out and leaves the show alone. The water pageant and Luminous only count when the map is
    near them. */
-function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||
+function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||(typeof fmPlaying==='function'&&fmPlaying()&&fmNear()>.1)||
  (typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying())||(typeof kissPlaying==='function'&&kissPlaying())}
 function auTick(){if(!AU.ready||FF)return;
  // a large jump in simulated time means a seek or a fast speed: resync state without firing stale one-shots
@@ -117,7 +117,7 @@ setInterval(areaTick,120);
    "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
    name: happily-ever-after.mp3, minnies-christmas-fireworks.mp3, let-the-magic-begin.mp3, kiss-goodnight.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
-   electrical-water-pageant.mp3, luminous.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
+   electrical-water-pageant.mp3, luminous.mp3, fantasmic.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 function pickAudioFolder(){const i=document.createElement('input');i.type='file';i.multiple=true;i.webkitdirectory=true;i.onchange=()=>loadAudioFiles([...i.files]);i.click()}
@@ -129,6 +129,7 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
   else if(nm==='kiss-goodnight.mp3'){key='kiss';use=()=>{KISS.a.src='picked';KISS.a.audio.src=URL.createObjectURL(f);KISS.a.audio.load()}}
   else if(nm==='let-the-magic-begin.mp3'){key='welcome';use=()=>{WELC.a.src='picked';WELC.a.audio.src=URL.createObjectURL(f);WELC.a.audio.load()}}
   else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
+  else if(nm==='fantasmic.mp3'){key='fantasmic';use=()=>{FM.a.src='picked';FM.a.audio.src=URL.createObjectURL(f);FM.a.audio.load()}}
   else if(nm==='luminous.mp3'){key='luminous';use=()=>{LUM.a.src='picked';LUM.a.audio.src=URL.createObjectURL(f);LUM.a.audio.load()}}
   else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.id;use=()=>parUse(P,f,f.name)}
    else if(/^ride-(\w+)\.mp3$/.test(nm)){const k=/^ride-(\w+)\.mp3$/.exec(nm)[1];key='ride-'+k;use=()=>{RA.bad[k]=0;RA.url[k]=URL.createObjectURL(f)}}
@@ -188,13 +189,18 @@ async function rideUrl(k){if(RA.url[k])return RA.url[k];const u=await streamUrl(
  if(u){RA.url[k]=u;if(u.startsWith('blob:'))RA.tmp[k]=1}else{const b=await rideSaved(k);if(b){RA.url[k]=URL.createObjectURL(b);RA.tmp[k]=1}else RA.bad[k]=1}return RA.url[k]}
 /* a ride recording held whole in memory is let go once it has faded out (it is fetched again next time); streamed ones cost nothing to keep */
 function rideFree(k){if(!RA.tmp[k])return;URL.revokeObjectURL(RA.url[k]);delete RA.url[k];delete RA.tmp[k];const a=rideEl();a.src=SILENT}
+/* The monorail recording has silent stretches (the train standing at a station, doors open), up to 10 s long. Starting
+   in one (it starts at a random point) meant nothing was heard until the next announcement, so a start inside one jumps
+   to its end. Measured from the owner's file (672 s); a different file (another length) is left alone. */
+const RIDEGAP={monorail:{len:672,g:[[13,23],[28.2,34.8],[72.5,74.8],[156,160],[165.2,169.8],[196,204.2],[235.2,239.8],[292.8,300.8],[306,310.5],[341.8,347.8],[389,390.8],[440.2,441.8],[447,452.5],[480.8,483.5],[505,508.2],[557,558.5],[563.8,565.8],[592.2,594],[669,672]]}};
+function rideSkip(k,p,d){const q=RIDEGAP[k];if(!q||!isFinite(d)||Math.abs(d-q.len)>2)return p;for(const[a,b]of q.g)if(p>=a-.5&&p<b)return b%d;return p}
 function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=showOn(),
   base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?0:1);let top=null;for(const k in t)if(t[k]>0&&!RA.bad[k])top=k;const a=rideEl();
  if(RA.cur&&RA.cur!==top){RA.lvl*=.85;if(RA.lvl<.01){RA.pos[RA.cur]=a.currentTime;RA.heard[RA.cur]=Date.now();a.pause();rideFree(RA.cur);RA.cur=null;RA.lvl=0}} /* fade the old one out first */
  else if(!RA.cur&&top&&RA.loading!==top){const k=top;RA.loading=k;rideUrl(k).then(u=>{if(RA.loading!==k)return;RA.loading=null;if(!u||RA.cur)return;
    const fresh=!(k in RA.pos)||Date.now()-(RA.heard[k]||0)>10*60e3;a.src=u;RA.cur=k;RA.lvl=0;setVol(a,0);
-   a.addEventListener('loadedmetadata',()=>{if(RA.cur!==k)return;a.currentTime=fresh&&isFinite(a.duration)?Math.random()*a.duration:RA.pos[k]||0;a.play().catch(()=>{})},{once:true})})}
- else if(RA.cur&&RA.cur===top){RA.lvl+=(t[top]*base-RA.lvl)*.06;if(a.paused&&a.readyState>0)a.play().catch(()=>{});RA.heard[top]=Date.now()}
+   a.addEventListener('loadedmetadata',()=>{if(RA.cur!==k)return;a.currentTime=rideSkip(k,fresh&&isFinite(a.duration)?Math.random()*a.duration:RA.pos[k]||0,a.duration);a.play().catch(()=>{})},{once:true})})}
+ else if(RA.cur&&RA.cur===top){RA.lvl+=(t[top]*base-RA.lvl)*(top==='monorail'?.15:.06);if(a.paused&&a.readyState>0)a.play().catch(()=>{});RA.heard[top]=Date.now()}
  if(RA.cur)setVol(a,RA.lvl);
  rideLevel+=((top?t[top]:0)-rideLevel)*.06} /* how much the land music should step aside */
 setInterval(rideTick,120);

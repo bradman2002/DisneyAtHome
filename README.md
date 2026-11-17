@@ -117,12 +117,25 @@ from 7 AM to 10 PM, about 120 feet high, as the real one does.
 
 ## EPCOT
 
+Hollywood Studios is on the map too, south-west of EPCOT past the Swan and Dolphin, with the land around it (Caribbean
+Beach, Pop Century and Art of Animation): its seven areas, its rides and stage shows with live wait times, its own guests and
+hours, and its landmarks (the Hollywood Tower Hotel, the Chinese Theatre, Rock 'n' Roller Coaster's guitar, Galaxy's Edge's
+spires and the Millennium Falcon). TV mode visits it.
+Fantasmic! plays in the Hollywood Hills Amphitheater at the real show times (8:00 and 9:30 PM most nights): the seats fill
+with the Studios' guests, then Sorcerer Mickey on the mountain, the lit mist screen and fountains, the villains, the dragon
+setting the lagoon on fire, the riverboat with the characters circling the island, and fireworks to finish. Add your own
+copy of the soundtrack as audio/fantasmic.mp3 (or in Load audio folder) to hear it; it is never committed. Entertainment →
+"Start Fantasmic! now" starts it any time.
+
 EPCOT is on the map at its real place, south-east of the Magic Kingdom (scroll or zoom out to find it; TV mode
-visits it too), drawn from OpenStreetMap: Spaceship Earth, the Future World pavilions and each World Showcase
+visits it too), drawn from OpenStreetMap: Spaceship Earth, The Land under its great glass roof, the other pavilions and each World Showcase
 country in its own colours. All the land between and around the two parks is on the map too: the Ticket Center's
 parking, World Drive and the highways, the EPCOT monorail line (four trains run it: from the Ticket Center round over
 Future World into EPCOT's station and back, about 17 minutes a lap), golf courses, lakes and miles of forest (drawn as a
-canopy of tree tops, painted as you look at it). EPCOT has its own guests and wait times for its 18 main rides, in four neighbourhoods (World
+canopy of tree tops, painted as you look at it). The resorts on Crescent Lake, by EPCOT's back entrance, look like
+themselves: the Yacht Club in grey-blue clapboard with its lighthouse on the dock, the Beach Club in sea-foam green with
+Stormalong Bay's shipwreck, the BoardWalk's seaside facades and its wooden boardwalk along the shore, the Dolphin's coral
+triangle tower with its cascade and two dolphin statues, and the Swan's arched block with a swan at each end. EPCOT has its own guests and wait times for its 18 main rides, in four neighbourhoods (World
 Celebration, Discovery, Nature and Showcase) you can filter like the Magic Kingdom's lands. Its guests arrive at the
 main entrance and stay in EPCOT; it keeps its own hours (9 AM to 9 PM, or today's real hours when live), and with live
 data on, its waits and closures are the real ones too.

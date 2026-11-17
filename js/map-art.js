@@ -277,7 +277,12 @@ Object.assign(LANDSTYLE,{
 function cresDeco(k){
  if(k==='yc'||k==='bc'||k==='bcv'||k==='bwi')return(c,p,q,L,hh)=>{c.strokeStyle='rgba(255,255,255,.28)';c.lineWidth=.2;for(let v=1.2;v<hh;v+=1.2){c.beginPath();c.moveTo(p[0],p[1]-v);c.lineTo(q[0],q[1]-v);c.stroke()}
   c.strokeStyle='#fbfbf8';c.lineWidth=.7;c.beginPath();c.moveTo(p[0],p[1]-hh+.35);c.lineTo(q[0],q[1]-hh+.35);c.stroke();c.lineWidth=.5;c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(p[0],p[1]-hh);c.moveTo(q[0],q[1]);c.lineTo(q[0],q[1]-hh);c.stroke()};
- if(k==='dol'||k==='swan')return(c,p,q,L,hh)=>{const band=(f,col,w,amp)=>{c.strokeStyle=col;c.lineWidth=w;c.beginPath();const n=Math.max(2,Math.ceil(L/1.5));for(let i=0;i<=n;i++){const t=i/n,x=p[0]+(q[0]-p[0])*t,y=p[1]+(q[1]-p[1])*t-hh*f+Math.sin(t*L/4.5*6.283)*amp;i?c.lineTo(x,y):c.moveTo(x,y)}c.stroke()};
+ if(k==='dol')return(c,p,q,L,hh)=>{ /* the Dolphin: big turquoise banana leaves hanging down each wall from a turquoise cornice */
+  poly4(c,[[p[0],p[1]-hh],[q[0],q[1]-hh],[q[0],q[1]-hh*.9],[p[0],p[1]-hh*.9]],'#2fa9a3');const n=Math.max(1,Math.round(L/7));
+  for(let i=0;i<n;i++){const t=(i+.5)/n,x=p[0]+(q[0]-p[0])*t,y=p[1]+(q[1]-p[1])*t,y0=y-hh*.9,y1=y-hh*.42,w=Math.min(2.6,L/n*.38);c.fillStyle='#38b3ac';c.beginPath();c.moveTo(x,y0);c.quadraticCurveTo(x-w*1.4,(y0+y1)/2,x,y1);c.quadraticCurveTo(x+w*1.4,(y0+y1)/2,x,y0);c.fill();
+   c.strokeStyle='#1f8c86';c.lineWidth=.25;c.beginPath();c.moveTo(x,y0);c.lineTo(x,y1);for(let k=1;k<5;k++){const yy=y0+(y1-y0)*k/5;c.moveTo(x,yy);c.lineTo(x-w*.9,yy+1.2);c.moveTo(x,yy);c.lineTo(x+w*.9,yy+1.2)}c.stroke()}
+  c.fillStyle='#2fa9a3';poly4(c,[p,q,[q[0],q[1]-hh*.05],[p[0],p[1]-hh*.05]],'#2fa9a3')};
+ if(k==='swan')return(c,p,q,L,hh)=>{const band=(f,col,w,amp)=>{c.strokeStyle=col;c.lineWidth=w;c.beginPath();const n=Math.max(2,Math.ceil(L/1.5));for(let i=0;i<=n;i++){const t=i/n,x=p[0]+(q[0]-p[0])*t,y=p[1]+(q[1]-p[1])*t-hh*f+Math.sin(t*L/4.5*6.283)*amp;i?c.lineTo(x,y):c.moveTo(x,y)}c.stroke()};
   band(.9,'#2fa9a3',Math.max(.6,hh*.07),hh*.03);band(.78,k==='swan'?'#ef9a80':'#f7e7d2',Math.max(.4,hh*.04),hh*.025);c.fillStyle='#2fa9a3';poly4(c,[p,q,[q[0],q[1]-hh*.06],[p[0],p[1]-hh*.06]],'#2fa9a3')};
  return null}
 /* a dolphin statue: head down on its plinth, body arching up to a fanned tail */
@@ -295,7 +300,7 @@ function swanStatue(c,x,y,h,flip){const s=flip?-1:1;c.save();c.translate(x,y);c.
  c.fillStyle='#e9a23b';c.beginPath();c.moveTo(-w*.48,-h*.99);c.lineTo(-w*.82,-h*.93);c.lineTo(-w*.48,-h*.91);c.fill();
  c.strokeStyle='rgba(120,130,140,.45)';c.lineWidth=Math.max(.2,h*.03);c.beginPath();c.moveTo(-w*.4,-h*.3);c.quadraticCurveTo(0,-h*.42,w*.5,-h*.28);c.stroke();c.restore()}
 /* the Dolphin's triangle tower rising from the middle of its wings, with the turquoise cascade down its face */
-function dolphinTower(c,e,x,y,base,H,dep,wingH){const L=[x-base,y],Rr=[x+base,y],A=[x,y-H],up=p=>[p[0],p[1]-dep];
+function dolphinTower(c,e,x,y,base,H,dep,wingH,noStatues){const L=[x-base,y],Rr=[x+base,y],A=[x,y-H],up=p=>[p[0],p[1]-dep];
  poly4(c,[L,A,up(A),up(L)],'#f6b39d');poly4(c,[A,Rr,up(Rr),up(A)],'#d97b63');
  c.save();pathOf(c,[L,A,up(A),up(L)],1);c.clip();c.strokeStyle='rgba(47,169,163,.75)';c.lineWidth=H*.03;for(let t=.15;t<1;t+=.22){c.beginPath();c.moveTo(L[0]+(A[0]-L[0])*t,L[1]+(A[1]-L[1])*t);c.lineTo(L[0]+(A[0]-L[0])*t,L[1]+(A[1]-L[1])*t-dep);c.stroke()}c.restore();
  poly4(c,[L,Rr,A],'#ee9479');
@@ -305,7 +310,17 @@ function dolphinTower(c,e,x,y,base,H,dep,wingH){const L=[x-base,y],Rr=[x+base,y]
  for(let i=0;i<4;i++){const yy=y-H*(.12+i*.17),r=cw*(1.5-i*.22);c.fillStyle='#f4e6cf';c.beginPath();c.arc(x,yy,r,Math.PI,0);c.fill();c.strokeStyle='#2fa9a3';c.lineWidth=.3;for(let a=0;a<5;a++){c.beginPath();c.moveTo(x,yy);c.lineTo(x+Math.cos(Math.PI+a*Math.PI/4)*r,yy+Math.sin(Math.PI+a*Math.PI/4)*r);c.stroke()}}
  c.fillStyle='#2fa9a3';c.beginPath();c.moveTo(A[0],A[1]-3);c.lineTo(A[0]-1.4,A[1]+1);c.lineTo(A[0]+1.4,A[1]+1);c.fill();
  if(e){e.fillStyle='rgba(120,240,230,.55)';poly4(e,[[x-cw,y],[x+cw,y],[x+cw*.4,y-H*.82],[x-cw*.4,y-H*.82]],'rgba(120,240,230,.5)')}
- const sh=H*.38;dolphinStatue(c,x-base*1.22,y-wingH,sh,false);dolphinStatue(c,x+base*1.22,y-wingH,sh,true)}
+ if(noStatues)return;const sh=H*.38;dolphinStatue(c,x-base*1.22,y-wingH,sh,false);dolphinStatue(c,x+base*1.22,y-wingH,sh,true)}
+/* the Dolphin as built: four 9-storey wings reaching toward the lake (the footprint), a 12-storey block across the back,
+   the 78 m triangular tower through the block's middle (its face and cascade toward the lake) and a 17 m dolphin on each
+   half of the block. The block is the rectangle in the footprint's north-west corner. */
+function dolphinResort(c,e,q,S2){const bb=bbox(q.p),wing=34*S2,blk=45*S2,
+  M=[[bb[0]+38,bb[1]+49],[bb[0]+136,bb[1]+49],[bb[0]+136,bb[1]+102],[bb[0]+38,bb[1]+102]]; /* the block: x 2917–3015, y 6294–6347 at today's data */
+ extrude(c,e,q.p,wing,'#f09d84','#f3c3b0',{deco:cresDeco('dol'),ridge:false});
+ extrude(c,e,M,blk,'#ee9579','#e9ab95',{deco:cresDeco('dol'),ridge:false});
+ const mx=(M[0][0]+M[1][0])/2,front=M[2][1],dep=M[2][1]-M[0][1];
+ dolphinTower(c,e,mx,front,24,78*S2,dep,blk,true);
+ const sh=17*S2*1.25;dolphinStatue(c,(M[0][0]+mx-24)/2,(M[0][1]+M[2][1])/2-blk+4,sh,false);dolphinStatue(c,(M[1][0]+mx+24)/2,(M[0][1]+M[2][1])/2-blk+4,sh,true)}
 /* the Swan's centre block: white with wave bands, its gently arched roof, a swan at each end */
 function swanBlock(c,e,x,y,w,dep,H){const arch=H*.16,top=t=>y-H-Math.sin(t*Math.PI)*arch,n=24;
  const front=[[x-w,y],[x+w,y]];for(let i=n;i>=0;i--)front.push([x-w+2*w*i/n,top(i/n)]);
@@ -574,7 +589,7 @@ function paintMap(rx,ry,rw,rh,mss){
   if(land.startsWith('ep')&&q.k==='greenhouse'&&bb[0]>3650&&bb[2]<3900&&bb[1]>5450&&bb[3]<5700)continue; /* The Land's round greenhouse: part of its painting */
   if(land.startsWith('ep')&&q.n==='Spaceship Earth'){B.push({y:bb[3],f:()=>spaceshipEarth(c,e,cx_,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2,S2)});continue}
   if(land==='ep_mexico'&&q.n==='Mexico Pavilion'){B.push({y:bb[3],f:()=>mexicoPyramid(c,e,q.p,S2)});continue}
-  if(q.n==='Walt Disney World Dolphin Resort'){const bw_=Math.min((bb[2]-bb[0])*.16,30),qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#f09d84','#f2b3a0',{deco:cresDeco('dol')});dolphinTower(c,e,cx_,cy_+bw_*.4,bw_,78*S2,bw_*.45,hh)}});continue}
+  if(q.n==='Walt Disney World Dolphin Resort'){const qq=q;B.push({y:bb[3],f:()=>dolphinResort(c,e,qq,S2)});continue}
   if(q.n==='Walt Disney World Swan Resort'){const qq=q,sw=Math.min((bb[2]-bb[0])*.2,52);B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#f7f0e6','#ef9a80',{deco:cresDeco('swan')});swanBlock(c,e,cx_,cy_+10,sw,22,46*S2)}});continue}
   if(q.n==='The Twilight Zone Tower of Terror'){const qq=q;B.push({y:bb[3],f:()=>towerHotel(c,e,qq,bb,S2)});continue}
   if(towerB&&q!==towerB&&!q.n&&ptIn(cx_,cy_,towerB.p))continue; /* the Tower's own inner outline: part of its painting */

@@ -65,7 +65,7 @@ EV:[{id:'parade',n:'Festival of Fantasy Parade',ts:['12:00','15:00'],dur:20,lead
  // EPCOT's nighttime show on World Showcase Lagoon, at EPCOT's closing time (its length is the soundtrack's, see luminous.js)
  {id:'lum',n:'Luminous: The Symphony of Us',ts:['21:00'],dur:18.2,lead:35,pref:.6,exit:.75,rel:['eclose',0],pk:1},
  // Hollywood Studios' nighttime show in the Hollywood Hills Amphitheater, an hour before the park closes (today's real times when live; see fantasmic.js)
- {id:'fmic',n:'Fantasmic!',ts:['20:00'],dur:29,lead:45,pref:.55,exit:.7,rel:['hclose',-3600],pk:2}]};
+ {id:'fmic',n:'Fantasmic!',ts:['20:00'],dur:29.4,lead:45,pref:.55,exit:.7,rel:['hclose',-3600],pk:2}]};
 const {LANDS,SC,N,E,V,EV}=PARK;
 const AT=PARK.A.map((r,i)=>{const p=POS[r[1]],pk=parkOf(r[2]);return{i,n:r[0],osm:r[1],l:r[2],pk,x:p.c[0],y:p.c[1],nd:p.nd,dx:N[p.nd][0],dy:N[p.nd][1],thr:r[3],dur:r[4],pop:r[5],k:r[6],open:r[7]||9,close:r[8]||(pk?21:22),o0:r[7]||9,c0:r[8]||(pk?21:22),c00:pk?21:22,risk:r[9]||.7}});
 /* Soarin' and Awesome Planet are inside The Land: guests go in by its door, not the nearest path to the far side of the building */

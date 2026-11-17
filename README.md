@@ -124,7 +124,9 @@ spires and the Millennium Falcon). TV mode visits it.
 Fantasmic! plays in the Hollywood Hills Amphitheater at the real show times (8:00 and 9:30 PM most nights): the seats fill
 with the Studios' guests, then Sorcerer Mickey on the mountain, the lit mist screen and fountains, the villains, the dragon
 setting the lagoon on fire, the riverboat with the characters circling the island, and fireworks to finish. Add your own
-copy of the soundtrack as audio/fantasmic.mp3 (or in Load audio folder) to hear it; it is never committed. Entertainment →
+copy of the soundtrack as audio/fantasmic.mp3 (or in Load audio folder) to hear it; it is never committed. With it, the show
+follows the music: the lagoon stays dark through the opening announcement, each scene starts where the music changes, the
+fountains pulse with its beats and the closing fireworks go up on them. Entertainment →
 "Start Fantasmic! now" starts it any time.
 
 EPCOT is on the map at its real place, south-east of the Magic Kingdom (scroll or zoom out to find it; TV mode

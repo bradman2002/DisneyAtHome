@@ -28,7 +28,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - These files pack many statements onto one long line. Never add a `//` comment in the middle of such a line: it
   silently comments out everything after it (this has broken the speed button and guest arrivals). Use `/* */`,
   or put the comment on its own line.
-- Load order in index.html matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv (luminous.js and fantasmic.js load just before live).
+- Load order in index.html matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv (choreo-luminous, luminous, choreo-fantasmic and fantasmic load just before live).
 
 ## Files
 - `js/park-osm.js` — GENERATED geometry for the park and resort area from OpenStreetMap (buildings, walkways,
@@ -144,7 +144,12 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   amphitheater's walkway pieces to the park's network (they are separate in the data). The show is a fixed running order
   (`FM_SCENES`, fractions of its length): Sorcerer Mickey, mist screen, fountains (`lumJet`), villains, the dragon and the
   lagoon on fire, the Steamboat Willie boat with characters, and a finale through the shared fireworks engine (`fmCues`).
-  Optional owner's soundtrack `audio/fantasmic.mp3` (git-ignored) plays in time and sets the length. Guests sit in the
+  Owner's soundtrack `audio/fantasmic.mp3` (git-ignored; 29:23, added 17 Nov 2026 with "The first minute or so is an intro
+  schpeel") plays in time and sets the length. `js/choreo-fantasmic.js` (`CHOREO_FM`, from `tools/fireworks_from_audio.py` plus
+  scene times read off the track) maps it: pre-show announcement 0–60 s (lagoon dark), intro 60, imagine 175, adventure 470,
+  villains 799 (the silent breaks), dragon 1101, Mickey 1241, riverboat finale 1300, ending 1547; fountains follow its
+  loudness (`env`) and beats; the ending's fireworks are its beats after 1555 s. A different recording (another length)
+  falls back to `FM_SCENES` fractions. Guests sit in the
   seats (`spot0` 'fmic'; `spot()` skips the pavement test there). Start it by hand from Entertainment or its sheet.
 - The monorail recording's silent station stops are skipped when its audio starts (`RIDEGAP`/`rideSkip` in `audio.js`,
   measured from the owner's 672 s file; another file length is left alone).

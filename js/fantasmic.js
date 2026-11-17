@@ -38,6 +38,15 @@ if(OSM.hs){const g=fmGeo();if(g)EVPOS.fmic=g.lc}
 // how much the map is looking at the amphitheater
 function fmNear(){const G=fmGeo();if(SV.on||!G)return 0;return Math.max(0,Math.min(1,prox(G.lc[0],G.lc[1],320)*1.7-.08))}
 /* the running order, as fractions of the show: [start, name, two hues] */
+const FM_HUES={pre:[230,250],intro:[265,215],imagine:[300,45],adventure:[195,150],villains:[120,285],dragon:[25,10],mickey:[210,55],finale:[45,0],end:[55,210]};
+/* with the owner's soundtrack (CHOREO_FM, in choreo-fantasmic.js, made from it): the scenes start where the music changes,
+   the fountains and lights follow its loudness and beats, and the finale's fireworks go up on its beats. The first minute
+   is the pre-show announcement, with the lagoon dark. Without it (or with a different recording), the running order below
+   is spread over the show's length. */
+const fmCh=()=>typeof CHOREO_FM!=='undefined'&&Math.abs(fmLen()-CHOREO_FM.len)<20?CHOREO_FM:null;
+function fmAt(st){const C=fmCh();if(C){let k='pre';for(const[t,n]of C.scenes)if(st>=t)k=n;return[k,FM_HUES[k]]}const[,k,h]=fmScene(Math.max(0,st)/fmLen());return[k,h]}
+function fmEnv(st){const C=fmCh();if(!C)return .7;return C.env[Math.max(0,Math.min(C.env.length-1,Math.floor(st*2)))]}
+function fmBeat(st){const C=fmCh();if(!C)return 0;const B=C.beats;let lo=0,hi=B.length-1;if(hi<0||B[0]>st)return 0;while(lo<hi){const m=(lo+hi+1)>>1;if(B[m]<=st)lo=m;else hi=m-1}return Math.max(0,1-(st-B[lo])/.45)} /* 1 on a beat, fading over half a second */
 const FM_SCENES=[[0,'intro',[265,215]],[.05,'imagine',[300,45]],[.25,'adventure',[195,150]],[.42,'villains',[120,285]],[.6,'dragon',[25,10]],[.72,'mickey',[210,55]],[.8,'finale',[45,0]],[.97,'end',[55,210]]];
 const fmScene=f=>{let s=FM_SCENES[0];for(const q of FM_SCENES)if(f>=q[0])s=q;return s};
 function fmStart(){const ev=fmEv();if(!ev)return;if(ev.ph==='live'){fmLook();closeSheet();return}ev.on=true;const s=Math.ceil(T)+3;(ev.force||(ev.force=[])).push(s);ev.t=[...new Set([...ev.t,s])].sort((a,b)=>a-b);
@@ -54,7 +63,7 @@ function fmSync(){const ev=fmEv(),A=FM.a,a=A.audio;if(!ev)return;fmForceTidy(ev)
  if(a.paused){a.currentTime=Math.max(0,st);a.play().catch(()=>{})}
  else if(Math.abs(a.currentTime-st)>.6)a.currentTime=Math.max(0,st)}
 /* the finale's fireworks, made once: a steady rise to a big last minute, from the mountain and along the island */
-function fmCues(){if(FM.cues)return FM.cues;const L=fmLen(),r=seeded(1955),K=['peony','chrys','willow','ring','crossette','strobe','comet','mine'],out=[];
+function fmCues(){if(FM.cues)return FM.cues;const C=fmCh();if(C){FM.cues=C.cues;return FM.cues}const L=fmLen(),r=seeded(1955),K=['peony','chrys','willow','ring','crossette','strobe','comet','mine'],out=[];
  for(let t=L*.8;t<L*.985;){const f=(t-L*.8)/(L*.185),gap=1.6-1.25*f;const k=K[r()*K.length|0];out.push([t,k,(r()-.5)*2,.25+r()*.7,[45,0,210,300,120][r()*5|0]+r()*20,.7+r()*.6+f*.4]);if(f>.85&&r()<.5)out.push([t+.1,'peony',(r()-.5)*2,.5+r()*.5,45,1.3]);t+=gap*(.5+r())}
  FM.cues=out;return out}
 function fmLaunch(q){const G=fmGeo(),[t,kind,c0,alt,h,sz]=q,z=zf(),bx=G.sc[0]+G.v[0]*c0*26,by=G.sc[1]+G.v[1]*c0*26-(kind==='mine'?G.hh:0),b=toS(bx,by-G.hh*.4),my=kind==='mine'?by:kind==='comet'?by-(14+alt*40):by-(40+alt*95),e=toS(bx+(Math.random()-.5)*12,my),rise=kind==='comet'||kind==='mine'?.9+alt*.8:1.3+alt*1.3;
@@ -89,22 +98,22 @@ function fmBoat(G,a,t,al){const ib=G.ib,rx=(ib[2]-ib[0])/2+11,ry=(ib[3]-ib[1])/2
  cx.fillStyle='#ffe9a0';for(let i=0;i<9;i++)cx.fillRect(x-L*.55+i*L*.14,y-1.6,.5,.5);
  if(typeof drawChar==='function'){const s=OSM.S*2.2;cx.save();for(const[w,dx]of[['mickey',-3],['minnie',-1],['donald',1.2],['goofy',3.4]])drawChar(cx,s,(x+dx)/s,(y-4.5)/s,w,t);cx.restore()}
  cx.restore()}
-function fmDraw(now){const st=fmClock(),G=fmGeo();if(st===null||!G||SV.on)return;const L=fmLen();if(st>L+10)return;const f=Math.max(0,st)/L,[,kind,[h1,h2]]=fmScene(f),t=now/1000,on=Math.min(1,st/6,(L+8-st)/8),A=on*Math.max(.35,nf);
- if(A<=0)return;
+function fmDraw(now){const st=fmClock(),G=fmGeo();if(st===null||!G||SV.on)return;const L=fmLen();if(st>L+10)return;const f=Math.max(0,st)/L,[kind,[h1,h2]]=fmAt(st),t=now/1000,env=fmEnv(st),beat=fmBeat(st),pre=kind==='pre',on=Math.min(1,st/6,(L+8-st)/8)*(pre?.25:1),A=on*Math.max(.35,nf)*(fmCh()?.55+.6*env:1);
+ if(A<=0)return;if(pre){cx.save();cx.globalCompositeOperation='lighter';const g=cx.createRadialGradient(G.sc[0],G.sc[1],1,G.sc[0],G.sc[1],G.reach*.8);g.addColorStop(0,'rgba(120,130,255,.25)');g.addColorStop(1,'rgba(120,130,255,0)');cx.fillStyle=g;cx.beginPath();cx.arc(G.sc[0],G.sc[1],G.reach*.8,0,7);cx.fill();cx.restore();return} /* the announcement: just a glow on the island */
  cx.save();cx.globalCompositeOperation='lighter';
  /* the lagoon lit in the scene's colours, and searchlights up from the island */
  {const g=cx.createRadialGradient(G.lc[0],G.lc[1],2,G.lc[0],G.lc[1],G.reach);g.addColorStop(0,hsl(h1,80,55,.35*A));g.addColorStop(1,hsl(h2,80,50,0));cx.fillStyle=g;cx.beginPath();cx.arc(G.lc[0],G.lc[1],G.reach,0,7);cx.fill()}
  for(let i=0;i<4;i++){const a=-Math.PI/2+Math.sin(t*.5+i*1.7)*.6,x0=G.sc[0]+(i-1.5)*6,y0=G.sc[1],len=G.reach*2.4,g=cx.createLinearGradient(x0,y0,x0+Math.cos(a)*len,y0+Math.sin(a)*len);g.addColorStop(0,hsl(i%2?h1:h2,60,85,.35*A));g.addColorStop(1,hsl(h1,60,85,0));cx.fillStyle=g;cx.beginPath();cx.moveTo(x0,y0);cx.lineTo(x0+Math.cos(a-.05)*len,y0+Math.sin(a-.05)*len);cx.lineTo(x0+Math.cos(a+.05)*len,y0+Math.sin(a+.05)*len);cx.closePath();cx.fill()}
  /* fountains along the front of the lagoon */
- for(let i=0;i<G.jets.length;i++){const[x,y]=G.jets[i],mode=Math.floor(st/20)%3,amp=mode===0?.5+.5*Math.sin(t*2.2+i*.6):mode===1?(Math.floor(t*2+i)%2?1:.35):.4+.6*Math.abs(Math.sin(t*1.3+i*.25)),H=(kind==='finale'?26:16)*amp*on;lumJet(x,y,H,Math.sin(t+i)*.6,i%2?h1:h2,A,1.1,t,i)}
+ for(let i=0;i<G.jets.length;i++){const[x,y]=G.jets[i],mode=Math.floor(st/20)%3,amp=mode===0?.5+.5*Math.sin(t*2.2+i*.6):mode===1?(Math.floor(t*2+i)%2?1:.35):.4+.6*Math.abs(Math.sin(t*1.3+i*.25)),H=(kind==='finale'||kind==='end'?26:16)*(fmCh()?Math.max(.25,Math.min(1.25,amp*.5+env*.6+beat*.35)):amp)*on;lumJet(x,y,H,Math.sin(t+i)*.6,i%2?h1:h2,A,1.1,t,i)}
  /* the mist screens, lit by the projectors */
  if(kind!=='end'||f<.99)for(let i=0;i<G.screens.length;i++){const[x,y]=G.screens[i];fmMist(x,y,15,28,h1,h2,t+i,A*.85*(kind==='finale'?.6:1),kind)}
  /* the lagoon on fire: flames across the front, after the dragon's breath */
- if(kind==='dragon'){const k=Math.min(1,(f-.6)/.04)*Math.min(1,(.72-f)/.02);for(let i=0;i<26;i++){const a=(i/25-.5)*2.2,r=G.reach*(.45+.35*((i*7)%5)/5),x=G.lc[0]+G.u[0]*r*Math.cos(a)+G.v[0]*r*Math.sin(a),y=G.lc[1]+G.u[1]*r*Math.cos(a)+G.v[1]*r*Math.sin(a);fmFire(x,y,(3.8+((i*13)%7)*.6)*k,t,i)}}
+ if(kind==='dragon'){const C=fmCh(),d0=C?1101:L*.6,d1=C?1241:L*.72,k=Math.max(0,Math.min(1,(st-d0)/40,(d1-st)/10));for(let i=0;i<26;i++){const a=(i/25-.5)*2.2,r=G.reach*(.45+.35*((i*7)%5)/5),x=G.lc[0]+G.u[0]*r*Math.cos(a)+G.v[0]*r*Math.sin(a),y=G.lc[1]+G.u[1]*r*Math.cos(a)+G.v[1]*r*Math.sin(a);fmFire(x,y,(3.8+((i*13)%7)*.6)*k,t,i)}}
  cx.restore();
  /* figures on the island: the dragon, Sorcerer Mickey on the peak, the riverboat in the finale */
  if(kind==='dragon')fmDragon(G,t,on,Math.max(0,Math.sin(t*1.4)));
- if((kind==='intro'||kind==='mickey'||kind==='end'||kind==='imagine'&&f<.08)&&typeof drawChar==='function'){const s=OSM.S*3,[px,py]=G.peak;cx.save();cx.globalAlpha=on;
+ if((kind==='intro'||kind==='mickey'||kind==='end')&&typeof drawChar==='function'){const s=OSM.S*3,[px,py]=G.peak;cx.save();cx.globalAlpha=on;
   const g=cx.createRadialGradient(px,py-3,1,px,py-3,12);g.addColorStop(0,'rgba(255,255,230,.6)');g.addColorStop(1,'rgba(255,255,230,0)');cx.fillStyle=g;cx.beginPath();cx.arc(px,py-3,12,0,7);cx.fill();
   drawChar(cx,s,px/s,py/s,'mickey',t);cx.fillStyle='#2f4fb8';cx.beginPath();cx.moveTo(px-2.4,py-6.4);cx.lineTo(px+.4,py-12.5);cx.lineTo(px+2.2,py-6.4);cx.closePath();cx.fill();cx.fillStyle='#f6e8a8';cx.beginPath();cx.arc(px-.4,py-8.4,.45,0,7);cx.arc(px+.9,py-10.2,.35,0,7);cx.fill();cx.restore()}
- if(kind==='finale'||kind==='end'){const a=(st-L*.8)/40*Math.PI*2;fmBoat(G,a,t,on)}}
+ if(kind==='finale'){const C=fmCh(),t0=C?C.scenes.find(q=>q[1]==='finale')[0]:L*.8,a=(st-t0)/40*Math.PI*2;fmBoat(G,a,t,on)}}

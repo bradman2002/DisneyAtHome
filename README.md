@@ -127,7 +127,9 @@ data on, its waits and closures are the real ones too.
 live): fireworks go up from barges around the lagoon on the music's beats, and the barges' fountains and coloured
 lights follow the music. EPCOT's guests gather round the promenade to watch. Put your copy of the soundtrack at
 `audio/luminous.mp3` (or include it in Load audio folder); like the other Disney music it is never committed. When both
-nighttime shows run at once, you hear the one the map is looking at, and TV mode cuts between them.
+nighttime shows run at once, you hear the one the map is looking at, and TV mode cuts between them. To see it any time, press
+**Start Luminous now** (in Entertainment, or on the show's star on the map): it starts a few seconds later, right
+where the clock is, and the map flies to the lagoon.
 
 ## Crowds
 

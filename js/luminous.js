@@ -25,8 +25,15 @@ function lumBarges(){if(LUM.B)return LUM.B;LUM.B=[];if(typeof EPCOT==='undefined
  LUM.B.sort((p,q)=>p[0]-q[0]);LUM.B.splice(Math.floor(n/2),0,[cx0,cy0]);return LUM.B} /* left to right, so a cue's x (-1..1) picks a barge across the lagoon */
 const lumEnv=st=>CHOREO_LUM.env[Math.max(0,Math.min(CHOREO_LUM.env.length-1,Math.floor(st*2)))]||0;
 function lumSec(st){const S=CHOREO_LUM.sec;let i=0;while(i<S.length-2&&st>=S[i+1])i++;return i}
+/* Start it now, whatever the time: an extra showtime a few seconds from now (kept through live updates in `ev.force`,
+   and dropped again once it has played or the clock is taken back before it). The map flies to the lagoon. */
+function lumStart(){const ev=lumEv();if(!ev)return;if(ev.ph==='live'){lumLook();closeSheet();return}ev.on=true;const s=Math.ceil(T)+3;(ev.force||(ev.force=[])).push(s);ev.t=[...new Set([...ev.t,s])].sort((a,b)=>a-b);
+ if(!AU.ready)auInit();LUM.liveKey=null;speed=1;playing=true;lumLook();closeSheet();sync();
+ if(!LUM.a.ready)toast('Add audio/luminous.mp3 (or include it in Load audio folder) to hear the show');LUM.a.audio.play().then(()=>LUM.a.audio.pause()).catch(()=>{})} /* the tap unlocks its player */
+function lumLook(){if(SV.on)setView(false);follow=null;sel=null;cam.x=cam.tx=EVPOS.lum[0];cam.y=cam.ty=EVPOS.lum[1]-50;cam.tm=Math.max(1.35,Math.min(cam.tm,2.2));cam.m=cam.tm}
+function lumForceTidy(ev){if(!ev.force||!ev.force.length)return;for(const s of ev.force.slice())if(T>s+ev.dur*60+120||T<s-120){ev.force.splice(ev.force.indexOf(s),1);const i=ev.t.indexOf(s);if(i>=0&&ev.t.length>1)ev.t.splice(i,1)}}
 /* soundtrack: the show's clock (unless Happily Ever After is playing too, which then keeps the time; this one just follows) */
-function lumSync(){const ev=lumEv(),A=LUM.a,a=A.audio;if(!ev)return;const st=lumClock(),live=ev.ph==='live';
+function lumSync(){const ev=lumEv(),A=LUM.a,a=A.audio;if(!ev)return;lumForceTidy(ev);const st=lumClock(),live=ev.ph==='live';
  if(live&&LUM.liveKey!==ev.key){LUM.liveKey=ev.key;if(A.ready&&HEA.auto&&speed!==1&&!FF&&lumNear()>.15){speed=1;sync();toast('Luminous is starting — speed set to 1× so the soundtrack stays in sync')}}
  const want=live&&A.ready&&playing&&speed===1&&!FF&&st!==null&&st<a.duration-.5;
  if(!want){if(!a.paused)a.pause();return}

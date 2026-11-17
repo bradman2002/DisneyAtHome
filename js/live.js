@@ -35,7 +35,8 @@ function liveApply(live,c,ep){const by={};for(const x of[...(live.liveData||[]),
  if(LIVE.follow)liveSchedule(true)}
 // put today's real hours and show times into the simulation (on), or give back the built-in ones (off)
 function liveSchedule(on){for(const e of EV){if(!LIVE.shows||!(e.id in LIVE.shows))continue;if(e.t0===undefined){e.t0=e.t.slice();e.on0=e.on;e.userOn0=e.userOn}
-  if(on){const t=LIVE.shows[e.id];if(t.length){e.t=t.slice();e.on=true}else e.on=false;e.userOn=true}else{e.t=e.t0.slice();e.on=e.on0;e.userOn=e.userOn0;delete e.t0}}
+  if(on){const t=LIVE.shows[e.id];if(t.length){e.t=t.slice();e.on=true}else e.on=false;e.userOn=true}else{e.t=e.t0.slice();e.on=e.on0;e.userOn=e.userOn0;delete e.t0}
+  if(e.force&&e.force.length){e.t=[...new Set([...e.t,...e.force])].sort((a,b)=>a-b);e.on=true}} /* a show started by hand keeps going */
  if(on&&LIVE.hours)setHours(LIVE.hours[0],LIVE.hours[1]);else if(!on){setHours(9,22);dayParams()}
  if(on&&LIVE.epHours)setHoursEP(LIVE.epHours[0],LIVE.epHours[1]);else if(!on)setHoursEP(9,21)}
 function liveFollow(){if(!LIVE.ok)return;LIVE.on=LIVE.follow=true;liveSchedule(true);const c=parkClock();LIVE.inTick=true;dateStr=c.date;reset(Math.min(7*3600,c.s));seek(c.s,false);LIVE.inTick=false;speed=1;playing=true;sync();liveBadge()}

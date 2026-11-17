@@ -129,6 +129,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   earth-tone strata bands (`strataDeco`), a hipped glass roof over the atrium and a glass entrance (`glassHall`), the round
   greenhouse dome and the Living with the Land greenhouses' sawtooth glass, placed at fixed map positions (the projection is pinned).
 - Hollywood Studios (owner, 17 Nov 2026: "Add Hollywood studios, the land in between and all the rides"): `hs.osm` (git-ignored)
+- Land east of EPCOT (owner, 17 Nov 2026: "Add some land to the right of epcot"): `east.osm` (git-ignored, api.openstreetmap.org/api/0.6/map in 12 pieces, bbox 28.3490,-81.5450,28.4240,-81.5330) widens the map to lon -81.5340 (W 5634). Building outlines keep full detail everywhere (only areas/paths between parks are coarsened). Zooming in anywhere outside the fixed close-ups paints a sharp temporary patch (`d.tmp` in `MAP.detail`, at most 4, dropped by `dropDetail` after 90 s away), so the Crescent Lake resorts and the land between parks are as sharp as the parks.
   is merged from api.openstreetmap.org/api/0.6/map pieces (Overpass kept failing; bbox in the extractor) and covers the park
   plus the land round it (Caribbean Beach, Pop Century, Art of Animation). It is park 2: `OSM.regions` = [MKR, EPR, HSR, whole
   map], `OSM.nparks`=3, H=8425. In the extractor, earlier files win for overlapping ways/nodes and `rel_chain(...,box=)` keeps

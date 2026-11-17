@@ -14,7 +14,8 @@ Run from the site folder:  python3 tools/osm_extract.py"""
 import xml.etree.ElementTree as ET, math, json, collections, heapq
 
 import os
-SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
+SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['east.osm'] if os.path.exists('east.osm') and os.path.exists('hs.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
+  # east.osm: a strip east of EPCOT, its parking lots and roads (bbox 28.3490,-81.5450,28.4240,-81.5330), merged the same way
   # gap.osm: everything between (bbox 28.3645,-81.5905,28.4240,-81.5450)
 OUT='js/park-osm.js'
 # The projection is pinned to a fixed corner (not the file's bounds), so coordinates stay put when the data is refreshed.
@@ -56,7 +57,8 @@ def centroid(p):
     return (cx/(6*a),cy/(6*a))
 def simplify(p,tol):
     # between the parks (once that land is filled in) shapes are kept coarser: it is seen from further out, and it keeps the data small
-    if FULL and p and not any(inpark(*q) for q in p[::max(1,len(p)//6)]): tol*=3
+    # (buildings, tol .25, keep their full shape everywhere: the resorts out here are looked at close up too)
+    if FULL and tol>.25 and p and not any(inpark(*q) for q in p[::max(1,len(p)//6)]): tol*=3
     return _simplify(p,tol)
 FULL=False;inpark=lambda x,y:True
 def _simplify(p,tol):
@@ -128,6 +130,7 @@ def inpark(x,y): return any(r[0]<=x<=r[2] and r[1]<=y<=r[3] for r in PARKS)
 if EPC and 'gap.osm' in SRCS:  # the land between the parks is filled in too: content everywhere on the map
     H=max(H,6730)  # a little further south than Epcot needs, so the Swan and the Swan Reserve fit whole
     if HSC: H=max(H,int(proj(-81.56,28.3490)[1]))  # down to the bottom of the Hollywood Studios data
+    if 'east.osm' in SRCS: W=max(W,int(proj(-81.5340,28.4)[0]))  # land east of EPCOT, so its edge isn't the end of the world
     FULL=True;REGIONS.append((0,0,W,H));print('filled in: whole map',W,'x',H)
 def inreg(x,y,m=0): return any(r[0]-m<=x<=r[2]+m and r[1]-m<=y<=r[3]+m for r in REGIONS)
 def clip_box(p,m=60): return any(inreg(x,y,m) for x,y in p)

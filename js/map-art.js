@@ -319,8 +319,8 @@ function dolphinResort(c,e,q,S2){const bb=bbox(q.p),wing=34*S2,blk=45*S2,
  extrude(c,e,q.p,wing,'#f09d84','#f3c3b0',{deco:cresDeco('dol'),ridge:false});
  extrude(c,e,M,blk,'#ee9579','#e9ab95',{deco:cresDeco('dol'),ridge:false});
  const mx=(M[0][0]+M[1][0])/2,front=M[2][1],dep=M[2][1]-M[0][1];
- dolphinTower(c,e,mx,front,24,78*S2,dep,blk,true);
- const sh=17*S2*1.25;dolphinStatue(c,(M[0][0]+mx-24)/2,(M[0][1]+M[2][1])/2-blk+4,sh,false);dolphinStatue(c,(M[1][0]+mx+24)/2,(M[0][1]+M[2][1])/2-blk+4,sh,true)}
+ dolphinTower(c,e,mx,front,24,78*S2,dep*.55,blk,true); /* about as deep as it is wide, so its roof doesn't run back in a long spike */
+ const sh=17*S2*2.4;dolphinStatue(c,(M[0][0]+mx-24)/2+3,M[2][1]-blk-dep*.3,sh,false);dolphinStatue(c,(M[1][0]+mx+24)/2-3,M[2][1]-blk-dep*.3,sh,true)}
 /* the Swan's centre block: white with wave bands, its gently arched roof, a swan at each end */
 function swanBlock(c,e,x,y,w,dep,H){const arch=H*.16,top=t=>y-H-Math.sin(t*Math.PI)*arch,n=24;
  const front=[[x-w,y],[x+w,y]];for(let i=n;i>=0;i--)front.push([x-w+2*w*i/n,top(i/n)]);
@@ -460,8 +460,9 @@ function falcon(c,e,o){const b=bbox(o),x=(b[0]+b[2])/2,y=(b[1]+b[3])/2,r=Math.mi
  c.fillStyle='#d6d3cc';c.beginPath();c.arc(x,y-z,r*.18,0,7);c.fill();c.fillStyle='#c2bfb8';c.save();c.translate(x-r*.1,y-z+r*.78);c.rotate(.5);c.fillRect(0,-r*.1,r*.45,r*.2);c.fillStyle='#3a4a5a';c.beginPath();c.arc(r*.47,0,r*.11,0,7);c.fill();c.restore();
  c.fillStyle='#d65a3a';c.fillRect(x-r*.8,y-z-r*.05,r*.15,r*.1);if(e){e.fillStyle='rgba(120,180,255,.9)';e.fillRect(x-r*1.02,y-z-r*.35,r*.12,r*.7)}}
 /* ---------- the build: everything from OpenStreetMap ---------- */
+let dbox;
 function buildMap(){
- const phone=Math.min(screen.width,screen.height)<700,P=OSM.places,box=(x0,y0,x1,y1,k)=>({x:Math.max(0,x0),y:Math.max(0,y0),w:Math.min(W,x1)-Math.max(0,x0),h:Math.min(H,y1)-Math.max(0,y0),k,base:null,glow:null});
+ const phone=Math.min(screen.width,screen.height)<700,P=OSM.places,box=dbox=(x0,y0,x1,y1,k)=>({x:Math.max(0,x0),y:Math.max(0,y0),w:Math.min(W,x1)-Math.max(0,x0),h:Math.min(H,y1)-Math.max(0,y0),k,base:null,glow:null});
  MSS=phone?2:3;const R0=REGIONS[0];MAP.mss=Math.min(MSS,Math.sqrt((phone?8e6:16e6)/((R0[2]-R0[0])*(R0[3]-R0[1]))));
  /* one layer per region at the same sharpness (Magic Kingdom first, then Epcot); the blank land between them isn't painted */
  MAP.layers=PARKR.map(R=>{const L={x:Math.max(0,R[0]),y:Math.max(0,R[1])};L.w=Math.min(W,R[2])-L.x;L.h=Math.min(H,R[3])-L.y;return Object.assign(L,paintMap(L.x,L.y,L.w,L.h,MAP.mss))});
@@ -481,12 +482,20 @@ function buildMap(){
  setTimeout(()=>{const d=MAP.detail[0];if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k))},400)} /* the park itself is wanted almost at once */
 /* Close-up layers are painted only when you zoom in near one, and let go again after a while away, so only the ones
    in use take memory (each is tens of MB). Checked a few times a second; one is painted at a time. */
+function dropDetail(d){for(const k of['base','glow'])if(d[k]){d[k].width=d[k].height=0;d[k]=null}if(d.tmp)MAP.detail.splice(MAP.detail.indexOf(d),1)}
 function detailTick(z){const now=performance.now();if(now-(MAP.dtAt||0)<300)return;MAP.dtAt=now;
  const want=z*dpr>MAP.mss*1.15||cam.tm*baseZ()*dpr>MAP.mss*1.15,views=[[cam.x,cam.y],[cam.tx,cam.ty]],hw=cw/2/z*1.6+150,hh=ch/2/z*1.6+150;
- for(const d of MAP.detail){const near=want&&views.some(([x,y])=>d.x<x+hw&&d.x+d.w>x-hw&&d.y<y+hh&&d.y+d.h>y-hh);
+ for(const d of[...MAP.detail]){const near=want&&views.some(([x,y])=>d.x<x+hw&&d.x+d.w>x-hw&&d.y<y+hh&&d.y+d.h>y-hh);
   if(near)d.seen=now;
   if(near&&!d.base&&!MAP.dtBusy){MAP.dtBusy=true;setTimeout(()=>{if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0)}
-  else if(d.base&&!near&&now-(d.seen||0)>90e3&&d!==MAP.detail[0]){for(const k of['base','glow']){d[k].width=d[k].height=0;d[k]=null}}}
+  else if(d.base&&!near&&now-(d.seen||0)>90e3&&d!==MAP.detail[0])dropDetail(d)}
+ /* anywhere else zoomed in close (the resorts round Crescent Lake, the land east of EPCOT...): paint a sharp patch round
+    the view, as sharp as the close-ups, and let it go like them; at most four are kept, the oldest goes first */
+ if(want&&FULL&&!MAP.dtBusy){const ax=cw/2/z,ay=ch/2/z;
+  for(const[x,y]of views){if(MAP.detail.some(d=>d.x<=Math.max(0,x-ax)&&d.y<=Math.max(0,y-ay)&&d.x+d.w>=Math.min(W,x+ax)&&d.y+d.h>=Math.min(H,y+ay)))continue;
+   const hx=Math.max(450,ax*1.5),hy=Math.max(450,ay*1.5),d=dbox(x-hx,y-hy,x+hx,y+hy,MSS);d.tmp=true;d.seen=now;
+   const tmp=MAP.detail.filter(q=>q.tmp);if(tmp.length>=4){const o=tmp.reduce((a,b)=>(a.seen||0)<(b.seen||0)?a:b);dropDetail(o)}
+   MAP.detail.push(d);MAP.dtBusy=true;setTimeout(()=>{if(!d.base&&MAP.detail.includes(d))Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0);break}}
  const vw=cw/2/z+60,vh=ch/2/z+60;
  for(const d of MAP.tiles||[]){const near=views.some(([x,y])=>d.x<x+vw&&d.x+d.w>x-vw&&d.y<y+vh&&d.y+d.h>y-vh);if(near)d.seen=now;
   if(near&&!d.base&&!MAP.dtBusy){MAP.dtBusy=true;setTimeout(()=>{if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0)}

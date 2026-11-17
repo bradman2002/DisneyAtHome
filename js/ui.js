@@ -114,6 +114,9 @@ function hitMap(x,y){const z=zf(),r=16/Math.min(z,2);let b=null,bd=r;for(const a
  {const st=ewpState(T);if(st)for(let i=0;i<EWP.N;i++){const p=ewpBarge(st,i);if(p&&Math.hypot(p[0]-x,p[1]-4-y)<9)b={k:'w',i:0}}}
  if(!b&&z>1.5){let bd=4.5;for(const g of guests){if(g.st===1||g.st===2||g.st===3)continue;const d=Math.hypot(g.x-x,g.y-y);if(d<bd){bd=d;b={k:'g',g}}}} /* zoomed in: tap a party to see what they are up to */
  if(!b){let d0=110;for(const k in LANDS){const L=LANDS[k],d=Math.hypot(L[1]-x,L[2]-y);if(d<d0&&k!=='hub'){d0=d;b={k:'l',i:k}}}}return b}
+/* double-click or double-tap: glide in 2× toward that spot, keeping it under the finger (Shift + double-click zooms out) */
+const TAP={t:0,x:0,y:0};
+function dblZoom(sx,sy,f){const[wx,wy]=toW(sx,sy),m1=Math.max(minM(),Math.min(7,cam.tm*f)),z1=baseZ()*m1;follow=null;cam.tm=m1;cam.tx=wx-(sx-cw/2)/z1;cam.ty=wy-(sy-ch/2)/z1}
 function zoomAt(sx,sy,f){const[bx,by]=toW(sx,sy);cam.tm=cam.m=Math.max(minM(),Math.min(7,cam.m*f));const[ax,ay]=toW(sx,sy);cam.x+=bx-ax;cam.y+=by-ay;cam.tx=cam.x;cam.ty=cam.y;follow=null}
 cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);
  if(SV.on){drag={x:e.clientX,y:e.clientY,p:SV.pan,t:SV.tilt,sv:1};return}
@@ -127,7 +130,9 @@ cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&!SV.on){const 
  const z=zf(),dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.mv=1;if(drag.mv&&!drag.pinch){follow=null;cam.tx=cam.x=drag.cx-dx/z;cam.ty=cam.y=drag.cy-dy/z}});
 const endPtr=e=>{ptr.delete(e.pointerId);cv.classList.remove('grab');if(SV.on){if(!ptr.size)drag=null;return}
  if(drag&&!drag.mv&&!drag.pinch&&e.type==='pointerup'){const r=cv.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top;const b=[...BUB].reverse().find(o=>sx>=o.r[0]&&sx<=o.r[2]&&sy>=o.r[1]&&sy<=o.r[3]);
-  if(b)pick(b.item);else{const[x,y]=toW(sx,sy),h=hitMap(x,y);if(h)pick(h);else{sel=null;if(sheet==='detail')closeSheet()}}}
+  const now=performance.now();if(now-TAP.t<330&&Math.hypot(sx-TAP.x,sy-TAP.y)<30){TAP.t=0;dblZoom(sx,sy,e.shiftKey?.5:2)} /* a second tap on the same spot: zoom in there (Shift: out) */
+  else{TAP.t=now;TAP.x=sx;TAP.y=sy;
+  if(b)pick(b.item);else{const[x,y]=toW(sx,sy),h=hitMap(x,y);if(h)pick(h);else{sel=null;if(sheet==='detail')closeSheet()}}}}
  if(!ptr.size)drag=null;else if(ptr.size===1)drag=null};
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointerleave',()=>{MONOHOVER=false});cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('wheel',e=>{e.preventDefault();if(SV.on){SV.zoom=Math.max(.6,Math.min(2.6,SV.zoom*(e.deltaY<0?1.1:1/1.1)));svLayout();return}const r=cv.getBoundingClientRect();zoomAt(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.15:1/1.15)},{passive:false});

@@ -7,6 +7,9 @@ and the Fort Wilderness marina, a street-level Main Street view,
 day/night, guests, transportation and the Happily Ever After fireworks show synced to its soundtrack. Wait times, ride closures, show times and park hours are the real
 ones when "Live" is on (see below); guests, crowds and vehicles are always simulated.
 
+Getting around the map: drag to move, scroll or pinch to zoom, double-click or double-tap to zoom in on a spot
+(Shift + double-click zooms out), tap anything for its details.
+
 ## Live: the real park
 
 When the page opens it fetches Magic Kingdom's current wait times, ride closures, today's show times and

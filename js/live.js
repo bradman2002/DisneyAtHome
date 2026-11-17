@@ -31,6 +31,7 @@ function liveApply(live,c,ep){const by={};for(const x of[...(live.liveData||[]),
  const times={};for(const x of live.liveData||[]){if(x.entityType!=='SHOW')continue;const m=LIVE_SHOWS.find(([re])=>re.test(x.name));if(!m)continue;const t=times[m[1]]||(times[m[1]]=new Set());for(const s of x.showtimes||[]){const v=isoSec(s.startTime,c.date);if(v!==null&&v<86400-20*60)t.add(v)}}
  LIVE.fwShow=(live.liveData||[]).some(x=>x.entityType==='SHOW'&&/minnie.*fireworks/i.test(x.name)&&(x.showtimes||[]).some(s=>isoSec(s.startTime,c.date)!==null))?'minnie':'hea'; /* party night: Minnie's fireworks instead of Happily Ever After */
  LIVE.shows={};for(const[,id]of LIVE_SHOWS)LIVE.shows[id]=[...(times[id]||[])].sort((a,b)=>a-b);
+ {const lt=new Set();for(const x of(ep&&ep.liveData)||[])if(x.entityType==='SHOW'&&/luminous/i.test(x.name))for(const s of x.showtimes||[]){const v=isoSec(s.startTime,c.date);if(v!==null&&v<86400-20*60)lt.add(v)}if(ep)LIVE.shows.lum=[...lt].sort((a,b)=>a-b)} /* EPCOT's Luminous, from its own feed */
  if(LIVE.follow)liveSchedule(true)}
 // put today's real hours and show times into the simulation (on), or give back the built-in ones (off)
 function liveSchedule(on){for(const e of EV){if(!LIVE.shows||!(e.id in LIVE.shows))continue;if(e.t0===undefined){e.t0=e.t.slice();e.on0=e.on;e.userOn0=e.userOn}
@@ -42,7 +43,7 @@ function liveUnfollow(){if(!LIVE.follow)return;LIVE.follow=false;LIVENOW=false;C
 // called every frame: keep the clock on the real time, and say whether the live numbers apply right now
 function liveTick(){if(!LIVE.follow){LIVENOW=false;return}const c=parkClock();LIVE.inTick=true;
  if(dateStr!==c.date){dateStr=c.date;liveSchedule(true);reset(Math.min(7*3600,c.s));seek(c.s,false)}
- else{const d=c.s-T,music=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||ewpPlaying(); // while a show's music is playing it keeps the time
+ else{const d=c.s-T,music=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||ewpPlaying()||lumPlaying(); // while a show's music is playing it keeps the time
   if(!music&&Math.abs(d)>3){if(d>0&&d<=120||d<0&&d>-120)T=c.s;else seek(c.s,d<0)}}
  LIVE.inTick=false;if(speed!==1||!playing){speed=1;playing=true;sync()}
  LIVENOW=LIVE.ok&&Date.now()-LIVE.at<25*60e3;CROWDX=LIVENOW?LIVE.crowd||1:1}

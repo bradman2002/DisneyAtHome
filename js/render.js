@@ -32,7 +32,7 @@ const GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=64;co
 function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
- paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();
+ paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k; /* TV mode glides between shots */
   if(Math.abs(cam.tm-cam.m)<cam.m*.0015)cam.m=cam.tm;if(Math.abs(cam.tx-cam.x)<.04)cam.x=cam.tx;if(Math.abs(cam.ty-cam.y)<.04)cam.y=cam.ty} /* then settle exactly, rather than creeping closer by ever-smaller amounts (which kept the picture shimmering) */
@@ -53,7 +53,7 @@ function frame(rdt){
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
- drawPageant(now,1); // the water pageant's lights
+ drawPageant(now,1);lumDraw(now); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint
  // castle projections during Happily Ever After
@@ -61,7 +61,7 @@ function frame(rdt){
  if(st!==null&&st<CHOREO.end+5&&nf>.3){const[bx,by,bw,bh]=MAP.castleBox;const P=MAP.proj||(MAP.proj=document.createElement('canvas'));P.width=MAP.castle.width;P.height=MAP.castle.height;const pc=P.getContext('2d');
   pc.drawImage(MAP.castle,0,0);pc.setTransform(MAP.castleMSS,0,0,MAP.castleMSS,0,0);drawProjection(pc,bw,bh,Math.max(0,st));cx.globalAlpha=Math.min(MAP.castleImg?.55:.85,Math.max(0,st)/4,(CHOREO.end+5-st)/5);cx.drawImage(P,bx,by,bw,bh);cx.globalAlpha=1}
  // fireworks + smoke (screen space)
- cx.setTransform(dpr,0,0,dpr,0,0);heaFrame(rdt);
+ cx.setTransform(dpr,0,0,dpr,0,0);lumTick();heaFrame(rdt);
  {const u=tinkU(st);if(u!==null){const[ux,uy]=MAP.castleAt,[sx,sy]=toS(ux+u*250,uy-18+u*72);drawTink(cx,sx,sy-(1-u)*MAP.castleBox[3]*.93*z,z*4.4,.4)}} // Tinker Bell, from the top of the castle toward Tomorrowland
  for(const s of HEA.smoke){const a=Math.min(1,s.l/s.m)*.08,lit=.25+SV.fl*.7,c2=`${150*lit+40|0},${140*lit+40|0},${170*lit+50|0}`,g=cx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r);g.addColorStop(0,`rgba(${c2},${a})`);g.addColorStop(1,`rgba(${c2},0)`);cx.fillStyle=g;cx.fillRect(s.x-s.r,s.y-s.r,s.r*2,s.r*2)}
  cx.save();cx.setTransform(1,0,0,1,0,0);cx.globalCompositeOperation='lighter';cx.drawImage(HEA.fwC,0,0);if(SV.fl>0){cx.fillStyle=`hsla(${SV.flH},80%,60%,${SV.fl*.07*nf})`;cx.fillRect(0,0,cv.width,cv.height)}cx.restore();
@@ -182,7 +182,7 @@ function drawOverlays(z,now){BUB=[];const c=cx;c.setTransform(dpr,0,0,dpr,0,0);c
   if(EPCOT){const[ex,ey]=toS(EPCOT.sse[0],EPCOT.sse[1]-75);if(ex>-200&&ex<cw+200&&ey>-60&&ey<ch+60){c.font='800 15px "Nunito Sans",Figtree,system-ui,sans-serif';const tw=c.measureText('EPCOT').width+26;c.fillStyle='rgba(60,40,110,.8)';c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText('EPCOT',ex,ey+.5)}
    c.font='700 12px "Nunito Sans",Figtree,system-ui,sans-serif';if(z>.9)for(const p of EPCOT.pav){const[sx,sy]=toS(p.x,p.y-30);if(sx<-80||sx>cw+80||sy<-20||sy>ch+20)continue;const tw=c.measureText(p.n).width+18;c.fillStyle='rgba(40,46,66,.66)';c.beginPath();c.roundRect(sx-tw/2,sy-11,tw,22,11);c.fill();c.fillStyle='#fff';c.fillText(p.n,sx,sy+.5)}}
   c.font='italic 700 '+Math.max(12,Math.min(22,z*26))+'px "Nunito Sans",Figtree,system-ui,sans-serif';c.strokeStyle='rgba(30,90,120,.45)';c.lineWidth=3;
-  for(const[n,p]of[['Seven Seas Lagoon',LAGOON],['Bay Lake',BAYLAKE],['Discovery Island',P_.disc&&z>.7?[P_.disc[0],P_.disc[1]]:null],['World Showcase Lagoon',EPCOT?EPCOT.c:null]]){if(!p)continue;const[sx,sy]=toS(...p);c.fillStyle='rgba(255,255,255,.85)';c.strokeText(n,sx,sy);c.fillText(n,sx,sy)}}
+  for(const[n,p]of[['Seven Seas Lagoon',LAGOON],['Bay Lake',BAYLAKE],['Discovery Island',P_.disc&&z>.7?[P_.disc[0],P_.disc[1]]:null],['World Showcase Lagoon',EPCOT&&!lumLive()?EPCOT.c:null]]){if(!p)continue;const[sx,sy]=toS(...p);c.fillStyle='rgba(255,255,255,.85)';c.strokeText(n,sx,sy);c.fillText(n,sx,sy)}}
  const isSel=(k,i)=>sel&&sel.k===k&&sel.i===i;
  if(document.body.classList.contains('idle')&&!(typeof TV!=='undefined'&&TV.on))return; /* full screen with controls faded: no callouts over the show */
  if(VIEW.layer==='wait'&&!VIEW.fwWaits&&fireEv()&&fireEv().ph==='live'){} // wait times stay out of the way during the fireworks (Filter turns them back on)

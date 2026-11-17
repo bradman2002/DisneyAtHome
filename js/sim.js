@@ -46,7 +46,9 @@ EV:[{id:'parade',n:'Festival of Fantasy Parade',ts:['12:00','15:00'],dur:20,lead
  {id:'welcome',n:'Let the Magic Begin (welcome show)',ts:['8:55'],dur:5,lead:35,pref:.85,rel:['open',-300]},
  {id:'caval',n:'Adventure Friends Cavalcade',ts:['11:05','13:15'],dur:9,lead:12,pref:.2},
  {id:'flag',n:'Flag Retreat',ts:['17:00'],dur:12,lead:8,pref:.1},
- {id:'kiss',n:'Kiss Goodnight',ts:['22:30'],dur:3,lead:0,pref:0,rel:['close',1800]}]};
+ {id:'kiss',n:'Kiss Goodnight',ts:['22:30'],dur:3,lead:0,pref:0,rel:['close',1800]},
+ // EPCOT's nighttime show on World Showcase Lagoon, at EPCOT's closing time (its length is the soundtrack's, see luminous.js)
+ {id:'lum',n:'Luminous: The Symphony of Us',ts:['21:00'],dur:18.2,lead:35,pref:.6,exit:.75,rel:['eclose',0],pk:1}]};
 const {LANDS,SC,N,E,V,EV}=PARK;
 const AT=PARK.A.map((r,i)=>{const p=POS[r[1]],pk=parkOf(r[2]);return{i,n:r[0],osm:r[1],l:r[2],pk,x:p.c[0],y:p.c[1],nd:p.nd,dx:N[p.nd][0],dy:N[p.nd][1],thr:r[3],dur:r[4],pop:r[5],k:r[6],open:r[7]||9,close:r[8]||(pk?21:22),o0:r[7]||9,c0:r[8]||(pk?21:22),risk:r[9]||.7}});
 /* Soarin' and Awesome Planet are inside The Land: guests go in by its door, not the nearest path to the far side of the building */
@@ -54,9 +56,9 @@ const AT=PARK.A.map((r,i)=>{const p=POS[r[1]],pk=parkOf(r[2]);return{i,n:r[0],os
 const VN=V.map((r,i)=>{const p=POS[r[1]];return{i,n:r[0],osm:r[1],k:r[2],l:r[3],pk:r[3]?parkOf(r[3]):0,x:p.c[0],y:p.c[1],nd:p.nd,dr:0}});
 // set the park's hours; each ride keeps its own offset from them (a ride that normally shuts an hour early still does)
 // shows whose time follows the park's hours (the welcome show five minutes before opening, the Kiss Goodnight half an hour after closing)
-function relTimes(){for(const e of EV)if(e.rel&&Array.isArray(e.t)){const t=(e.rel[0]==='open'?OPEN:CLOSE)*3600+e.rel[1];e.t=[Math.min(t,86400-e.dur*60-90)]}}
+function relTimes(){for(const e of EV)if(e.rel&&Array.isArray(e.t)){const t=(e.rel[0]==='open'?OPEN:e.rel[0]==='eclose'?ECLOSE:CLOSE)*3600+e.rel[1];e.t=[Math.min(t,86400-e.dur*60-90)]}}
 function setHours(o,c){OPEN=o;CLOSE=c;relTimes();for(const a of AT)if(!a.pk){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(22-a.c0))}}
-function setHoursEP(o,c){EOPEN=o;ECLOSE=c;for(const a of AT)if(a.pk){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(21-a.c0))}}
+function setHoursEP(o,c){EOPEN=o;ECLOSE=c;relTimes();for(const a of AT)if(a.pk){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(21-a.c0))}}
 const pOpen=pk=>pk?EOPEN:OPEN,pClose=pk=>pk?ECLOSE:CLOSE;
 const GATE=OSM.keys.gate,TOWNSQ=OSM.keys.townsq,MAINST=OSM.keys.mainst,HUB=OSM.keys.hub;
 /* ---- graph: real walkways. Routes are computed on demand toward each destination (Dijkstra), then cached ---- */
@@ -212,7 +214,7 @@ const hm24=s=>{const m=Math.floor(s/60);return Math.floor(m/60)+':'+String(m%60)
    it each pick their own moment to head over: a few early birds claim the front, most drift in during the last
    minutes, and stragglers keep arriving after it starts. Spots fill from the front (the kerb, the hub by the castle)
    backwards as the crowd grows, and each guest takes a spot near where they already are. */
-function invite(ev,key){ev.nw=0;ev.nexp=0;for(const g of guests){if(g.pk||g.intent==='exit'||g.st===7||R()>=ev.pref)continue;g.evId=ev.id;g.evK=key;g.evT=key-150-ev.lead*60*R()**2.2;ev.nexp++}}
+function invite(ev,key){ev.nw=0;ev.nexp=0;for(const g of guests){if((g.pk||0)!==(ev.pk||0)||g.intent==='exit'||g.st===7||R()>=ev.pref)continue;g.evId=ev.id;g.evK=key;g.evT=key-150-ev.lead*60*R()**2.2;ev.nexp++}}
 const isPar=ev=>typeof isParade==='function'?isParade(ev.id):ev.id==='parade',paradeLen=ev=>(typeof parOf==='function'&&parOf(ev.id)?parOf(ev.id).len:300)*OSM.S,paradeHead=ev=>ev.p*(PR.L+paradeLen(ev));
 function spot(ev,g){let s=null;for(let i=0;i<8;i++){s=spot0(ev,g);if(!s)return null;if(PAVE(s[0],s[1])){s[4]=0;break}s[4]=1} // only on pavement: try again if the spot fell on a lawn, a building or the water
  s[2]=nearestNode(s[0],s[1]);if(s[4]){s[0]=N[s[2]][0]+rr(-1.5,1.5);s[1]=N[s[2]][1]+rr(-1.5,1.5)}return s}
@@ -221,10 +223,14 @@ function spot0(ev,g){ // [x, y, (walk-graph node, filled in by spot), distance a
  switch(isPar(ev)?'parade':ev.id){case'parade':{const head=ev.ph==='live'?paradeHead(ev)+30:0;let best=null,bd=1e18; // only where the parade hasn't passed; busiest toward Main Street
    for(let i=0;i<4;i++){const d=PR.L*(.08+.88*R()**.75);if(d<head)continue;const[x,y,a]=PR.at(d),dd=(x-g.x)**2+(y-g.y)**2;if(dd<bd){bd=dd;best=[d,x,y,a]}}
    if(!best)return null;const[d,x,y,a]=best,o=(R()<.5?-1:1)*(6.5+rr(0,1.2+4.8*f));return near(x-Math.sin(a)*o,y+Math.cos(a)*o,d)}
+  case'lum':{const L=lumSpots();if(!L.length)return null;const n=N[L[R()*L.length|0]],k=1+f*1.5;return near(n[0]+rr(-4,4)*k,n[1]+rr(-4,4)*k)} /* along the World Showcase promenade, round the lagoon */
   case'castle':case'welcome':return near(P_.stage[0]+rr(-34,34),P_.stage[1]+rr(14,22+26*f));
   case'flag':{const fp=P_.flagpole||P_.townsq,a=rr(0,6.283),d=7+rr(0,14)*(.4+.6*f);return near(fp[0]+Math.cos(a)*d,fp[1]+Math.sin(a)*d*.8+3)} /* around the pole, leaving it clear */
   case'band':{const k=.4+.6*f;return near(P_.townsq[0]+rr(-22,22)*k,P_.townsq[1]+rr(-14,14)*k)}
   default:{const k=.35+.65*f;if(R()<.55)return near(P_.hub[0]+rr(-55,55)*k,P_.hub[1]+rr(-40,45)*k);const d=rr(0,1)*Math.min(1,.25+f);return near(P_.hub[0]+rr(-11,11),P_.hub[1]+50+d*(P_.townsq[1]-P_.hub[1]-60))}}}
+/* the walkway nodes along World Showcase Lagoon's shore: where EPCOT's guests stand to watch Luminous */
+let LUMSPOTS=null;function lumSpots(){if(LUMSPOTS)return LUMSPOTS;LUMSPOTS=[];if(!EPR||typeof EPCOT==='undefined'||!EPCOT)return LUMSPOTS;const c=EPCOT.c,w=OSM.areas.filter(a=>a.k==='water'&&ptIn(c[0],c[1],a.o)).sort((p,q)=>q.o.length-p.o.length)[0];if(!w)return LUMSPOTS;
+ for(let i=0;i<N.length;i++){const[x,y]=N[i];if(x<EPR[0]||y<EPR[1]||Math.hypot(x-c[0],y-c[1])>420)continue;let d=1e9;for(const q of w.o)d=Math.min(d,Math.hypot(q[0]-x,q[1]-y));if(d<40)LUMSPOTS.push(i)}return LUMSPOTS}
 // a guest's moment to head for the show has come
 function joinEv(g){const ev=EV.find(e=>e.id===g.evId);if(!ev||ev.key!==g.evK||(ev.ph!=='gather'&&ev.ph!=='live')||g.intent==='exit'){g.evT=0;return}
  if(g.st===1){const a=AT[g.tgt],i=a.q.indexOf(g);if(i<0||R()>=.25){g.evT=0;return}a.q.splice(i,1);g.node=a.nd}   // in a queue: most stay in line

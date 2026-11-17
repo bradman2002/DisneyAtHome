@@ -99,7 +99,7 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  /* the nearest land dominates sharply (fifth power), so the hub hears mostly one land, not a muddle of six */
  if(sum>0)for(const k in w)t[k]=w[k]/sum*Math.min(1,top*2.2)*zoom;
  return t}
-function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying())||(typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying())||(typeof kissPlaying==='function'&&kissPlaying()),
+function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying())||(typeof lumPlaying==='function'&&lumPlaying())||(typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying())||(typeof kissPlaying==='function'&&kissPlaying()),
   duck=(show?.12:1)*(1-.8*(typeof rideLevel==='number'?rideLevel:0)),base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
  for(const k in AREA){if(AM.bad[k])continue;const want=t[k]*duck*base,v=AM.vol[k]=(AM.vol[k]||0)+(want-(AM.vol[k]||0))*.12;let a=AM.el[k];
   if(v>.006){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
@@ -111,7 +111,7 @@ setInterval(areaTick,120);
    "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
    name: happily-ever-after.mp3, minnies-christmas-fireworks.mp3, let-the-magic-begin.mp3, kiss-goodnight.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
-   electrical-water-pageant.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
+   electrical-water-pageant.mp3, luminous.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 function pickAudioFolder(){const i=document.createElement('input');i.type='file';i.multiple=true;i.webkitdirectory=true;i.onchange=()=>loadAudioFiles([...i.files]);i.click()}
@@ -123,6 +123,7 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
   else if(nm==='kiss-goodnight.mp3'){key='kiss';use=()=>{KISS.a.src='picked';KISS.a.audio.src=URL.createObjectURL(f);KISS.a.audio.load()}}
   else if(nm==='let-the-magic-begin.mp3'){key='welcome';use=()=>{WELC.a.src='picked';WELC.a.audio.src=URL.createObjectURL(f);WELC.a.audio.load()}}
   else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
+  else if(nm==='luminous.mp3'){key='luminous';use=()=>{LUM.a.src='picked';LUM.a.audio.src=URL.createObjectURL(f);LUM.a.audio.load()}}
   else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.id;use=()=>parUse(P,f,f.name)}
    else if(/^ride-(\w+)\.mp3$/.test(nm)){const k=/^ride-(\w+)\.mp3$/.exec(nm)[1];key='ride-'+k;use=()=>{RA.bad[k]=0;RA.url[k]=URL.createObjectURL(f)}}
    else{const m=/^area-(\w+)\.mp3$/.exec(nm);if(m&&AREA[m[1]]){key='area-'+m[1];use=()=>{const a=AM.el[m[1]];AM.bad[m[1]]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}}}

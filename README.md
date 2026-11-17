@@ -121,7 +121,13 @@ pavilions and each World Showcase country in its own colours, with plain ground 
 filled in later). EPCOT has its own guests and wait times for its 18 main rides, in four neighbourhoods (World
 Celebration, Discovery, Nature and Showcase) you can filter like the Magic Kingdom's lands. Its guests arrive at the
 main entrance and stay in EPCOT; it keeps its own hours (9 AM to 9 PM, or today's real hours when live), and with live
-data on, its waits and closures are the real ones too. EPCOT's shows and fireworks aren't simulated yet.
+data on, its waits and closures are the real ones too.
+
+**Luminous: The Symphony of Us** plays on World Showcase Lagoon at EPCOT's closing time (today's real show time when
+live): fireworks go up from barges around the lagoon on the music's beats, and the barges' fountains and coloured
+lights follow the music. EPCOT's guests gather round the promenade to watch. Put your copy of the soundtrack at
+`audio/luminous.mp3` (or include it in Load audio folder); like the other Disney music it is never committed. When both
+nighttime shows run at once, you hear the one the map is looking at, and TV mode cuts between them.
 
 ## Crowds
 

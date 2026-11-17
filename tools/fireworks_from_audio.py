@@ -4,6 +4,8 @@ Output: a JS file defining CHOREO_MINNIE in the same format as choreo.js:
 import wave, array, math, json, sys
 # usage: afconvert -f WAVE -d LEI16@11025 -c 1 soundtrack.mp3 /tmp/s.wav   then   python3 tools/fireworks_from_audio.py /tmp/s.wav js/choreo-minnie.js
 wav, out = sys.argv[1], sys.argv[2]
+VAR = sys.argv[3] if len(sys.argv) > 3 else 'CHOREO_MINNIE'   # e.g. CHOREO_LUM for Luminous at EPCOT
+TITLE = sys.argv[4] if len(sys.argv) > 4 else "Minnie's Wonderful Christmastime Fireworks"
 w = wave.open(wav); sr = w.getframerate(); n = w.getnframes()
 x = array.array('h', w.readframes(n)); w.close()
 HOP = 512; nf = n // HOP; fps = sr / HOP
@@ -70,7 +72,7 @@ for j, (t, s) in enumerate(cand):
     size = round(.6 + .9*f*(.5 + .5*e), 2)
     cues.append([round(t, 2), kind, max(-1, min(1, xx)), alt, hue, size])
 data = {'end': end, 'sec': secs, 'pal': [PAL[i % len(PAL)] for i in range(len(secs)-1)], 'cues': cues, 'env': env}
-hdr = "/* Minnie's Wonderful Christmastime Fireworks choreography, derived from the soundtrack by tools/fireworks_from_audio.py\n   (beats + loudness), same format as choreo.js: cue = [burst time s, shell type, x -1..1, altitude 0..1, hue, size];\n   sec = section start times; pal = section hues (Christmas reds, greens, golds and icy blues); env = loudness at 2 Hz. */\n"
-open(out, 'w').write(hdr + 'var CHOREO_MINNIE=' + json.dumps(data, separators=(',', ':')) + ';\n')
+hdr = "/* " + TITLE + " choreography, derived from the soundtrack by tools/fireworks_from_audio.py\n   (beats + loudness), same format as choreo.js: cue = [burst time s, shell type, x -1..1, altitude 0..1, hue, size];\n   sec = section start times; pal = section hues; env = loudness at 2 Hz. */\n"
+open(out, 'w').write(hdr + 'var '+VAR+'=' + json.dumps(data, separators=(',', ':')) + ';\n')
 from collections import Counter
 print('dur', round(dur), 'peaks', len(pk), 'cues', len(cues), 'sections', secs, Counter(c[1] for c in cues), 'env median', sorted(env)[len(env)//2])

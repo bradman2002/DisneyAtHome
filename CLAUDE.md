@@ -102,7 +102,11 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   1 EPCOT; lands wc/wd/wn/ws via `parkOf`), EPCOT has its own hours `EOPEN/ECLOSE` (`setHoursEP`), gate `EPGATE`, arrivals
   (`spE`, `EPATT` × MK attendance), `decideEP`, its own `PAVE` mask, and its walkways are in the same graph (a separate
   component, from the extractor). Live data fetches EPCOT's feed too (`LIVE.epApi`, names via `LIVE_ALIAS`); shows,
-  parades and transport stay Magic Kingdom only. Art: `EPCOT` in `map-art.js` has the pavilion anchors and styles
+  parades and transport stay Magic Kingdom only, except Luminous (`js/luminous.js`, event `lum` with `pk:1`, at
+  `rel:['eclose',0]`; cues `CHOREO_LUM` in `js/choreo-luminous.js` from `tools/fireworks_from_audio.py <wav> <out> CHOREO_LUM`;
+  owner's audio `audio/luminous.mp3`, git-ignored). Its shells go through the shared fireworks engine (`HEA.rk`); it
+  only drives the clock when Happily Ever After isn't playing; each show's volume follows where the map is looking
+  (`lumNear`). Art: `EPCOT` in `map-art.js` has the pavilion anchors and styles
   (`ep_*` in `LANDSTYLE`), Spaceship Earth is drawn as a sphere, Mexico gets its pyramid. TV mode visits Epcot
   (three shots) and cuts, rather than glides, between the parks. Tree/shadow masks are kept at reduced scale `HS`.
   To fill in the gap later: add a region (or widen one) in `osm_extract.py` and download that area.

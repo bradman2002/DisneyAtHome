@@ -72,8 +72,10 @@ click, tap or key press starts everything.
 
 Each land's background music plays as you look at it: put your copies at `audio/area-ms.mp3` (Main Street,
 which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area-fan.mp3`, `area-tom.mp3`, and `area-ep.mp3` (plays anywhere over EPCOT).
-Neighbouring lands blend at their edges, the music fades as you zoom out over the lakes, it drops right down
-while a parade, the fireworks or the water pageant plays its own music, and it stops after closing. The Main
+Neighbouring lands blend at their edges, the music fades as you zoom out over the lakes, and while any show plays
+its own music (a parade, the fireworks, the water pageant, Luminous, the welcome show, the Flag Retreat or the Kiss
+Goodnight) the park's own sound fades right out: land music, ride audio, nature and the background crowd. It also
+stops after closing. The Main
 Street view always plays Main Street. "Area music" in the ☰ menu sets its volume. These files are Disney's
 music and are kept out of git; a missing one is simply skipped.
 
@@ -124,8 +126,9 @@ main entrance and stay in EPCOT; it keeps its own hours (9 AM to 9 PM, or today'
 data on, its waits and closures are the real ones too.
 
 **Luminous: The Symphony of Us** plays on World Showcase Lagoon at EPCOT's closing time (today's real show time when
-live): fireworks go up from barges around the lagoon on the music's beats, and the barges' fountains and coloured
-lights follow the music. EPCOT's guests gather round the promenade to watch. Put your copy of the soundtrack at
+live): fireworks go up from barges and from all round the shore on the music's beats (the bigger ones in mirrored
+pairs), each barge's fans of water jets rise and fall with the music in patterns that change with each section, the
+bursts flash on the water, flame bursts from the barges on the biggest beats and searchlights rake the sky. EPCOT's guests gather round the promenade to watch. Put your copy of the soundtrack at
 `audio/luminous.mp3` (or include it in Load audio folder); like the other Disney music it is never committed. When both
 nighttime shows run at once, you hear the one the map is looking at, and TV mode cuts between them. To see it any time, press
 **Start Luminous now** (in Entertainment, or on the show's star on the map): it starts a few seconds later, right

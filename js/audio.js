@@ -49,19 +49,25 @@ function cue(ev){if(!AU.ready||speed>30)return;const d=AU.g.show,p=evP(ev);
  else if(ev.id==='fire')play('fw4',.6*p,d)}
 function auSync(){for(const m of MONO)m._ps=m.st;for(const f of FERRY)f._ps=f.st;for(const b of BUS)b._ps=b.st;for(const ev of EV)ev._aps=ev.ph}
 function lvl(k,v,tc){const l=AU.L[k];if(!isFinite(v))v=0;if(l)l.g.gain.setTargetAtTime(Math.max(0,v),AU.ctx.currentTime,tc||.6)}
+/* Is a show's music playing where you can hear it? Then the park's own sound (land music, ride audio, nature and the
+   general crowd) fades right out and leaves the show alone. The water pageant and Luminous only count when the map is
+   near them. */
+function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||
+ (typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying())||(typeof kissPlaying==='function'&&kissPlaying())}
 function auTick(){if(!AU.ready||FF)return;
  // a large jump in simulated time means a seek or a fast speed: resync state without firing stale one-shots
  const jump=Math.abs(T-AU.lt)>Math.max(60,speed*3);AU.lt=T;if(jump){auSync();}
  const z=.6+.4*Math.min(1,cam.m/2),open=T>=8.5*3600&&T<22.5*3600,dens=Math.min(1,guests.length*K/24000),day=1-nf,zl=.5+.5*Math.min(1,Math.max(0,(cam.m-1)/1.5)),LP=k=>zl*prox(LANDS[k][1],LANDS[k][2],230);
  // beds
- lvl('crowd',(open?.12+.55*dens:.02)*z);
+ const SHOW=showOn(); /* during a show only the show (and its own crowd) is heard */
+ lvl('crowd',(open?.12+.55*dens:.02)*z*(SHOW?0:1));
  let ce=0;for(const ev of EV)if(ev.ph==='gather'||ev.ph==='live'){ce=Math.max(ce,evP(ev,300)*(ev.ph==='live'?1:.55)*Math.min(1,.4+dens))}lvl('crowdEv',ce*.6);
- // nature sits well under the crowd, and drops further while a show's music is playing
- const nat=PARADES.some(P=>parPlaying(P.id))||(HEA.ready&&!HEA.audio.paused)?.35:1;
+ // nature sits well under the crowd, and goes quiet while a show is playing (showOn)
+ const nat=SHOW?0:1;
  lvl('birds',day*(.06+.1*(1-dens*.6))*nat);lvl('crickets',nf*.13*nat,1.5);
  {const gp=P_.geyser?geyserNow()*prox(P_.geyser[0],P_.geyser[1],200)*zl:0;lvl('falls',Math.max(LP('adv')*.3*nat,gp*.6))} /* the waterfall recording also stands in for the geyser's roar */lvl('jungle',LP('adv')*.24*(.4+.6*day)*nat);lvl('river',LP('fr')*.3*nat);
- lvl('lap',LP('lib')*.24*nat);lvl('flag',(LP('lib')*.22+LP('ms')*.12)*(.5+.5*day));
- lvl('chimes',LP('fan')*.2*nat);lvl('creek',LP('fan')*.15*nat);lvl('hum',LP('tom')*.38);{let lk=0;for(let i=0;i<=8;i++){const q=FER.at(FER.L*i/8);lk=Math.max(lk,prox(q[0],q[1],260))}lvl('lake',lk*.3*nat)} // anywhere along the lagoon crossing
+ lvl('lap',LP('lib')*.24*nat);lvl('flag',(LP('lib')*.22+LP('ms')*.12)*(.5+.5*day)*nat);
+ lvl('chimes',LP('fan')*.2*nat);lvl('creek',LP('fan')*.15*nat);lvl('hum',LP('tom')*.38*nat);{let lk=0;for(let i=0;i<=8;i++){const q=FER.at(FER.L*i/8);lk=Math.max(lk,prox(q[0],q[1],260))}lvl('lake',lk*.3*nat)} // anywhere along the lagoon crossing
  let bv=0;for(const b of BUS){const p=busXY(b);bv=Math.max(bv,prox(p[0],p[1],240)*(b.st==='dwell'?.55:1))}lvl('engine',bv*.5,.3);
  if(AU.L.engine)AU.L.engine.s.playbackRate.setTargetAtTime(BUS.some(b=>{const p=busXY(b);return b.st!=='dwell'&&prox(p[0],p[1],240)>.3})?.8:.62,AU.ctx.currentTime,.5);
  const F=EV.find(e=>e.id==='fire');lvl('fwbed',F&&F.ph==='live'&&playing?.55*evP(F,500):0,.4);
@@ -99,8 +105,8 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  /* the nearest land dominates sharply (fifth power), so the hub hears mostly one land, not a muddle of six */
  if(sum>0)for(const k in w)t[k]=w[k]/sum*Math.min(1,top*2.2)*zoom;
  return t}
-function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying())||(typeof lumPlaying==='function'&&lumPlaying())||(typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying())||(typeof kissPlaying==='function'&&kissPlaying()),
-  duck=(show?.12:1)*(1-.8*(typeof rideLevel==='number'?rideLevel:0)),base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
+function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=showOn(),
+  duck=(show?0:1)*(1-.8*(typeof rideLevel==='number'?rideLevel:0)),base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
  for(const k in AREA){if(AM.bad[k])continue;const want=t[k]*duck*base,v=AM.vol[k]=(AM.vol[k]||0)+(want-(AM.vol[k]||0))*.12;let a=AM.el[k];
   if(v>.006){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
    setVol(a,v);if(a.paused)a.play().catch(()=>{})}
@@ -182,8 +188,8 @@ async function rideUrl(k){if(RA.url[k])return RA.url[k];const u=await streamUrl(
  if(u){RA.url[k]=u;if(u.startsWith('blob:'))RA.tmp[k]=1}else{const b=await rideSaved(k);if(b){RA.url[k]=URL.createObjectURL(b);RA.tmp[k]=1}else RA.bad[k]=1}return RA.url[k]}
 /* a ride recording held whole in memory is let go once it has faded out (it is fetched again next time); streamed ones cost nothing to keep */
 function rideFree(k){if(!RA.tmp[k])return;URL.revokeObjectURL(RA.url[k]);delete RA.url[k];delete RA.tmp[k];const a=rideEl();a.src=SILENT}
-function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id)),
-  base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?.25:1);let top=null;for(const k in t)if(t[k]>0&&!RA.bad[k])top=k;const a=rideEl();
+function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=showOn(),
+  base=(AU.mute?0:AU.v.master*AU.v.music*1.25)*(playing?1:0)*(speed>30?.3:1)*(show?0:1);let top=null;for(const k in t)if(t[k]>0&&!RA.bad[k])top=k;const a=rideEl();
  if(RA.cur&&RA.cur!==top){RA.lvl*=.85;if(RA.lvl<.01){RA.pos[RA.cur]=a.currentTime;RA.heard[RA.cur]=Date.now();a.pause();rideFree(RA.cur);RA.cur=null;RA.lvl=0}} /* fade the old one out first */
  else if(!RA.cur&&top&&RA.loading!==top){const k=top;RA.loading=k;rideUrl(k).then(u=>{if(RA.loading!==k)return;RA.loading=null;if(!u||RA.cur)return;
    const fresh=!(k in RA.pos)||Date.now()-(RA.heard[k]||0)>10*60e3;a.src=u;RA.cur=k;RA.lvl=0;setVol(a,0);

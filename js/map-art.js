@@ -303,29 +303,63 @@ function swanStatue(c,x,y,h,flip){const s=flip?-1:1;c.save();c.translate(x,y);c.
  c.strokeStyle='#fbfaf6';c.lineWidth=Math.max(.5,h*.11);c.lineCap='round';c.beginPath();c.moveTo(-w*.45,-h*.35);c.bezierCurveTo(-w*.95,-h*.6,-w*.1,-h*.8,-w*.45,-h*.98);c.stroke();
  c.fillStyle='#e9a23b';c.beginPath();c.moveTo(-w*.48,-h*.99);c.lineTo(-w*.82,-h*.93);c.lineTo(-w*.48,-h*.91);c.fill();
  c.strokeStyle='rgba(120,130,140,.45)';c.lineWidth=Math.max(.2,h*.03);c.beginPath();c.moveTo(-w*.4,-h*.3);c.quadraticCurveTo(0,-h*.42,w*.5,-h*.28);c.stroke();c.restore()}
-/* the Dolphin's triangle tower rising from the middle of its wings, with the turquoise cascade down its face */
-function dolphinTower(c,e,x,y,base,H,dep,wingH,noStatues){const L=[x-base,y],Rr=[x+base,y],A=[x,y-H],BL=[x-base,y-dep],BR=[x+base,y-dep];
- poly4(c,[L,BL,A],'#f6b39d');poly4(c,[Rr,BR,A],'#d97b63'); /* the sides slope back from the upright front face to the back corners: a wedge, with no ridge running back */
- poly4(c,[L,Rr,A],'#ee9479');
- c.save();pathOf(c,[L,Rr,A],1);c.clip();for(let r=1;r<H/3.4;r++){const yy=y-r*3.4,hw=base*(1-r*3.4/H);for(let xx=x-hw+1.6;xx<x+hw-1.2;xx+=2.6){if(Math.abs(xx-x)<base*.14)continue;c.fillStyle='#5a6f8c';c.fillRect(xx,yy+1,1.1,1.5);if(e&&hsh((xx*7|0)+r*13)%10<6){e.fillStyle='rgba(255,205,130,.9)';e.fillRect(xx,yy+1,1.1,1.5)}}}c.restore();
- const cw=base*.13;poly4(c,[[x-cw,y],[x+cw,y],[x+cw*.4,y-H*.82],[x-cw*.4,y-H*.82]],'#33b0aa');
- c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=.35;for(let yy=y-H*.8;yy<y-1;yy+=2.2){const k=(y-yy)/H;c.beginPath();c.moveTo(x-cw*(.4+.6*(1-k))*.8,yy);c.lineTo(x-cw*(.4+.6*(1-k))*.6,yy+1.4);c.moveTo(x+cw*(.4+.6*(1-k))*.7,yy+.6);c.lineTo(x+cw*(.4+.6*(1-k))*.5,yy+2);c.stroke()}
- for(let i=0;i<4;i++){const yy=y-H*(.12+i*.17),r=cw*(1.5-i*.22);c.fillStyle='#f4e6cf';c.beginPath();c.arc(x,yy,r,Math.PI,0);c.fill();c.strokeStyle='#2fa9a3';c.lineWidth=.3;for(let a=0;a<5;a++){c.beginPath();c.moveTo(x,yy);c.lineTo(x+Math.cos(Math.PI+a*Math.PI/4)*r,yy+Math.sin(Math.PI+a*Math.PI/4)*r);c.stroke()}}
- c.fillStyle='#2fa9a3';c.beginPath();c.moveTo(A[0],A[1]-3);c.lineTo(A[0]-1.4,A[1]+1);c.lineTo(A[0]+1.4,A[1]+1);c.fill();
- if(e){e.fillStyle='rgba(120,240,230,.55)';poly4(e,[[x-cw,y],[x+cw,y],[x+cw*.4,y-H*.82],[x-cw*.4,y-H*.82]],'rgba(120,240,230,.5)')}
- if(noStatues)return;const sh=H*.38;dolphinStatue(c,x-base*1.22,y-wingH,sh,false);dolphinStatue(c,x+base*1.22,y-wingH,sh,true)}
-/* the Dolphin as built: four 9-storey wings reaching toward the lake (the footprint), a 12-storey block across the back,
-   the 78 m triangular tower through the block's middle (its face and cascade toward the lake) and a 17 m dolphin on each
-   half of the block. The block is the rectangle in the footprint's north-west corner. */
-function dolphinResort(c,e,q,S2){const bb=bbox(q.p),wing=34*S2,blk=45*S2,
-  M=[[bb[0]+38,bb[1]+49],[bb[0]+136,bb[1]+49],[bb[0]+136,bb[1]+102],[bb[0]+38,bb[1]+102]]; /* the block: x 2917–3015, y 6294–6347 at today's data */
- extrude(c,e,q.p,wing,'#f09d84','#f3c3b0',{deco:cresDeco('dol'),ridge:false});
- extrude(c,e,M,blk,'#ee9579','#e9ab95',{deco:cresDeco('dol'),ridge:false});
- const mx=(M[0][0]+M[1][0])/2,front=M[2][1],dep=M[2][1]-M[0][1];
- /* the statues first: they stand on the block's roof either side of the tower, nearer the front, a little larger than life (17 m) so they read */
- const sh=17*S2*1.5,sy=M[2][1]-blk-dep*.22,st=(sx,f)=>{c.fillStyle='rgba(60,30,20,.22)';c.beginPath();c.ellipse(sx+sh*.22,sy+1,sh*.24,sh*.07,0,0,7);c.fill();dolphinStatue(c,sx,sy,sh,f)};
- st(mx-24-(mx-24-M[0][0])*.42,false);st(mx+24+(M[1][0]-mx-24)*.42,true);
- dolphinTower(c,e,mx,front,24,78*S2,dep*.7,blk,true)}
+/* the Dolphin as built (as seen from the Swan across the causeway): a long 12-storey coral block running north-east to
+   south-west, with the great turquoise pyramid (78 m, a grid of square windows and a tall dark glass panel in its middle)
+   standing on its lake side (south-east) and rising high over it. Lower wings reach toward the lake, each ending in a round
+   turquoise tower topped by a shell basin; a 17 m dolphin stands on the shells of the two outer towers. The tiered shell
+   fountain is at the foot of the pyramid. The lobby on the north-west side is low. OSM has no heights for it, so the parts are
+   placed by hand from the footprint's bbox corner (2879,6245 in today's data) so they follow it. */
+function dolphinResort(c,e,q,S2){const bb=bbox(q.p),P=(x,y)=>[bb[0]+x-2879,bb[1]+y-6245],deco=cresDeco('dol'),main=40*S2,wing=28*S2,
+  u=[.723,-.691],n=[.691,.723],add=(p,v,k)=>[p[0]+v[0]*k,p[1]+v[1]*k]; /* u: along the block toward the north-east; n: toward the lake */
+ const W='#f09d84',R='#f3c3b0',ex=(pts,h)=>extrude(c,e,pts,h,W,R,{deco,ridge:false}),tw=(p,top,dol)=>dolphinTowerEnd(c,e,p,top,dol,S2);
+ ex(q.p,10*S2); /* the low lobby and the base of everything */
+ ex([P(2879,6426),P(3068,6245),P(3081,6259),P(2892,6440)],main); /* the long block */
+ ex([P(3052,6287),P(3066,6273),P(3095,6303),P(3081,6317)],wing);tw(P(3088,6310),wing,'ne'); /* the north-east wing and its tower */
+ const C=[P(2942,6366),P(3004,6307),P(3042,6347),P(2980,6405)];ex(C,wing); /* the lower wings either side of the pyramid */
+ tw(C[2],wing,false);
+ const mid=add([(C[2][0]+C[3][0])/2,(C[2][1]+C[3][1])/2],n,-4);
+ dolphinPyramid(c,e,add(mid,u,-30),add(mid,u,30),[-n[0]*52,-n[1]*52],78*S2);
+ shellFountain(c,e,add(mid,n,9),S2);
+ tw(C[3],wing,false);
+ ex([P(2920,6412),P(2949,6443),P(2935,6456),P(2907,6426)],wing);tw(P(2942,6450),wing,'sw')} /* the south-west wing, in front */
+/* one of the round turquoise towers at a wing's lake end: a little taller than the wing, white balcony rails, a shell basin on
+   top, and on the outer two a dolphin standing in the shell */
+function dolphinTowerEnd(c,e,p,wingH,dol,S2){const r=5.5,h=wingH+6,x=p[0],y=p[1];
+ c.fillStyle='rgba(40,30,20,.2)';c.beginPath();c.ellipse(x+r*.6,y+.8,r*1.3,r*.45,0,0,7);c.fill();
+ const g=c.createLinearGradient(x-r,0,x+r,0);g.addColorStop(0,'#7fd0c2');g.addColorStop(.55,'#4fb3a5');g.addColorStop(1,'#2f8f84');c.fillStyle=g;
+ c.beginPath();c.moveTo(x-r,y);c.lineTo(x-r,y-h);c.ellipse(x,y-h,r,r*.4,0,Math.PI,0,true);c.lineTo(x+r,y);c.ellipse(x,y,r,r*.4,0,0,Math.PI);c.fill();
+ c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=.35;for(let v=3;v<h-1;v+=3.2){c.beginPath();c.ellipse(x,y-v,r,r*.4,0,0,Math.PI);c.stroke()}
+ if(e){e.fillStyle='rgba(255,205,130,.6)';for(let v=4;v<h-2;v+=3.2)e.fillRect(x-r*.5,y-v,r,1)}
+ /* the shell basin: a wide fluted cup */
+ const cy=y-h,cw=r*1.7,ch=r*1.1;c.fillStyle='#3f978c';c.beginPath();c.moveTo(x-r*.55,cy);c.lineTo(x-cw,cy-ch);c.lineTo(x+cw,cy-ch);c.lineTo(x+r*.55,cy);c.fill();
+ c.fillStyle='#5fbfb2';c.beginPath();c.ellipse(x,cy-ch,cw,cw*.32,0,0,7);c.fill();c.strokeStyle='#2f7f76';c.lineWidth=.3;for(let k=-3;k<=3;k++){c.beginPath();c.moveTo(x+k*r*.17,cy);c.lineTo(x+k*cw/3.2,cy-ch);c.stroke()}
+ if(dol)dolphinStatue(c,x,cy-ch+.5,17*S2*2,dol==='ne')}
+/* the pyramid: base front edge L–R on the ground facing the lake, back edge moved by back; apex over the base's middle. The
+   near (south-west) side and the front face show; a grid of square windows, and the tall dark glass panel in the middle */
+function dolphinPyramid(c,e,Lp,Rp,back,H){const BL=[Lp[0]+back[0],Lp[1]+back[1]],BR=[Rp[0]+back[0],Rp[1]+back[1]],
+  ctr=[(Lp[0]+Rp[0]+BL[0]+BR[0])/4,(Lp[1]+Rp[1]+BL[1]+BR[1])/4],A=[ctr[0],ctr[1]-H],
+  F=(s,v)=>[(1-v)*(Lp[0]+(Rp[0]-Lp[0])*s)+v*A[0],(1-v)*(Lp[1]+(Rp[1]-Lp[1])*s)+v*A[1]]; /* a point on the front face */
+ poly4(c,[Rp,BR,A],'#3f9a86');poly4(c,[BL,Lp,A],'#7fcfb6');
+ /* the near side's windows too (no glass panel there) */
+ {const G=(s,v)=>[(1-v)*(BL[0]+(Lp[0]-BL[0])*s)+v*A[0],(1-v)*(BL[1]+(Lp[1]-BL[1])*s)+v*A[1]];c.save();pathOf(c,[BL,Lp,A],1);c.clip();
+  for(let r=0;r<26;r++){const v=(r+.4)/26,cols=Math.max(1,Math.round(18*(1-v)));for(let k=0;k<cols;k++){const p=G((k+.5)/cols,v),q2=G((k+.85)/cols,v+.45/26),w=Math.max(.6,Math.abs(q2[0]-p[0])),h=Math.max(.6,Math.abs(q2[1]-p[1]));c.fillStyle='#3d7a6c';c.fillRect(p[0],p[1]-h,w,h);
+   if(e&&hsh(k*5+r*11)%10<6){e.fillStyle='rgba(255,205,130,.85)';e.fillRect(p[0],p[1]-h,w,h)}}}c.restore()}
+ poly4(c,[Lp,Rp,A],'#63bba2');
+ const face=[Lp,Rp,A];c.save();pathOf(c,face,1);c.clip();
+ const rows=26;for(let r=0;r<rows;r++){const v=(r+.4)/rows,cols=Math.max(1,Math.round(22*(1-v)));for(let k=0;k<cols;k++){const s=(k+.5)/cols;if(s>.36&&s<.64&&v>.22&&v<.62)continue;
+  const p=F(s,v),q2=F(s+.35/cols,v+.45/rows),w=Math.max(.6,Math.abs(q2[0]-p[0])),h=Math.max(.6,Math.abs(q2[1]-p[1]));c.fillStyle='#2c5d55';c.fillRect(p[0],p[1]-h,w,h);
+  if(e&&hsh(k*7+r*13)%10<6){e.fillStyle='rgba(255,205,130,.85)';e.fillRect(p[0],p[1]-h,w,h)}}}
+ const gl=[F(.36,.22),F(.64,.22),F(.64,.62),F(.36,.62)];poly4(c,gl,'#1f2f45');c.strokeStyle='rgba(140,170,210,.45)';c.lineWidth=.25;
+ for(let k=1;k<8;k++){const a=F(.36+.28*k/8,.22),b=F(.36+.28*k/8,.62);c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke()}for(let k=1;k<10;k++){const a=F(.36,.22+.4*k/10),b=F(.64,.22+.4*k/10);c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke()}
+ if(e)poly4(e,gl,'rgba(255,215,150,.55)');
+ /* the slit window high in the middle, and the coral cornice at the base */
+ poly4(c,[F(.47,.7),F(.53,.7),F(.53,.84),F(.47,.84)],'#3a4f6a');c.restore();
+ c.strokeStyle='#2f8a76';c.lineWidth=.5;pathOf(c,face,1);c.stroke()}
+/* the tiered shell fountain at the pyramid's foot */
+function shellFountain(c,e,p,S2){const x=p[0],y=p[1];c.fillStyle='rgba(40,30,20,.18)';c.beginPath();c.ellipse(x+2,y+1,9,3,0,0,7);c.fill();
+ c.fillStyle='#4aa8c8';c.beginPath();c.ellipse(x,y-1,8,2.6,0,0,7);c.fill();
+ for(let i=0;i<4;i++){const yy=y-3-i*3.6,r=6.5-i*1.4;c.fillStyle='#e9f3f2';c.fillRect(x-.6,yy,1.2,3.6);c.fillStyle=i%2?'#5fbfb2':'#8fd6e0';c.beginPath();c.moveTo(x-r,yy);c.quadraticCurveTo(x,yy+r*.7,x+r,yy);c.closePath();c.fill();
+  c.strokeStyle='rgba(255,255,255,.8)';c.lineWidth=.3;c.beginPath();c.moveTo(x-r,yy);c.quadraticCurveTo(x-r*1.1,yy+2,x-r*.9,yy+3.4);c.moveTo(x+r,yy);c.quadraticCurveTo(x+r*1.1,yy+2,x+r*.9,yy+3.4);c.stroke()}}
 /* the Swan as built (an H in plan): the long 12-storey centre block runs north-east to south-west, its roofline rising in a
    gentle curve to the middle with a swan at each end; a 7-storey wing crosses near each end; the lobby and meeting rooms
    around them are low. Places are measured from the footprint (bbox corner 2991,6455 in today's data) so they follow it. */

@@ -122,7 +122,9 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `swr` in `LANDSTYLE`; clapboard trim or Graves wave bands via `extrude`'s `deco` hook); `dolphinResort`/`dolphinTower`, `swanResort`/`swanCentre` (with the
   statues; owner, 18 Nov 2026, compared with the Disney app: OSM has no heights for either hotel, so their parts are placed by hand
   from the footprint's bbox corner: the Swan is a low podium, two 7-storey wings and the 12-storey centre block along its NE–SW axis
-  with its curved roofline; the Dolphin tower is a wedge with an upright triangle face), `lighthouse`, `shipwreck` and `coasterSlide` are drawn by name; the boardwalk's planks are walkways inside the
+  with its curved roofline; the Dolphin, from the owner's photo: a long 12-storey coral NE–SW block, the great turquoise pyramid
+  (`dolphinPyramid`: square-window grid, dark glass panel) on its lake side, lower wings ending in round turquoise towers with
+  shell basins (`dolphinTowerEnd`; dolphins on the outer two), and the tiered `shellFountain` at the pyramid's foot), `lighthouse`, `shipwreck` and `coasterSlide` are drawn by name; the boardwalk's planks are walkways inside the
   BoardWalk outline near the lake (`onBoardwalk`). The extractor exports `OSM.crescent` (BoardWalk outline, lake, pools) and
   dock places, sets their heights in `HEIGHTS`, and the map now runs to H=6730 so the Swan and Swan Reserve fit whole.
   Map tiles overlap by 3 units so no seam shows between them. Art that clips (`c.save();…clip()`) must `c.restore()`: a

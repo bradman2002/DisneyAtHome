@@ -14,9 +14,12 @@ Run from the site folder:  python3 tools/osm_extract.py"""
 import xml.etree.ElementTree as ET, math, json, collections, heapq
 
 import os
-SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['east.osm'] if os.path.exists('east.osm') and os.path.exists('hs.osm') else [])+(['springs.osm'] if os.path.exists('springs.osm') and os.path.exists('east.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
+SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['muppets.osm'] if os.path.exists('muppets.osm') and os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['east.osm'] if os.path.exists('east.osm') and os.path.exists('hs.osm') else [])+(['springs.osm'] if os.path.exists('springs.osm') and os.path.exists('east.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
   # springs.osm: Disney Springs, Typhoon Lagoon and the land north of them (bbox 28.3490,-81.5330,28.4240,-81.5090), merged the same way
   # east.osm: a strip east of EPCOT, its parking lots and roads (bbox 28.3490,-81.5450,28.4240,-81.5330), merged the same way
+  # muppets.osm: Muppets Courtyard on Grand Avenue as it was before it closed in 2024 (OpenStreetMap history at 2023-06-01 from
+  # Overpass, bbox 28.3522,-81.5608,28.3556,-81.5580, only the ways whose middle is in that box). Read before hs.osm so its copies win;
+  # today's construction site and the theatre's new name (SKIP_WAYS) are left out
   # gap.osm: everything between (bbox 28.3645,-81.5905,28.4240,-81.5450)
 OUT='js/park-osm.js'
 # The projection is pinned to a fixed corner (not the file's bounds), so coordinates stay put when the data is refreshed.
@@ -33,9 +36,10 @@ for r in roots:
         ND[n.get('id')]=proj(float(n.get('lon')),float(n.get('lat')))
         t={x.get('k'):x.get('v') for x in n.findall('tag')}
         if t: NT[n.get('id')]=t
+SKIP_WAYS={'1416883582','1576253220'} if 'muppets.osm' in SRCS else set()  # the Monsters, Inc. construction site and "The Glob Theater"
 for r in roots:
     for w in r.findall('way'):
-        if w.get('id') in WAYS: continue  # the first file's copy wins, so newer overlapping downloads don't reshape what is already mapped
+        if w.get('id') in WAYS or w.get('id') in SKIP_WAYS: continue  # the first file's copy wins, so newer overlapping downloads don't reshape what is already mapped
         WAYS[w.get('id')]={'ids':[x.get('ref') for x in w.findall('nd') if x.get('ref') in ND],'t':tags(w)}
     for rl in r.findall('relation'):
         if rl.get('id') in seen_rel: continue
@@ -408,8 +412,8 @@ if EPC: ATTR=ATTR+EP_ATTR
 # Hollywood Studios: its rides and theatre shows, restaurants and shops (names as in OpenStreetMap)
 HS_ATTR=['The Twilight Zone Tower of Terror','Rock ’n’ Roller Coaster Starring The Muppets',"Mickey and Minnie's Runaway Railway",'Star Wars: Rise of the Resistance','Millennium Falcon: Smugglers Run',
  'Star Tours: The Adventures Continue','Slinky Dog Dash','Toy Story Mania!','Alien Swirling Saucers','Indiana Jones Epic Stunt Spectacular!','Theater of the Stars','Voyage of the Little Mermaid',
- 'Hyperion Theater','Walt Disney Presents','Mickey Shorts Theater','Disney Junior Dance Party!','The Magic of Disney Animation']
-HS_VEN=["50's Prime Time Cafe",'Hollywood and Vine','The Hollywood Brown Derby','ABC Commissary','Roundup Rodeo BBQ','Sci-Fi Dine-In Theater','Docking Bay 7 Food and Cargo','Ronto Roasters',"Woody's Lunch Box",
+ 'Hyperion Theater','Walt Disney Presents','Mickey Shorts Theater','Disney Junior Dance Party!','The Magic of Disney Animation',"Jim Henson's Muppet*Vision 3-D"]
+HS_VEN=['Pizza Rizzo',"Mama Melrose's Ristorante Italiano","50's Prime Time Cafe",'Hollywood and Vine','The Hollywood Brown Derby','ABC Commissary','Roundup Rodeo BBQ','Sci-Fi Dine-In Theater','Docking Bay 7 Food and Cargo','Ronto Roasters',"Woody's Lunch Box",
  'Backlot Express',"Oga's Cantina","Min and Bill's Dockside Diner","Rosie's All-American Café","Catalina Eddie's","Mickey's of Hollywood",'Tower Hotel Gifts','Dok-Ondar’s Den of Antiquities','Celebrity 5 & 10']
 if HSC: ATTR=ATTR+HS_ATTR
 VEN=(HS_VEN if HSC else [])+(EP_VEN if EPC else [])+['Emporium','Main Street Confectionery',"Casey's Corner",'The Plaza Restaurant','The Crystal Palace','Agrabah Bazaar','Columbia Harbor House','Pecos Bill Tale Tale Inn and Café','Frontier Trading Post','Be Our Guest Restaurant','Storybook Treats',"Cosmic Ray's Starlight Café","Mickey's Star Traders"]

@@ -41,13 +41,13 @@ A:[['Jungle Cruise','Jungle Cruise','adv',1800,540,1.0,'box'],['Pirates of the C
 ['Indiana Jones Epic Stunt Spectacular!','Indiana Jones Epic Stunt Spectacular!','el',2000,1800,.5,'box',10,20],['Beauty and the Beast – Live on Stage','Theater of the Stars','sb',1500,1500,.5,'box',10,20],
 ['The Little Mermaid – A Musical Adventure','Voyage of the Little Mermaid','ac',1500,1500,.5,'box',10,20],['Frozen Sing-Along Celebration','Hyperion Theater','el',1500,1800,.6,'box',10,20],
 ['Mickey Mouse Clubhouse Live!','Disney Junior Dance Party!','ac',1200,1320,.35,'box',10,19],['Walt Disney Presents','Walt Disney Presents','ac',1200,900,.2,'box',9,21],
-['Vacation Fun','Mickey Shorts Theater','el',1200,600,.2,'box',9,21],['Olaf Draws!','The Magic of Disney Animation','ac',1000,600,.25,'box',10,20]].filter(r=>POS[r[1]]),
+['Vacation Fun','Mickey Shorts Theater','el',1200,600,.2,'box',9,21],['Muppet*Vision 3D',"Jim Henson's Muppet*Vision 3-D",'ga',1800,1020,.35,'box',9,21],['Olaf Draws!','The Magic of Disney Animation','ac',1000,600,.25,'box',10,20]].filter(r=>POS[r[1]]),
 // venues: display name, OpenStreetMap name, kind
 V:[['Emporium','Emporium','shop'],['Main Street Confectionery','Main Street Confectionery','shop'],['Casey’s Corner',"Casey's Corner",'eat'],['The Plaza Restaurant','The Plaza Restaurant','eat'],['The Crystal Palace','The Crystal Palace','eat'],['Agrabah Bazaar','Agrabah Bazaar','shop'],['Columbia Harbour House','Columbia Harbor House','eat'],['Pecos Bill Tall Tale Inn','Pecos Bill Tale Tale Inn and Café','eat'],['Frontier Trading Post','Frontier Trading Post','shop'],['Be Our Guest','Be Our Guest Restaurant','eat'],['Storybook Treats','Storybook Treats','eat'],['Cosmic Ray’s Starlight Café',"Cosmic Ray's Starlight Café",'eat'],['Star Traders',"Mickey's Star Traders",'shop'],
  ['Sunshine Seasons','Sunshine Seasons','eat','wn'],['Regal Eagle Smokehouse','Regal Eagle Smokehouse: Craft Drafts & Barbecue','eat','ws'],['Katsura Grill','Katsura Grill','eat','ws'],['Les Halles Boulangerie','Les Halles Boulangerie & Pâtisserie','eat','ws'],['Via Napoli','Via Napoli Ristorante e Pizzeria','eat','ws'],
  ['La Cantina de San Angel','La Cantina de San Angel','eat','ws'],['Lotus Blossom Café','Lotus Blossom Cafe','eat','ws'],['Yorkshire County Fish Shop','Yorkshire County Fish Shop','eat','ws'],['Space 220','Space 220 Restaurant','eat','wd'],['Sommerfest','Sommerfest','eat','ws'],['Tangierine Café','Tangierine Cafe','eat','ws'],['Kringla Bakeri Og Kafe','Kringla Bakeri Og Kafe','eat','ws'],
  ['50’s Prime Time Café',"50's Prime Time Cafe",'eat','el'],['Hollywood & Vine','Hollywood and Vine','eat','el'],['The Hollywood Brown Derby','The Hollywood Brown Derby','eat','hb'],['ABC Commissary','ABC Commissary','eat','el'],
- ['Roundup Rodeo BBQ','Roundup Rodeo BBQ','eat','ts'],['Sci-Fi Dine-In Theater','Sci-Fi Dine-In Theater','eat','ga'],['Docking Bay 7','Docking Bay 7 Food and Cargo','eat','sw'],['Ronto Roasters','Ronto Roasters','eat','sw'],
+ ['Roundup Rodeo BBQ','Roundup Rodeo BBQ','eat','ts'],['PizzeRizzo','Pizza Rizzo','eat','ga'],['Mama Melrose’s Ristorante Italiano',"Mama Melrose's Ristorante Italiano",'eat','ga'],['Sci-Fi Dine-In Theater','Sci-Fi Dine-In Theater','eat','ga'],['Docking Bay 7','Docking Bay 7 Food and Cargo','eat','sw'],['Ronto Roasters','Ronto Roasters','eat','sw'],
  ['Woody’s Lunch Box',"Woody's Lunch Box",'eat','ts'],['Backlot Express','Backlot Express','eat','el'],['Oga’s Cantina',"Oga's Cantina",'eat','sw'],['Min and Bill’s Dockside Diner',"Min and Bill's Dockside Diner",'eat','el'],
  ['Rosie’s All-American Café',"Rosie's All-American Café",'eat','sb'],['Catalina Eddie’s',"Catalina Eddie's",'eat','sb'],['Mickey’s of Hollywood',"Mickey's of Hollywood",'shop','hb'],['Tower Hotel Gifts','Tower Hotel Gifts','shop','sb'],
  ['Dok-Ondar’s Den of Antiquities','Dok-Ondar’s Den of Antiquities','shop','sw'],['Celebrity 5 & 10','Celebrity 5 & 10','shop','hb']].filter(r=>POS[r[1]]),
@@ -68,6 +68,8 @@ EV:[{id:'parade',n:'Festival of Fantasy Parade',ts:['12:00','15:00'],dur:20,lead
  {id:'fmic',n:'Fantasmic!',ts:['20:00'],dur:29.4,lead:45,pref:.55,exit:.7,rel:['hclose',-3600],pk:2}]};
 const {LANDS,SC,N,E,V,EV}=PARK;
 const AT=PARK.A.map((r,i)=>{const p=POS[r[1]],pk=parkOf(r[2]);return{i,n:r[0],osm:r[1],l:r[2],pk,x:p.c[0],y:p.c[1],nd:p.nd,dx:N[p.nd][0],dy:N[p.nd][1],thr:r[3],dur:r[4],pop:r[5],k:r[6],open:r[7]||9,close:r[8]||(pk?21:22),o0:r[7]||9,c0:r[8]||(pk?21:22),c00:pk?21:22,risk:r[9]||.7}});
+/* Muppet*Vision 3D closed in 2024, so there's no real wait for it: it shows a fixed placeholder wait while it runs (a.ph, minutes) */
+{const M=AT.find(a=>a.osm==="Jim Henson's Muppet*Vision 3-D");if(M)M.ph=15}
 /* Soarin' and Awesome Planet are inside The Land: guests go in by its door, not the nearest path to the far side of the building */
 {const L=AT.find(a=>a.osm==='Living with the Land');if(L)for(const a of AT)if(a.osm==='Soarin\' Around The World'||a.osm==='Awesome Planet'){a.nd=L.nd;a.dx=L.dx;a.dy=L.dy}}
 const VN=V.map((r,i)=>{const p=POS[r[1]];return{i,n:r[0],osm:r[1],k:r[2],l:r[3],pk:r[3]?parkOf(r[3]):0,x:p.c[0],y:p.c[1],nd:p.nd,dr:0}});
@@ -234,6 +236,7 @@ function updA(a,dt){
  for(let i=a.ri.length-1;i>=0;i--){const g=a.ri[i];g.timer-=dt;if(g.timer<=0){a.ri.splice(i,1);g.v[a.i]=1;[g.x,g.y]=paved(a.dx,a.dy,4,a.nd);g.node=a.nd;g.st=5;g.timer=rr(15,150)}}
  a.est=a.q.length*K/(a.thr/60);a.hw+=dt;if(a.hw>=60){a.hw=0;const tgt=aStat(a)==='Closed'?0:Math.max(5,a.est+3);a.posted+=(tgt-a.posted)*.35;a.wt=Math.round(a.posted/5)*5}
  if(LIVENOW&&a.live&&a.live.w!==null)a.posted=a.wt=a.live.w; // the real posted wait
+ if(a.ph!==undefined&&aStat(a)!=='Closed')a.posted=a.wt=a.ph; // a placeholder wait (Muppet*Vision 3D)
  if(a.hist.length===0||T-a.ht>=600){a.hist.push(a.wt);a.ht=T;if(a.hist.length>150)a.hist.shift()}}
 /* events */
 const hm24=s=>{const m=Math.floor(s/60);return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')},hm=s=>{const m=/^(\d{1,2}):(\d{2})$/.exec(s.trim());return m?(+m[1]*3600+ +m[2]*60):null};

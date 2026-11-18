@@ -23,6 +23,13 @@ real time in Orlando and every wait time is the posted one. Scrub the time, paus
 becomes a plain simulation again; press "Go live" to return. Add `?sim` to the address to start simulated.
 If the data can't be reached, everything stays simulated.
 
+## Muppets Courtyard, as it was
+
+Grand Avenue at Hollywood Studios is shown as it was before Muppets Courtyard closed in 2024, from OpenStreetMap's history
+(`muppets.osm`, the map as of June 2023; today's map has the Monsters, Inc. construction site there). Muppet*Vision 3D runs
+with a fixed placeholder wait of 15 minutes, since there are no real waits for it, next to PizzeRizzo, Mama Melrose's and the
+courtyard fountain.
+
 ## TV mode: leave it running on a screen
 
 Press the screen button at the top right of the map (or the T key). The controls disappear and the
@@ -34,6 +41,11 @@ day as a time-lapse, slowing to real time for each show. Esc or T leaves.
 To show just one park, open ☰ Sound & settings and pick **All parks**, **Magic Kingdom**, **EPCOT** or
 **Hollywood Studios** under TV mode (it's remembered). The camera, the shows it cuts to, the wait-time board and
 "Coming up" then stick to that park. `?tv=mk`, `?tv=ep` or `?tv=hs` in the address does the same.
+
+For a screen that runs all day, also tick **Keep the whole map in memory** in ☰ Sound & settings. The map is
+normally drawn piece by piece as you reach each part and let go after 90 seconds away. With this on, every part is
+painted in the background in the first 20 seconds or so and kept, so panning and zooming anywhere is instant. It uses
+about half a gigabyte of memory, and it's remembered.
 
 To put it on a TV:
 - Simplest: connect this Mac to the TV (cable or AirPlay) and double-click **Start TV.command**. It starts the
@@ -82,7 +94,10 @@ click, tap or key press starts everything.
 ## Area music
 
 Each land's background music plays as you look at it: put your copies at `audio/area-ms.mp3` (Main Street,
-which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area-fan.mp3`, `area-tom.mp3`, `area-ep.mp3` (plays anywhere over EPCOT), and `area-hs.mp3` (the Hollywood Boulevard loop, plays anywhere over Hollywood Studios).
+which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area-fan.mp3`, `area-tom.mp3`, `area-ep.mp3` (plays anywhere over EPCOT), and `area-hs.mp3` (the Hollywood Boulevard loop, plays anywhere over Hollywood Studios). Ride audio is `audio/ride-<name>.mp3`, heard when you zoom in on the ride: Hollywood Studios has
+`ride-tot.mp3` (Tower of Terror), `ride-rotr.mp3` (Rise of the Resistance), `ride-railway.mp3` (Mickey & Minnie's Runaway
+Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic Stunt Spectacular!) and `ride-muppets.mp3`
+(Muppet*Vision 3D); EPCOT has `ride-lwtl.mp3` (Living with the Land) and `ride-soarin.mp3` (Soarin').
 Neighbouring lands blend at their edges, the music fades as you zoom out over the lakes, and while any show plays
 its own music (a parade, the fireworks, the water pageant, Luminous, the welcome show, the Flag Retreat or the Kiss
 Goodnight) the park's own sound fades right out: land music, ride audio, nature and the background crowd. It also

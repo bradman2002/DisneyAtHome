@@ -13,6 +13,11 @@ let CASTLE_IMG=null;
 function loadCastleImage(){return new Promise(res=>{const i=new Image();i.onload=()=>{CASTLE_IMG=i;res()};i.onerror=()=>{console.warn('images/castle.png not found; using the drawn castle');res()};i.src='images/castle.png'})}
 let MSS=3; // pixels per map unit in the close-up layers (2 on phones)
 const MAP={};
+/* "Keep the whole map in memory" (Sound & settings, remembered): paint every piece of the map in the background once the page
+   is up and never let any go, so panning and zooming anywhere is instant. Costs memory: about 0.5 GB on a computer. */
+MAP.keep=false;try{MAP.keep=localStorage.getItem('mk-keepmap')==='1'}catch(e){}
+function setKeepMap(on){MAP.keep=!!on;try{localStorage.setItem('mk-keepmap',on?'1':'0')}catch(e){}}
+function keepMapStat(){const all=[...(MAP.detail||[]).filter(d=>!d.tmp),...(MAP.tiles||[])];return[all.filter(d=>d.base).length,all.length]}
 function seeded(seed){let s=seed>>>0||1;return()=>{s=(s*16807)%2147483647;return s/2147483647}}
 const tone=(col,a)=>{let r,g,b;if(col[0]==='#'){const n=parseInt(col.slice(1),16);r=n>>16;g=n>>8&255;b=n&255}else{[r,g,b]=col.match(/[\d.]+/g).map(Number)}const t=a<0?0:255,p=Math.abs(a);return`rgb(${Math.round(r+(t-r)*p)},${Math.round(g+(t-g)*p)},${Math.round(b+(t-b)*p)})`};
 const PAL={grass:'#94c45c',grass2:'#7fb04e',path:'#ede1d6',pathEdge:'#cbbcae',road:'#a9adb6',water:'#86cde0',waterEdge:'#5fb3cd',waterDeep:'#6fbfd6',
@@ -319,7 +324,8 @@ function dolphinResort(c,e,q,S2){const bb=bbox(q.p),P=(x,y)=>[bb[0]+x-2879,bb[1]
  tw(C[2],wing,false);
  const mid=add([(C[2][0]+C[3][0])/2,(C[2][1]+C[3][1])/2],n,-4);
  dolphinPyramid(c,e,add(mid,u,-30),add(mid,u,30),[-n[0]*52,-n[1]*52],78*S2);
- shellFountain(c,e,add(mid,n,9),S2);
+ {let fp=add(mid,n,9),best=60;for(const w of OSM.areas||[]){if(w.k!=='water')continue;const b=bbox(w.o||w.p||w);if(b[2]-b[0]>45||b[3]-b[1]>45)continue;const cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2,dd=Math.hypot(cx-fp[0],cy-fp[1]);if(dd<best){best=dd;fp=[cx,cy+2]}}
+  shellFountain(c,e,fp,S2)} /* in the round pool of the driveway circle in front (the nearest small pool), or just in front of the pyramid */
  tw(C[3],wing,false);
  ex([P(2920,6412),P(2949,6443),P(2935,6456),P(2907,6426)],wing);tw(P(2942,6450),wing,'sw')} /* the south-west wing, in front */
 /* one of the round turquoise towers at a wing's lake end: a little taller than the wing, white balcony rails, a shell basin on
@@ -388,6 +394,23 @@ function swanCentre(c,e,a,b,d,f,H,arch){const n=28,lerp=(p,q,t)=>[p[0]+(q[0]-p[0
  c.restore();c.strokeStyle='#d98a72';c.lineWidth=.5;pathOf(c,face,1);c.stroke();
  /* a swan at each end of the roof, on its centre line, facing outward */
  const sh=H*.62;for(const t of[.06,.94]){const m=lerp(nw(t),se(t),.5);swanStatue(c,m[0],m[1]-h(t),sh,t>.5)}}
+/* Muppets Courtyard (Grand Avenue, closed 2024): the Muppet*Vision 3D theatre in cream with coloured stripes along its walls, a
+   big red roof sign (plain lettering, not the attraction's logo), and the courtyard's round fountain */
+function muppetDeco(c,p,q,L,hh){for(const[f,col]of[[.82,'#d6453d'],[.74,'#f2b632'],[.66,'#3b8fd0'],[.58,'#4fae5a']]){c.strokeStyle=col;c.lineWidth=Math.max(.5,hh*.05);c.beginPath();c.moveTo(p[0],p[1]-hh*f);c.lineTo(q[0],q[1]-hh*f);c.stroke()}}
+function muppetSign(c,e,bb,hh){const x=(bb[0]+bb[2])/2,y=bb[1]+(bb[3]-bb[1])*.45-hh,w=Math.min(36,(bb[2]-bb[0])*.9),h=w*.3;
+ c.fillStyle='#6a5a48';c.fillRect(x-w*.3,y-h*.15,1.2,h*.4);c.fillRect(x+w*.3,y-h*.15,1.2,h*.4); /* its legs on the roof */
+ c.fillStyle='rgba(40,20,10,.25)';c.fillRect(x-w/2+1.2,y-h*.2+1.2,w,h*.12);
+ const g=c.createLinearGradient(0,y-h-h*.2,0,y-h*.2);g.addColorStop(0,'#e0483c');g.addColorStop(1,'#b8302a');c.fillStyle=g;c.fillRect(x-w/2,y-h-h*.2,w,h);
+ c.strokeStyle='#f6d34a';c.lineWidth=.8;c.strokeRect(x-w/2+.6,y-h-h*.2+.6,w-1.2,h-1.2);
+ c.fillStyle='#fff3c4';c.font=`900 ${(h*.42).toFixed(1)}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText('MUPPET*VISION',x,y-h*.88);
+ c.fillStyle='#f6d34a';c.font=`900 ${(h*.3).toFixed(1)}px sans-serif`;c.fillText('3 D',x,y-h*.46);
+ if(e){e.fillStyle='rgba(255,220,140,.75)';e.fillRect(x-w/2,y-h-h*.2,w,h)}}
+function courtyardFountain(c,e,x,y){c.fillStyle='rgba(40,30,20,.2)';c.beginPath();c.ellipse(x+1.5,y+1.2,8.5,3.2,0,0,7);c.fill();
+ c.fillStyle='#d9cdb4';c.beginPath();c.ellipse(x,y,8,3,0,0,7);c.fill();c.fillStyle='#c4b697';c.fillRect(x-8,y,16,1.4);c.beginPath();c.ellipse(x,y+1.4,8,3,0,0,Math.PI);c.fill();
+ c.fillStyle='#5fb7d6';c.beginPath();c.ellipse(x,y-.2,6.8,2.4,0,0,7);c.fill();
+ c.fillStyle='#d9cdb4';c.fillRect(x-1,y-6,2,6);c.beginPath();c.ellipse(x,y-6,3.4,1.2,0,0,7);c.fill();c.fillStyle='#8fd3ea';c.beginPath();c.ellipse(x,y-6.1,2.6,.8,0,0,7);c.fill();
+ c.strokeStyle='rgba(235,250,255,.9)';c.lineWidth=.45;for(const s of[-1,1]){c.beginPath();c.moveTo(x,y-8.5);c.quadraticCurveTo(x+s*2.6,y-10,x+s*3.4,y-6.2);c.stroke();c.beginPath();c.moveTo(x+s*3.2,y-5.8);c.quadraticCurveTo(x+s*5.6,y-5,x+s*6,y-.4);c.stroke()}
+ c.beginPath();c.moveTo(x,y-6.5);c.lineTo(x,y-10);c.stroke()}
 /* the Yacht Club's lighthouse at the end of its dock */
 function lighthouse(c,e,x,y,h){c.fillStyle='rgba(30,50,60,.25)';c.beginPath();c.ellipse(x+h*.25,y+.6,h*.22,h*.08,0,0,7);c.fill();
  poly4(c,[[x-h*.11,y],[x+h*.11,y],[x+h*.07,y-h*.78],[x-h*.07,y-h*.78]],'#fbfaf6');poly4(c,[[x+h*.02,y],[x+h*.11,y],[x+h*.07,y-h*.78],[x+h*.02,y-h*.78]],'#dfe2e4');
@@ -544,18 +567,21 @@ function detailTick(z){const now=performance.now();if(now-(MAP.dtAt||0)<300)retu
  for(const d of[...MAP.detail]){const near=want&&views.some(([x,y])=>d.x<x+hw&&d.x+d.w>x-hw&&d.y<y+hh&&d.y+d.h>y-hh);
   if(near)d.seen=now;
   if(near&&!d.base&&!MAP.dtBusy){MAP.dtBusy=true;setTimeout(()=>{if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0)}
-  else if(d.base&&!near&&now-(d.seen||0)>90e3&&d!==MAP.detail[0])dropDetail(d)}
+  else if(d.base&&!near&&now-(d.seen||0)>90e3&&d!==MAP.detail[0]&&!MAP.keep)dropDetail(d)}
  /* anywhere else zoomed in close (the resorts round Crescent Lake, the land east of EPCOT...): paint a sharp patch round
     the view, as sharp as the close-ups, and let it go like them; at most four are kept, the oldest goes first */
  if(want&&FULL&&!MAP.dtBusy){const ax=cw/2/z,ay=ch/2/z;
   for(const[x,y]of views){if(MAP.detail.some(d=>d.x<=Math.max(0,x-ax)&&d.y<=Math.max(0,y-ay)&&d.x+d.w>=Math.min(W,x+ax)&&d.y+d.h>=Math.min(H,y+ay)))continue;
    const hx=Math.max(450,ax*1.5),hy=Math.max(450,ay*1.5),d=dbox(x-hx,y-hy,x+hx,y+hy,MSS);d.tmp=true;d.seen=now;
-   const tmp=MAP.detail.filter(q=>q.tmp);if(tmp.length>=4){const o=tmp.reduce((a,b)=>(a.seen||0)<(b.seen||0)?a:b);dropDetail(o)}
+   const tmp=MAP.detail.filter(q=>q.tmp);if(tmp.length>=(MAP.keep?12:4)){const o=tmp.reduce((a,b)=>(a.seen||0)<(b.seen||0)?a:b);dropDetail(o)}
    MAP.detail.push(d);MAP.dtBusy=true;setTimeout(()=>{if(!d.base&&MAP.detail.includes(d))Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0);break}}
  const vw=cw/2/z+60,vh=ch/2/z+60;
  for(const d of MAP.tiles||[]){const near=views.some(([x,y])=>d.x<x+vw&&d.x+d.w>x-vw&&d.y<y+vh&&d.y+d.h>y-vh);if(near)d.seen=now;
   if(near&&!d.base&&!MAP.dtBusy){MAP.dtBusy=true;setTimeout(()=>{if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0)}
-  else if(d.base&&!near&&now-(d.seen||0)>90e3){for(const k of['base','glow']){d[k].width=d[k].height=0;d[k]=null}}}} /* away for 90 s: let it go (the park's own stays) */
+  else if(d.base&&!near&&now-(d.seen||0)>90e3&&!MAP.keep){for(const k of['base','glow']){d[k].width=d[k].height=0;d[k]=null}}}
+ /* keeping the whole map: with nothing wanted on screen, paint the next unpainted piece (close-ups first, then the land) */
+ if(MAP.keep&&!MAP.dtBusy){const d=[...MAP.detail.filter(q=>!q.tmp),...(MAP.tiles||[])].find(q=>!q.base);
+  if(d){MAP.dtBusy=true;setTimeout(()=>{if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k));d.seen=performance.now();MAP.dtBusy=false},0)}}} /* away for 90 s: let it go (the park's own stays), unless keeping the whole map */
 /* Paint the rectangle (rx,ry,rw,rh) of the map at `mss` pixels per map unit. Every call walks the same data in the same
    order with the same random seed, so a close-up layer is the same picture as the base, just sharper. */
 /* Working masks (where trees may grow, the forests, the soft shadows) are kept at a reduced scale HS on a big map, so
@@ -658,6 +684,10 @@ function paintMap(rx,ry,rw,rh,mss){
   if(q.n==='Walt Disney World Swan Resort'){const qq=q;B.push({y:bb[3],f:()=>swanResort(c,e,qq,S2)});continue}
   if(q.n==='The Twilight Zone Tower of Terror'){const qq=q;B.push({y:bb[3],f:()=>towerHotel(c,e,qq,bb,S2)});continue}
   if(towerB&&q!==towerB&&!q.n&&ptIn(cx_,cy_,towerB.p))continue; /* the Tower's own inner outline: part of its painting */
+  if(q.n==="Jim Henson's Muppet*Vision 3-D"){const qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#f1e3bd','#cdb98f',{noWin:true,ridge:false,deco:muppetDeco});muppetSign(c,e,bb,hh)}});
+   const W_=OSM.areas.find(a=>a.k==='water'&&(()=>{const b=bbox(a.o);return b[2]-b[0]<14&&Math.abs(b[0]-bb[2])<25&&Math.abs(b[1]-bb[1])<25})());
+   if(W_){const wb=bbox(W_.o);B.push({y:wb[3]+.5,f:()=>courtyardFountain(c,e,(wb[0]+wb[2])/2,(wb[1]+wb[3])/2)})}continue}
+  if(!q.n&&POS['Pizza Rizzo']&&ptIn(POS['Pizza Rizzo'].c[0],POS['Pizza Rizzo'].c[1],q.p)){const qq=q;B.push({y:bb[3],f:()=>extrude(c,e,qq.p,hh,'#b9553f','#7a4b3c',{ridge:false,deco:(c,p,q2,L,h)=>{c.strokeStyle='#f3e6c8';c.lineWidth=.6;c.beginPath();c.moveTo(p[0],p[1]-h+.4);c.lineTo(q2[0],q2[1]-h+.4);c.moveTo(p[0],p[1]-h*.45);c.lineTo(q2[0],q2[1]-h*.45);c.stroke()}})});continue} /* PizzeRizzo and Mama Melrose's: brick, cream trim */
   if(q.n==="Mickey and Minnie's Runaway Railway"){const qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#d8c9b0','#9d8f7a',{noWin:true,ridge:false});chineseTheatre(c,e,bb,S2)}});continue}
   if(q.n==='Rock ’n’ Roller Coaster Starring The Muppets'){const qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#3a3d48','#5a5e6a',{noWin:true,ridge:false});const g_=OSM.places.hsbooth||[bb[2],bb[3]];bigGuitar(c,bb[2]-8,bb[3]-4,26)}});continue}
   if(tronB&&q===tronB){B.push({y:bb[3],f:()=>tronBuilding(c,e,q,hh)});continue}

@@ -55,6 +55,6 @@ function liveTick(){if(!LIVE.follow){LIVENOW=false;return}const c=parkClock();LI
 {const seek0=seek;seek=function(t,force){if(!LIVE.inTick&&!CATCHUP)liveUnfollow();return seek0(t,force)}}
 function liveBadge(){const b=$('#liveBtn');if(!b)return;b.hidden=!LIVE.ok;b.classList.toggle('on',LIVE.follow);b.textContent=LIVE.follow?'● Live':'Go live';b.title=LIVE.follow?'Showing the real park right now. Live data: ThemeParks.wiki':'Jump to the real time and real wait times';
  const o=$('#osmc');if(o)o.textContent='Map data © OpenStreetMap contributors'+(LIVE.follow?' · Live data: ThemeParks.wiki':'')}
-const liveText=a=>LIVENOW&&a.live?`Live from the park${a.live.at?' · updated '+new Date(a.live.at).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'}):''}`:'Simulated estimate';
+const liveText=a=>a.ph!==undefined?'Placeholder wait (this show closed in 2024)':LIVENOW&&a.live?`Live from the park${a.live.at?' · updated '+new Date(a.live.at).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'}):''}`:'Simulated estimate';
 // start: fetch now and every five minutes; go live as soon as there is data (add ?sim to the address to stay simulated)
 function liveInit(){const want=!/[?&]sim\b/.test(location.search);liveFetch().then(()=>{if(want&&LIVE.ok)liveFollow()});setInterval(liveFetch,5*60e3)}

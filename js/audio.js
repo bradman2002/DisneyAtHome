@@ -154,7 +154,7 @@ function soundAuto(){auInit();setTimeout(soundHint,1500);
    when you tap one, or when the mouse is over one. The land music dips underneath, and the ride fades out again as you move away. It only
    plays while the ride is running. Each track keeps its place, but starts from the top if it hasn't been heard for ten
    minutes, when it jumps to a random spot, so you drop in partway through as if walking up to the ride. To add a ride, put its file in audio/ and add a line to RIDEAUD. */
-const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirates','"it\'s a small world"':'smallworld','Space Mountain':'spacemtn','Tomorrowland Transit Authority PeopleMover':'peoplemover'};
+const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirates','"it\'s a small world"':'smallworld','Space Mountain':'spacemtn','Tomorrowland Transit Authority PeopleMover':'peoplemover','Living with the Land':'lwtl'};
 const RA={bad:{},heard:{}};let rideLevel=0;
 const rideAt=a=>a&&RIDEAUD[a.osm];
 async function rideSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('ride-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}

@@ -31,6 +31,10 @@ and the resorts; it cuts to the parade, the fireworks and the water pageant when
 pages through the live wait times and what's coming up. While the park is closed overnight it replays the
 day as a time-lapse, slowing to real time for each show. Esc or T leaves.
 
+To show just one park, open ☰ Sound & settings and pick **All parks**, **Magic Kingdom**, **EPCOT** or
+**Hollywood Studios** under TV mode (it's remembered). The camera, the shows it cuts to, the wait-time board and
+"Coming up" then stick to that park. `?tv=mk`, `?tv=ep` or `?tv=hs` in the address does the same.
+
 To put it on a TV:
 - Simplest: connect this Mac to the TV (cable or AirPlay) and double-click **Start TV.command**. It starts the
   site and opens Google Chrome full screen in TV mode with sound, on the TV if one is connected, and keeps the

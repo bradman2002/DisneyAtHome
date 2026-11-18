@@ -152,7 +152,7 @@ function soundAuto(){auInit();setTimeout(soundHint,1500);
    at that ride, the way you hear it walking up to the entrance: when you tap the ride, when you zoom in on it, or when
    TV mode's camera visits it. The monorail works the same way: its onboard audio plays while TV mode follows a train,
    when you tap one, or when the mouse is over one. The land music dips underneath, and the ride fades out again as you move away. It only
-   plays while the ride is running. Each track keeps its place, but starts from the top if it hasn't been heard for ten
+   plays while the ride is open: a short delay or breakdown keeps it going, and a closed ride is silent rather than letting the ride next door's track play over it. Each track keeps its place, but starts from the top if it hasn't been heard for ten
    minutes, when it jumps to a random spot, so you drop in partway through as if walking up to the ride. To add a ride, put its file in audio/ and add a line to RIDEAUD. */
 const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirates','"it\'s a small world"':'smallworld','Space Mountain':'spacemtn','Tomorrowland Transit Authority PeopleMover':'peoplemover','Living with the Land':'lwtl',"Soarin' Around The World":'soarin',
  'The Twilight Zone Tower of Terror':'tot','Star Wars: Rise of the Resistance':'rotr',"Mickey and Minnie's Runaway Railway":'railway','Star Tours: The Adventures Continue':'startours',
@@ -165,13 +165,18 @@ function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monor
  if(SV.on)return t;
  /* the monorail's onboard audio (audio/ride-monorail.mp3): while TV mode rides along with a train, while a train's card is open, or while the mouse is over one; only in operating hours */
  if(T>OPEN*3600-5400&&T<CLOSE*3600+3600)t.monorail=follow&&follow.k==='m'?1:sel&&sel.k==='m'&&sheet==='detail'?.95:MONOHOVER?.85:0;const z=Math.max(0,Math.min(1,(cam.m-1.9)/1.1));
- for(const a of AT){const k=rideAt(a);if(!k)continue;const run=aStat(a)==='Operating'||aStat(a)==='Last riders';if(!run)continue;
+ const quiet=new Set(); /* rides you're looking at that are closed: they stay silent, and keep a neighbour's track from taking their place */
+ for(const a of AT){const k=rideAt(a);if(!k)continue;const st=aStat(a);
   let v=z*Math.exp(-Math.hypot(cam.x-a.x,cam.y-a.y)/55); /* close in on it */
   if(sel&&sel.k==='a'&&sel.i===a.i&&sheet==='detail')v=Math.max(v,.9); /* you tapped it */
-  t[k]=Math.max(t[k],Math.min(1,v*1.4))}
+  v=Math.min(1,v*1.4);if(st==='Closed'){if(v>t[k])quiet.add(k);continue}  /* a short delay or breakdown keeps its audio going (the queue and its music carry on); only a closed ride is silent */
+  t[k]=Math.max(t[k],v);quiet.delete(k)}
  /* only one ride (or the monorail) is heard at a time: the one you're closest to, or tapped. Neighbouring rides
     (Haunted Mansion and small world are next door to each other) would otherwise play over each other */
- let top=null;for(const k in t)if(t[k]>.02&&(!top||t[k]>t[top]))top=k;for(const k in t)if(k!==top)t[k]=0;return t}
+ let top=null;for(const k in t)if(t[k]>.02&&(!top||t[k]>t[top]))top=k;for(const k in t)if(k!==top)t[k]=0;
+ /* a closed ride nearer the middle of the screen than the one playing wins the spot with silence, rather than letting its neighbour's track play over it */
+ if(top&&top!=='monorail')for(const a of AT){const k=rideAt(a);if(!k||!quiet.has(k)||k===top)continue;const A=AT.find(b=>rideAt(b)===top);if(A&&Math.hypot(cam.x-a.x,cam.y-a.y)<Math.hypot(cam.x-A.x,cam.y-A.y)){t[top]=0;break}}
+ return t}
 /* One shared player for all ride audio (only one ride is heard at a time anyway). iPhones only let a page start an audio
    player in response to a tap, so this one player is unlocked on your first tap (unlockRide) and then reused for every
    ride and the monorail by swapping in each recording. Each recording streams (or, where the server cannot stream, is fetched whole and let go after it fades out);

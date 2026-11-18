@@ -92,12 +92,13 @@ function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(
    the fireworks or the water pageant has its own music playing, and stops after the park closes.
    The files are long (25 to 60 minutes) and simply loop; each keeps its place while it is silent. A missing file is
    skipped. */
-const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT */
+const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3',hs:'audio/area-hs.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT; hs: Hollywood Studios (the Hollywood Boulevard loop for now), heard anywhere over that park */
 const AM={el:{},vol:{},bad:{}};
 function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(T<OPEN*3600-1800||T>CLOSE*3600+900)return t;
  if(SV.on){t.ms=1;return t}
  if(typeof EPCOT!=='undefined'&&EPCOT&&cam.x>EPR[0]-250&&cam.x<EPR[2]+250&&cam.y>EPR[1]-250&&cam.y<EPR[3]+250){t.ep=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over EPCOT: its one loop, fading as you zoom out */
+ if(typeof HSR!=='undefined'&&HSR&&cam.x>HSR[0]-250&&cam.x<HSR[2]+250&&cam.y>HSR[1]-250&&cam.y<HSR[3]+250){t.hs=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Hollywood Studios: one loop for the whole park, like EPCOT */
  /* nearness of each land's centre to the middle of the screen; the nearest dominates, and everything fades as you zoom out */
  const zoom=Math.max(0,Math.min(1,(cam.m-.55)/.9)),w={};let sum=0,top=0;
  for(const k in AREA){const L=LANDS[k];if(!L)continue;let d=Math.hypot(cam.x-L[1],cam.y-L[2]);if(k==='ms'&&LANDS.hub)d=Math.min(d,Math.hypot(cam.x-LANDS.hub[1],cam.y-LANDS.hub[2])*.8); /* the hub in front of the castle plays Main Street's music, as in the park */

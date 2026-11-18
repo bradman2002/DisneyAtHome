@@ -119,8 +119,10 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   Future World comes on the way in); its loads are scenery only, EPCOT's guests still start at its gate.
   The Crescent Lake resorts (owner, 16 Nov 2026: "Make swan and dolphin, beach and yacht club, and boardwalk look more
   correct"): `CRES`/`cresOf` in `map-art.js` give their buildings the real colours (`yc`, `bc`, `bcv`, `bwi`, `bwv`, `dol`, `swan`,
-  `swr` in `LANDSTYLE`; clapboard trim or Graves wave bands via `extrude`'s `deco` hook); `dolphinTower`, `swanBlock` (with the
-  statues), `lighthouse`, `shipwreck` and `coasterSlide` are drawn by name; the boardwalk's planks are walkways inside the
+  `swr` in `LANDSTYLE`; clapboard trim or Graves wave bands via `extrude`'s `deco` hook); `dolphinResort`/`dolphinTower`, `swanResort`/`swanCentre` (with the
+  statues; owner, 18 Nov 2026, compared with the Disney app: OSM has no heights for either hotel, so their parts are placed by hand
+  from the footprint's bbox corner: the Swan is a low podium, two 7-storey wings and the 12-storey centre block along its NE–SW axis
+  with its curved roofline; the Dolphin tower is a wedge with an upright triangle face), `lighthouse`, `shipwreck` and `coasterSlide` are drawn by name; the boardwalk's planks are walkways inside the
   BoardWalk outline near the lake (`onBoardwalk`). The extractor exports `OSM.crescent` (BoardWalk outline, lake, pools) and
   dock places, sets their heights in `HEIGHTS`, and the map now runs to H=6730 so the Swan and Swan Reserve fit whole.
   Map tiles overlap by 3 units so no seam shows between them. Art that clips (`c.save();…clip()`) must `c.restore()`: a

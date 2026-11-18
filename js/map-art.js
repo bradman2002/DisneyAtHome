@@ -304,9 +304,8 @@ function swanStatue(c,x,y,h,flip){const s=flip?-1:1;c.save();c.translate(x,y);c.
  c.fillStyle='#e9a23b';c.beginPath();c.moveTo(-w*.48,-h*.99);c.lineTo(-w*.82,-h*.93);c.lineTo(-w*.48,-h*.91);c.fill();
  c.strokeStyle='rgba(120,130,140,.45)';c.lineWidth=Math.max(.2,h*.03);c.beginPath();c.moveTo(-w*.4,-h*.3);c.quadraticCurveTo(0,-h*.42,w*.5,-h*.28);c.stroke();c.restore()}
 /* the Dolphin's triangle tower rising from the middle of its wings, with the turquoise cascade down its face */
-function dolphinTower(c,e,x,y,base,H,dep,wingH,noStatues){const L=[x-base,y],Rr=[x+base,y],A=[x,y-H],up=p=>[p[0],p[1]-dep];
- poly4(c,[L,A,up(A),up(L)],'#f6b39d');poly4(c,[A,Rr,up(Rr),up(A)],'#d97b63');
- c.save();pathOf(c,[L,A,up(A),up(L)],1);c.clip();c.strokeStyle='rgba(47,169,163,.75)';c.lineWidth=H*.03;for(let t=.15;t<1;t+=.22){c.beginPath();c.moveTo(L[0]+(A[0]-L[0])*t,L[1]+(A[1]-L[1])*t);c.lineTo(L[0]+(A[0]-L[0])*t,L[1]+(A[1]-L[1])*t-dep);c.stroke()}c.restore();
+function dolphinTower(c,e,x,y,base,H,dep,wingH,noStatues){const L=[x-base,y],Rr=[x+base,y],A=[x,y-H],BL=[x-base,y-dep],BR=[x+base,y-dep];
+ poly4(c,[L,BL,A],'#f6b39d');poly4(c,[Rr,BR,A],'#d97b63'); /* the sides slope back from the upright front face to the back corners: a wedge, with no ridge running back */
  poly4(c,[L,Rr,A],'#ee9479');
  c.save();pathOf(c,[L,Rr,A],1);c.clip();for(let r=1;r<H/3.4;r++){const yy=y-r*3.4,hw=base*(1-r*3.4/H);for(let xx=x-hw+1.6;xx<x+hw-1.2;xx+=2.6){if(Math.abs(xx-x)<base*.14)continue;c.fillStyle='#5a6f8c';c.fillRect(xx,yy+1,1.1,1.5);if(e&&hsh((xx*7|0)+r*13)%10<6){e.fillStyle='rgba(255,205,130,.9)';e.fillRect(xx,yy+1,1.1,1.5)}}}c.restore();
  const cw=base*.13;poly4(c,[[x-cw,y],[x+cw,y],[x+cw*.4,y-H*.82],[x-cw*.4,y-H*.82]],'#33b0aa');
@@ -323,19 +322,38 @@ function dolphinResort(c,e,q,S2){const bb=bbox(q.p),wing=34*S2,blk=45*S2,
  extrude(c,e,q.p,wing,'#f09d84','#f3c3b0',{deco:cresDeco('dol'),ridge:false});
  extrude(c,e,M,blk,'#ee9579','#e9ab95',{deco:cresDeco('dol'),ridge:false});
  const mx=(M[0][0]+M[1][0])/2,front=M[2][1],dep=M[2][1]-M[0][1];
- dolphinTower(c,e,mx,front,24,78*S2,dep*.55,blk,true); /* about as deep as it is wide, so its roof doesn't run back in a long spike */
- const sh=17*S2*2.4;dolphinStatue(c,(M[0][0]+mx-24)/2+3,M[2][1]-blk-dep*.3,sh,false);dolphinStatue(c,(M[1][0]+mx+24)/2-3,M[2][1]-blk-dep*.3,sh,true)}
-/* the Swan's centre block: white with wave bands, its gently arched roof, a swan at each end */
-function swanBlock(c,e,x,y,w,dep,H){const arch=H*.16,top=t=>y-H-Math.sin(t*Math.PI)*arch,n=24;
- const front=[[x-w,y],[x+w,y]];for(let i=n;i>=0;i--)front.push([x-w+2*w*i/n,top(i/n)]);
- const roof=[];for(let i=0;i<=n;i++)roof.push([x-w+2*w*i/n,top(i/n)]);for(let i=n;i>=0;i--)roof.push([x-w+2*w*i/n,top(i/n)-dep]);
- const g=c.createLinearGradient(x,y-H-arch-dep,x,y-H);g.addColorStop(0,'#f3ab93');g.addColorStop(1,'#e28a70');poly4(c,roof,g);
- c.strokeStyle='rgba(160,80,60,.35)';c.lineWidth=.3;for(let i=1;i<n;i+=2){const xx=x-w+2*w*i/n;c.beginPath();c.moveTo(xx,top(i/n));c.lineTo(xx,top(i/n)-dep);c.stroke()}
- poly4(c,front,'#f7f0e6');
- c.save();pathOf(c,front,1);c.clip();for(let r=1;r<H/3.3;r++){const yy=y-r*3.3;for(let xx=x-w+1.5;xx<x+w-1;xx+=2.5){c.fillStyle='#5a6f8c';c.fillRect(xx,yy+.9,1.1,1.5);if(e&&hsh((xx*5|0)+r*11)%10<6){e.fillStyle='rgba(255,205,130,.9)';e.fillRect(xx,yy+.9,1.1,1.5)}}}
- for(const[f,col,lw]of[[.88,'#2fa9a3',H*.07],[.72,'#ef9a80',H*.045],[.08,'#2fa9a3',H*.05]]){c.strokeStyle=col;c.lineWidth=lw;c.beginPath();for(let i=0;i<=60;i++){const t=i/60,xx=x-w+2*w*t,yy=y-H*f-(f>.5?Math.sin(t*Math.PI)*arch*(f-.5)*2:0)+Math.sin(t*w/5*6.283)*H*.025;i?c.lineTo(xx,yy):c.moveTo(xx,yy)}c.stroke()}c.restore();
- c.strokeStyle='#d98a72';c.lineWidth=.5;pathOf(c,front,1);c.stroke();
- const sh=H*.62;swanStatue(c,x-w*.8,top(.1)-dep*.45,sh,false);swanStatue(c,x+w*.8,top(.9)-dep*.45,sh,true)}
+ /* the statues first: they stand on the block's roof either side of the tower, nearer the front, a little larger than life (17 m) so they read */
+ const sh=17*S2*1.5,sy=M[2][1]-blk-dep*.22,st=(sx,f)=>{c.fillStyle='rgba(60,30,20,.22)';c.beginPath();c.ellipse(sx+sh*.22,sy+1,sh*.24,sh*.07,0,0,7);c.fill();dolphinStatue(c,sx,sy,sh,f)};
+ st(mx-24-(mx-24-M[0][0])*.42,false);st(mx+24+(M[1][0]-mx-24)*.42,true);
+ dolphinTower(c,e,mx,front,24,78*S2,dep*.7,blk,true)}
+/* the Swan as built (an H in plan): the long 12-storey centre block runs north-east to south-west, its roofline rising in a
+   gentle curve to the middle with a swan at each end; a 7-storey wing crosses near each end; the lobby and meeting rooms
+   around them are low. Places are measured from the footprint (bbox corner 2991,6455 in today's data) so they follow it. */
+function swanResort(c,e,q,S2){const bb=bbox(q.p),P=(x,y)=>[bb[0]+x-2991,bb[1]+y-6455],deco=cresDeco('swan');
+ extrude(c,e,q.p,9*S2,'#f7f0e6','#f0b8a3',{deco,ridge:false}); /* the low lobby, shops and meeting rooms */
+ const wing=24*S2;
+ extrude(c,e,[P(3083,6519),P(3096,6506),P(3143,6553),P(3130,6566)],wing,'#f7f0e6','#ef9a80',{deco,ridge:false});
+ extrude(c,e,[P(3137,6471),P(3150,6458),P(3207,6518),P(3194,6531)],wing,'#f7f0e6','#ef9a80',{deco,ridge:false});
+ swanCentre(c,e,P(3131,6547),P(3176,6501),P(3197.5,6522),P(3152.5,6568),36*S2,11*S2)}
+/* the centre block from its four corners (SW-end on the north-west side, NE-end on that side, then the south-east side's NE and
+   SW ends): the visible walls are the south-east side and the south-west end; the roof curves up along the block's length */
+function swanCentre(c,e,a,b,d,f,H,arch){const n=28,lerp=(p,q,t)=>[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t],h=t=>H+Math.sin(t*Math.PI)*arch,
+  nw=t=>lerp(a,b,t),se=t=>lerp(f,d,t),up=(p,t)=>[p[0],p[1]-h(t)];
+ /* roof, in strips so each is shaded by its slope: lit where it rises, shaded where it falls */
+ for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n,sl=Math.cos((t0+t1)/2*Math.PI);poly4(c,[up(nw(t0),t0),up(nw(t1),t1),up(se(t1),t1),up(se(t0),t0)],tone('#ef9a80',.1+sl*.12))}
+ c.strokeStyle='rgba(150,70,50,.3)';c.lineWidth=.3;for(let i=1;i<n;i+=2){const t=i/n;c.beginPath();c.moveTo(...up(nw(t),t));c.lineTo(...up(se(t),t));c.stroke()}
+ /* the south-west end wall */
+ poly4(c,[f,a,up(a,0),up(f,0)],'#e9dfd0');
+ c.save();pathOf(c,[f,a,up(a,0),up(f,0)],1);c.clip();for(let r=1;r<H/3.4;r++)for(let k=1;k<6;k++){const p=lerp(f,a,k/6);c.fillStyle='#55698a';c.fillRect(p[0]-.5,p[1]-r*3.4-1,1.1,1.5)}c.restore();
+ /* the south-east face, with its arched top edge */
+ const face=[];for(let i=0;i<=n;i++)face.push(se(i/n));for(let i=n;i>=0;i--)face.push(up(se(i/n),i/n));
+ poly4(c,face,'#f7f0e6');c.save();pathOf(c,face,1);c.clip();
+ const L=Math.hypot(d[0]-f[0],d[1]-f[1]),cols=Math.floor(L/2.6);
+ for(let k=0;k<cols;k++){const t=(k+.5)/cols,p=se(t),top=h(t);for(let v=3;v<top-2;v+=3.3){c.fillStyle='#5a6f8c';c.fillRect(p[0]-.55,p[1]-v-1.5,1.1,1.5);if(e&&hsh(k*7+(v*3|0))%10<6){e.fillStyle='rgba(255,205,130,.9)';e.fillRect(p[0]-.55,p[1]-v-1.5,1.1,1.5)}}}
+ for(const[g,col,lw]of[[.06,'#2fa9a3',H*.06],[.84,'#ef9a80',H*.04],[.94,'#2fa9a3',H*.065]]){c.strokeStyle=col;c.lineWidth=lw;c.beginPath();for(let i=0;i<=60;i++){const t=i/60,p=se(t),yy=p[1]-(g<.5?H*g:h(t)*g)+Math.sin(t*L/5*6.283)*H*.022;i?c.lineTo(p[0],yy):c.moveTo(p[0],yy)}c.stroke()}
+ c.restore();c.strokeStyle='#d98a72';c.lineWidth=.5;pathOf(c,face,1);c.stroke();
+ /* a swan at each end of the roof, on its centre line, facing outward */
+ const sh=H*.62;for(const t of[.06,.94]){const m=lerp(nw(t),se(t),.5);swanStatue(c,m[0],m[1]-h(t),sh,t>.5)}}
 /* the Yacht Club's lighthouse at the end of its dock */
 function lighthouse(c,e,x,y,h){c.fillStyle='rgba(30,50,60,.25)';c.beginPath();c.ellipse(x+h*.25,y+.6,h*.22,h*.08,0,0,7);c.fill();
  poly4(c,[[x-h*.11,y],[x+h*.11,y],[x+h*.07,y-h*.78],[x-h*.07,y-h*.78]],'#fbfaf6');poly4(c,[[x+h*.02,y],[x+h*.11,y],[x+h*.07,y-h*.78],[x+h*.02,y-h*.78]],'#dfe2e4');
@@ -603,7 +621,7 @@ function paintMap(rx,ry,rw,rh,mss){
   if(land.startsWith('ep')&&q.n==='Spaceship Earth'){B.push({y:bb[3],f:()=>spaceshipEarth(c,e,cx_,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2,S2)});continue}
   if(land==='ep_mexico'&&q.n==='Mexico Pavilion'){B.push({y:bb[3],f:()=>mexicoPyramid(c,e,q.p,S2)});continue}
   if(q.n==='Walt Disney World Dolphin Resort'){const qq=q;B.push({y:bb[3],f:()=>dolphinResort(c,e,qq,S2)});continue}
-  if(q.n==='Walt Disney World Swan Resort'){const qq=q,sw=Math.min((bb[2]-bb[0])*.2,52);B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#f7f0e6','#ef9a80',{deco:cresDeco('swan')});swanBlock(c,e,cx_,cy_+10,sw,22,46*S2)}});continue}
+  if(q.n==='Walt Disney World Swan Resort'){const qq=q;B.push({y:bb[3],f:()=>swanResort(c,e,qq,S2)});continue}
   if(q.n==='The Twilight Zone Tower of Terror'){const qq=q;B.push({y:bb[3],f:()=>towerHotel(c,e,qq,bb,S2)});continue}
   if(towerB&&q!==towerB&&!q.n&&ptIn(cx_,cy_,towerB.p))continue; /* the Tower's own inner outline: part of its painting */
   if(q.n==="Mickey and Minnie's Runaway Railway"){const qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#d8c9b0','#9d8f7a',{noWin:true,ridge:false});chineseTheatre(c,e,bb,S2)}});continue}

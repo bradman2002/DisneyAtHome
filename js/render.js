@@ -22,6 +22,18 @@ const baseZ=()=>{const fit=Math.min(cw/VW,ch/VH);return cw<ch?Math.max(fit,Math.
 const minM=()=>Math.min(1,Math.min(cw/W,ch/H)/baseZ()); // furthest out: the whole map on screen (Magic Kingdom and Epcot)
 const fitM=r=>Math.min(1,Math.min(cw/(r[2]-r[0]),ch/(r[3]-r[1]))/baseZ()); // the zoom that just fits a region
 const zf=()=>baseZ()*cam.m;
+/* the tethered balloon over Disney Springs: up and down on a ten-minute cycle while it's flying (8:30 am to 11 pm), lit at night */
+function dsBalloon(z){const b=P_.dsballoon;if(!b)return;const hw=cw/2/z+200,hh=ch/2/z+300;if(Math.abs(b[0]-cam.x)>hw||b[1]-cam.y>hh||cam.y-b[1]>hh+150)return;
+ const h=T/3600,on=h>8.5&&h<23,ph=(T%600)/600,up=on?(ph<.25?ph/.25:ph<.75?1:(1-ph)/.25):0,k=up*up*(3-2*up),alt=4+k*118,r=11,x=b[0]+Math.sin(T/40)*1.5*k,y=b[1]-alt,c=cx;
+ c.fillStyle='rgba(20,40,30,.2)';c.beginPath();c.ellipse(b[0]+alt*.35,b[1]+1,r*.9,r*.4,0,0,7);c.fill(); /* its shadow, cast off to one side */
+ c.strokeStyle='rgba(60,60,60,.7)';c.lineWidth=.35;c.beginPath();c.moveTo(b[0],b[1]);c.lineTo(x,y+r*1.25);c.stroke();
+ c.fillStyle='#8a8f96';c.beginPath();c.ellipse(b[0],b[1],3.5,1.6,0,0,7);c.fill();
+ const g=c.createRadialGradient(x-r*.35,y-r*.4,r*.1,x,y,r);g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#e8eef3');g.addColorStop(1,'#a9b6c2');c.fillStyle=g;c.beginPath();c.arc(x,y,r,0,7);c.fill();
+ c.save();c.beginPath();c.arc(x,y,r,0,7);c.clip();c.fillStyle='rgba(40,120,200,.85)';c.fillRect(x-r,y-r*.18,r*2,r*.36);c.fillStyle='rgba(230,90,60,.85)';c.fillRect(x-r,y+r*.3,r*2,r*.2);c.restore();
+ c.strokeStyle='rgba(70,80,90,.6)';c.lineWidth=.25;for(const dx of[-.6,0,.6]){c.beginPath();c.moveTo(x+dx*r,y+Math.sqrt(1-dx*dx)*r*.9);c.lineTo(x+dx*r*.45,y+r*1.25);c.stroke()}
+ c.fillStyle='#3d4650';c.beginPath();c.ellipse(x,y+r*1.3,r*.5,r*.14,0,0,7);c.fill();
+ if(nf>.05&&on){c.globalCompositeOperation='lighter';const l=c.createRadialGradient(x,y,0,x,y,r*2.4);l.addColorStop(0,'rgba(255,230,170,'+(.55*nf)+')');l.addColorStop(1,'rgba(255,230,170,0)');c.fillStyle=l;c.beginPath();c.arc(x,y,r*2.4,0,7);c.fill();c.globalCompositeOperation='source-over'}}
+
 /* map point → screen, exactly in step with the map, so callouts and pins glide with it */
 const toS=(x,y)=>{const z=zf();return[(x-cam.x)*z+cw/2,(y-cam.y)*z+ch/2]};
 const toW=(sx,sy)=>{const z=zf();return[(sx-cw/2)/z+cam.x,(sy-ch/2)/z+cam.y]};
@@ -54,7 +66,7 @@ function frame(rdt){
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
- drawPageant(now,1);lumDraw(now);fmDraw(now); // the water pageant's lights, and Luminous on World Showcase Lagoon
+ drawPageant(now,1);lumDraw(now);fmDraw(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint
  // castle projections during Happily Ever After
@@ -125,6 +137,12 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
  drawPageant(now,0);
  // resort launches
  if(h>8.5&&h<23)for(const b of LAUNCH){const R=BOATR[b.r];let[x,y,an]=R.p.at(Math.min(b.x,R.p.L-.01));if(!R.loop){const o=b.dir*5*Math.sin(Math.PI*b.x/R.p.L);x-=Math.sin(an)*o;y+=Math.cos(an)*o} /* boats going opposite ways keep to their own side */cx.save();cx.translate(x,y);cx.rotate(an+(b.dir<0&&!R.loop?Math.PI:0));if(b.tm<=0){cx.fillStyle='rgba(255,255,255,.5)';cx.beginPath();cx.moveTo(-6,0);cx.lineTo(-18,-3);cx.lineTo(-18,3);cx.fill()}
+   if(R.fs){ /* a Friendship boat: a long white catamaran-style hull, a teal canopy with a white roof stripe, windows down each side */
+    if(b.tm<=0){cx.fillStyle='rgba(255,255,255,.45)';cx.beginPath();cx.moveTo(-10,0);cx.lineTo(-30,-5);cx.lineTo(-30,5);cx.fill()}
+    cx.fillStyle='rgba(20,50,70,.22)';cx.beginPath();cx.roundRect(-10.5,-3.4,22,7.6,3);cx.fill();
+    cx.fillStyle='#fbfaf6';cx.beginPath();cx.moveTo(-11,-4);cx.lineTo(7,-4);cx.quadraticCurveTo(12.5,-3,13,0);cx.quadraticCurveTo(12.5,3,7,4);cx.lineTo(-11,4);cx.closePath();cx.fill();
+    cx.fillStyle=R.col;cx.beginPath();cx.roundRect(-9,-3.3,15,6.6,1.6);cx.fill();cx.fillStyle='#e8f4f6';cx.fillRect(-8,-.6,13,1.2);
+    cx.fillStyle='#24384a';for(let i=0;i<5;i++){cx.fillRect(-8+i*2.8,-3.9,1.8,.7);cx.fillRect(-8+i*2.8,3.2,1.8,.7)}cx.restore();continue}
    cx.fillStyle='#fbf8f0';cx.beginPath();cx.moveTo(-7,-2.6);cx.lineTo(5,-2.6);cx.lineTo(8,0);cx.lineTo(5,2.6);cx.lineTo(-7,2.6);cx.fill();cx.fillStyle=R.col;cx.fillRect(-5,-2.6,9,5.2);cx.fillStyle='#f4e7b8';cx.fillRect(-4,-1.6,7,3.2);cx.restore()}
  for(const f of FERRY){const[x,y,an]=ferXY(f);cx.save();cx.translate(x,y);cx.rotate(an+(f.dir<0?Math.PI:0));if(f.st==='run'){cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.moveTo(-16,0);cx.lineTo(-44,-6);cx.lineTo(-44,6);cx.fill()}
   cx.fillStyle='#fbf8f0';cx.beginPath();cx.moveTo(-18,-6);cx.lineTo(14,-6);cx.lineTo(20,0);cx.lineTo(14,6);cx.lineTo(-18,6);cx.fill();cx.fillStyle='#3a7bd5';cx.fillRect(-18,3,32,2);cx.fillStyle='#fff';cx.fillRect(-10,-4,18,7);cx.fillStyle='#c9463d';cx.fillRect(-3,-7,3,5);cx.restore()}
@@ -181,6 +199,9 @@ function drawOverlays(z,now){BUB=[];const c=cx;c.setTransform(dpr,0,0,dpr,0,0);c
   if(VIEW.layer!=='transport')for(const k in RESORTS){if(k==='mk')continue;const n=z<.9?RESORTS[k].n.replace('Disney’s ','').replace(/ Resort.*/,'').replace('Transportation and Ticket Center','Ticket Center'):RESORTS[k].n.replace('Disney’s ',''),[sx,sy]=toS(RESORTS[k].c[0],RESORTS[k].c[1]-22);const tw=c.measureText(n).width+18;
    c.fillStyle=sel&&sel.k==='r'&&sel.i===k?'rgba(26,143,214,.92)':'rgba(18,96,110,.8)';c.beginPath();c.roundRect(sx-tw/2,sy-11,tw,22,11);c.fill();c.fillStyle='#fff';c.fillText(n,sx,sy+.5)}
   if(OSM.hs&&P_.hsbooth){const[ex,ey]=toS(P_.hsbooth[0]+30,P_.hsbooth[1]-40);if(ex>-200&&ex<cw+200&&ey>-60&&ey<ch+60){c.font='800 15px "Nunito Sans",Figtree,system-ui,sans-serif';const L='HOLLYWOOD STUDIOS',tw=c.measureText(L).width+26;c.fillStyle='rgba(150,40,50,.82)';c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText(L,ex,ey+.5)}} /* the park's name over its entrance */
+  if(P_.ds){const pill=(L,x,y,col,f)=>{const[ex,ey]=toS(x,y);if(ex<-200||ex>cw+200||ey<-60||ey>ch+60)return;c.font=f;const tw=c.measureText(L).width+26;c.fillStyle=col;c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText(L,ex,ey+.5)};
+   pill('DISNEY SPRINGS',P_.ds[0],P_.ds[1]-60,'rgba(30,110,120,.85)','800 15px "Nunito Sans",Figtree,system-ui,sans-serif'); /* the shopping district, and the water park next door */
+   if(P_.typhoon&&z>.25)pill('Typhoon Lagoon',P_.typhoon[0],P_.typhoon[1]-40,'rgba(18,96,110,.8)','700 12px "Nunito Sans",Figtree,system-ui,sans-serif')}
   if(EPCOT){const[ex,ey]=toS(EPCOT.sse[0],EPCOT.sse[1]-75);if(ex>-200&&ex<cw+200&&ey>-60&&ey<ch+60){c.font='800 15px "Nunito Sans",Figtree,system-ui,sans-serif';const tw=c.measureText('EPCOT').width+26;c.fillStyle='rgba(60,40,110,.8)';c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText('EPCOT',ex,ey+.5)}
    c.font='700 12px "Nunito Sans",Figtree,system-ui,sans-serif';if(z>.9)for(const p of EPCOT.pav){const[sx,sy]=toS(p.x,p.y-30);if(sx<-80||sx>cw+80||sy<-20||sy>ch+20)continue;const tw=c.measureText(p.n).width+18;c.fillStyle='rgba(40,46,66,.66)';c.beginPath();c.roundRect(sx-tw/2,sy-11,tw,22,11);c.fill();c.fillStyle='#fff';c.fillText(p.n,sx,sy+.5)}}
   c.font='italic 700 '+Math.max(12,Math.min(22,z*26))+'px "Nunito Sans",Figtree,system-ui,sans-serif';c.strokeStyle='rgba(30,90,120,.45)';c.lineWidth=3;

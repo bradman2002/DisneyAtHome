@@ -14,7 +14,8 @@ Run from the site folder:  python3 tools/osm_extract.py"""
 import xml.etree.ElementTree as ET, math, json, collections, heapq
 
 import os
-SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['east.osm'] if os.path.exists('east.osm') and os.path.exists('hs.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
+SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['east.osm'] if os.path.exists('east.osm') and os.path.exists('hs.osm') else [])+(['springs.osm'] if os.path.exists('springs.osm') and os.path.exists('east.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
+  # springs.osm: Disney Springs, Typhoon Lagoon and the land north of them (bbox 28.3490,-81.5330,28.4240,-81.5090), merged the same way
   # east.osm: a strip east of EPCOT, its parking lots and roads (bbox 28.3490,-81.5450,28.4240,-81.5330), merged the same way
   # gap.osm: everything between (bbox 28.3645,-81.5905,28.4240,-81.5450)
 OUT='js/park-osm.js'
@@ -130,6 +131,7 @@ def inpark(x,y): return any(r[0]<=x<=r[2] and r[1]<=y<=r[3] for r in PARKS)
 if EPC and 'gap.osm' in SRCS:  # the land between the parks is filled in too: content everywhere on the map
     H=max(H,6730)  # a little further south than Epcot needs, so the Swan and the Swan Reserve fit whole
     if HSC: H=max(H,int(proj(-81.56,28.3490)[1]))  # down to the bottom of the Hollywood Studios data
+    if 'springs.osm' in SRCS: W=max(W,int(proj(-81.5095,28.4)[0]))  # out to the east end of Disney Springs
     if 'east.osm' in SRCS: W=max(W,int(proj(-81.5340,28.4)[0]))  # land east of EPCOT, so its edge isn't the end of the world
     FULL=True;REGIONS.append((0,0,W,H));print('filled in: whole map',W,'x',H)
 def inreg(x,y,m=0): return any(r[0]-m<=x<=r[2]+m and r[1]-m<=y<=r[3]+m for r in REGIONS)
@@ -501,6 +503,29 @@ BOATS={'fw':boat('magic kingdom - fort wilderness'),'wl':boat('wilderness lodge 
 def from_pt(p,q): return p[::-1] if p and math.dist(p[-1],q)<math.dist(p[0],q) else p
 BOATS['fw']=from_pt(BOATS['fw'],PLACES['monostation']);BOATS['wl']=from_pt(BOATS['wl'],PLACES['monostation'])
 if BOATS['fw']: PLACES['fw']=BOATS['fw'][-1];BOATS['blue']=from_pt(BOATS['blue'],PLACES['fw'])
+# the Friendship boats: the Crescent Lake line (EPCOT's International Gateway, the BoardWalk, the Yacht & Beach Club, the
+# Swan & Dolphin, and down the canal to Hollywood Studios), and the two across World Showcase Lagoon from Showcase Plaza.
+# The Crescent Lake legs are separate ways whose docks don't always share a node, so they're joined end to nearest end.
+def chain_near(lines,start,tol=60):
+    segs=[l for l in lines if len(l)>1]
+    if not segs: return []
+    i,rev=min(((i,r) for i in range(len(segs)) for r in (0,1)),key=lambda t:math.dist(segs[t[0]][-1 if t[1] else 0],start))
+    cur=segs.pop(i);cur=cur[::-1] if rev else cur
+    while segs:
+        i,rev=min(((i,r) for i in range(len(segs)) for r in (0,1)),key=lambda t:math.dist(segs[t[0]][-1 if t[1] else 0],cur[-1]))
+        s_=segs[i];s_=s_[::-1] if rev else s_
+        if math.dist(s_[0],cur[-1])>tol: break
+        segs.pop(i);cur=cur+s_[1:]
+    return cur
+def dock(name): return next((ND[i] for i,t in NT.items() if t.get('name')==name),None)
+if EPC and FULL:
+    ig=dock('EPCOT International Gateway Dock');hd=dock('Hollywood Studios Dock')
+    if ig: PLACES['igdock']=R1(ig)
+    if hd: PLACES['hsdock']=R1(hd)
+    legs=[pts(w['ids']) for w in WAYS.values() if w['t'].get('route')=='ferry' and w['t'].get('name') in('EPCOT-Boardwalk','Beach/Yacht Club-BoardWalk','Beach/Yacht Club-Swan/Dolphin','Swan/Dolphin-Hollywood Studios')]
+    if ig and legs: BOATS['fsc']=[R1(q) for q in simplify(chain_near(legs,ig),.5)]
+    for k,wid in (('fsw','45086801'),('fse','117143427')):  # each starts at its Showcase Plaza end, the lagoon's north end
+        if wid in WAYS: l_=pts(WAYS[wid]['ids']);BOATS[k]=[R1(q) for q in simplify(l_ if l_[0][1]<l_[-1][1] else l_[::-1],.5)]
 for k,v in BOATS.items(): print('boat',k,len(v),v[0] if v else None,v[-1] if v else None)
 # ferries: start each path at its Magic Kingdom end
 def from_mk(p): return p[::-1] if p and math.dist(p[-1],PLACES['monostation'])<math.dist(p[0],PLACES['monostation']) else p
@@ -541,7 +566,18 @@ if FULL:
         if n_: PLACES[key]=R1(n_)
     print('crescent lake',{k:len(v) for k,v in CRES.items()},{k:PLACES.get(k) for k in('bydock','bwdock','sddock','storm')})
 out['crescent']=CRES
-data_extra={'crescent':out.get('crescent'),'regions':[[round(v) for v in r] for r in REGIONS],'nparks':len(PARKS),'epcot':out.get('epcot'),'hs':out.get('hs'),'falcon':out.get('falcon'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
+# Disney Springs: its outline (the shopping district's multipolygon), the Aerophile balloon, and Typhoon Lagoon's middle, for labels and the balloon
+if 'springs.osm' in SRCS:
+    rl=next((x for x in RELS if x['t'].get('name')=='Disney Springs' and x['t'].get('landuse')=='retail'),None)
+    rg=rings_from([ref for ty,ref,role in rl['m'] if ty=='way' and role in('outer','')]) if rl else []
+    if rg: o=max(rg,key=len);out['springs']=[R1(q) for q in simplify(o,.8)];PLACES['ds']=R1(centroid(o[:-1] if o[0]==o[-1] else o))
+    for key,name in {'dsballoon':'Aerophile','dscoke':'Coca-Cola Store','dsmarket':'Marketplace','dswest':'West Side','dslanding':'The Landing'}.items():
+        n_=next((ND[i] for i,t in NT.items() if t.get('name')==name),None) or (lambda b:b and b[1])(find_named(name))
+        if n_: PLACES[key]=R1(n_)
+    tl=next((w for w in WAYS.values() if w['t'].get('name')=="Disney's Typhoon Lagoon" and w['t'].get('leisure')=='water_park'),None)
+    if tl: PLACES['typhoon']=R1(centroid(pts(tl['ids'])[:-1]))
+    print('disney springs',len(out.get('springs',[])),{k:PLACES.get(k) for k in('ds','dsballoon','dscoke','dsmarket','dswest','typhoon')})
+data_extra={'crescent':out.get('crescent'),'springs':out.get('springs'),'regions':[[round(v) for v in r] for r in REGIONS],'nparks':len(PARKS),'epcot':out.get('epcot'),'hs':out.get('hs'),'falcon':out.get('falcon'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
  'keys':{'epgate':epgate,'hsgate':hsgate,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
 # compact JS
 data={'W':W,'H':H,'S':S,'areas':out['areas'],'buildings':out['buildings'],'lines':out['lines'],'paths':out['paths'],'trees':out['trees'],'lamps':out['lamps'],'routes':out['routes'],'monoLines':out['monoLines'],'nodes':NODES,'edges':EDGES,**data_extra}

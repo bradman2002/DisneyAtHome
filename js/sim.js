@@ -135,8 +135,13 @@ const MSPEED=14,monoXY=(m,off)=>{const l=MLINE[m.l].p;return l.at((((m.x+(off||0
    Floridian and the Polynesian; the boats from Magic Kingdom to Fort Wilderness and to Wilderness Lodge; and the launch
    that circles Fort Wilderness, the Contemporary and Wilderness Lodge on Bay Lake.
    A route is {p: path, loop, st: distances of its stops, col, n: name}. */
-const BOATR=[];{const B=OSM.boats||{},add=(pts,loop,stops,col,n)=>{if(!pts||pts.length<4)return;const p=mkPath(pts),st=[...new Set([0,...stops.filter(Boolean).map(q=>Math.round(p.proj(...q))),loop?0:Math.floor(p.L)])].sort((a,b)=>a-b);BOATR.push({p,loop,st,col,n})};
- add(OSM.launchPath,true,[P_.gf,P_.poly],'#d9a520','Gold flag launch');add(B.fw,false,[],'#2f7d5a','Fort Wilderness boat');add(B.wl,false,[],'#b3262e','Wilderness Lodge boat');add(B.blue,true,[P_.fw,P_.wldock],'#2f6fd6','Blue flag launch')}
+const BOATR=[];{const B=OSM.boats||{},add=(pts,loop,stops,col,n,fs)=>{if(!pts||pts.length<4)return;const p=mkPath(pts),st=[...new Set([0,...stops.filter(Boolean).map(q=>Math.round(p.proj(...q))),loop?0:Math.floor(p.L)])].sort((a,b)=>a-b);BOATR.push({p,loop,st,col,n,fs})};
+ add(OSM.launchPath,true,[P_.gf,P_.poly],'#d9a520','Gold flag launch');add(B.fw,false,[],'#2f7d5a','Fort Wilderness boat');add(B.wl,false,[],'#b3262e','Wilderness Lodge boat');add(B.blue,true,[P_.fw,P_.wldock],'#2f6fd6','Blue flag launch');
+ /* the Friendship boats (bigger, drawn their own way): EPCOT's International Gateway to Hollywood Studios by way of the BoardWalk, the
+    Yacht & Beach Club and the Swan & Dolphin; and two loops across World Showcase Lagoon, Showcase Plaza to Germany and to Morocco */
+ add(B.fsc,false,[P_.bwdock,P_.bydock,P_.sddock],'#1d8fa8','Friendship boat · EPCOT – BoardWalk – Yacht & Beach Club – Swan & Dolphin – Hollywood Studios',true);
+ for(const k of['fsw','fse'])if(B[k]){const a=B[k][0],far=B[k].reduce((m,q)=>Math.hypot(q[0]-a[0],q[1]-a[1])>Math.hypot(m[0]-a[0],m[1]-a[1])?q:m,a);
+  add(B[k],true,[far],'#1d8fa8','Friendship boat · Showcase Plaza – '+(Math.max(a[0],far[0])>4200?'Germany':'Morocco'),true)}}
 const GATEXY=N[GATE],EPGATE=OSM.keys.epgate??null,EPGATEXY=EPGATE!==null?N[EPGATE]:null, /* EPCOT's main entrance */
  HSGATE=OSM.keys.hsgate??null,HSGATEXY=HSGATE!==null?N[HSGATE]:null,PGATE=[GATE,EPGATE,HSGATE],PGATEXY=[GATEXY,EPGATEXY,HSGATEXY]; /* Hollywood Studios' entrance; each park's gate by park number */
 /* Where guests may stand: every paved place in the map data (plazas, walkways and queue paths), minus building

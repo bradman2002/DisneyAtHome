@@ -125,6 +125,10 @@ from 7 AM to 10 PM, about 120 feet high, as the real one does.
 ## EPCOT
 
 Hollywood Studios is on the map too, south-west of EPCOT past the Swan and Dolphin, with the land around it (Caribbean
+
+Disney Springs is on the map as well, east of EPCOT past the land between them, with its lake, its shops in their mix of colours, the tethered balloon going up and down, and Typhoon Lagoon next door. It's scenery: guests in the simulation stay in the three parks.
+
+The Friendship boats sail their real routes: from EPCOT's International Gateway past the BoardWalk, the Yacht & Beach Club and the Swan & Dolphin and down the canal to Hollywood Studios, and across World Showcase Lagoon from Showcase Plaza to Germany and to Morocco, pausing at each dock (shown only; no guests ride them). The map data comes from `springs.osm` (and `east.osm` for the land in between), downloaded from OpenStreetMap like the others.
 Beach, Pop Century and Art of Animation): its seven areas, its rides and stage shows with live wait times, its own guests and
 hours, and its landmarks (the Hollywood Tower Hotel, the Chinese Theatre, Rock 'n' Roller Coaster's guitar, Galaxy's Edge's
 spires and the Millennium Falcon). TV mode visits it.

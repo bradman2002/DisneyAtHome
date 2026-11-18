@@ -261,6 +261,9 @@ const CRES=(()=>{const C=OSM.crescent;if(!C||!C.lake)return null;const R=[['yc',
  if(!res.length)return null;let box=[1e9,1e9,-1e9,-1e9];for(const r of res){box=[Math.min(box[0],r.bb[0]),Math.min(box[1],r.bb[1]),Math.max(box[2],r.bb[2]),Math.max(box[3],r.bb[3])]}
  return{res,box,bw:C.bw,lake:C.lake,storm:C.storm,luna:C.luna}})();
 /* which of those resorts a building belongs to: the one whose footprint it is in, or the nearest one close by */
+/* Disney Springs: inside its outline the shops get the district's mix of brick, cream, mustard and painted clapboard (garages stay grey) */
+const DSBB=OSM.springs?bbox(OSM.springs):null;
+function dsOf(x,y,k){return DSBB&&k!=='parking'&&x>=DSBB[0]&&y>=DSBB[1]&&x<=DSBB[2]&&y<=DSBB[3]&&ptIn(x,y,OSM.springs)?'ds':null}
 function cresOf(x,y){if(!CRES||x<CRES.box[0]-60||y<CRES.box[1]-60||x>CRES.box[2]+60||y>CRES.box[3]+60)return null;
  for(const r of CRES.res)if(x>=r.bb[0]&&x<=r.bb[2]&&y>=r.bb[1]&&y<=r.bb[3]&&ptIn(x,y,r.q.p))return r.k;
  let b=null,d0=110;for(const r of CRES.res){const d=Math.hypot(r.c[0]-x,r.c[1]-y);if(d<d0){d0=d;b=r.k}}return b}
@@ -268,6 +271,7 @@ Object.assign(LANDSTYLE,{
  yc:[['#a9b4bf','#a0acb8','#b3bdc7'],['#5c6671','#66707b','#545e69']],
  bc:[['#97cfc1','#8cc8ba','#a3d6c9'],['#e4e8ea','#d6dde2']],
  bcv:[['#bcdfe4','#f1e4b4','#c7e3cf','#f0d2c2'],['#d6dde2','#c3ccd3']],
+ ds:[['#b5523b','#a8462f','#efe2c4','#e2b44c','#7fb3b0','#f4efe4','#c98a5a','#6f8fb5'],['#5a5f68','#7b4b3a','#4f6f78','#8a6a4a','#6a7a5a']],
  bwi:[['#f0e4c6','#e8d4a6','#efe9da','#c96b52'],['#6f9a72','#5f8b66','#7aa37c']],
  bwv:[['#c75d4b','#e9c47c','#a3bfcc','#efc6a4','#ece4cf','#8fb59d'],['#6f9a72','#b45a4c','#5f8b66']],
  dol:[['#f09d84','#ea8e74'],['#f2b3a0','#eaa792']],
@@ -589,7 +593,7 @@ function paintMap(rx,ry,rw,rh,mss){
  const{b:tronB,cv:tronCv}=tronParts();
  const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle'),towerB=OSM.buildings.find(q=>q.n==='The Twilight Zone Tower of Terror');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbOf(q.p);if(!cull)b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);if(!vis(bb))continue;
-  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_))||ep_||landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
+  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
   if(q.n==='Disney’s Contemporary Resort'||q.n==="Disney's Contemporary Resort"){late.push(()=>aframe(c,e,bb,hh));continue} // painted after the monorail beams, which run behind and through it

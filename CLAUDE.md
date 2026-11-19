@@ -249,3 +249,5 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   placeholder wait (`a.ph`=15, sim.js; liveText says so); PizzeRizzo and Mama Melrose's are venues. Art: `muppetDeco`, `muppetSign`
   (plain lettering, not the logo), `courtyardFountain`, brick for the building holding PizzeRizzo. Ride audio keys added in
   `RIDEAUD`: soarin, tot, rotr, railway, startours, indy, muppets (the owner's files, git-ignored).
+  Later the same day: spaceship, cosmic, testtrack, missionspace, remy, fiesta (EPCOT). Remy's osm name has a curly
+  apostrophe (’); RIDEAUD keys must match the osm name exactly.

@@ -97,7 +97,9 @@ Each land's background music plays as you look at it: put your copies at `audio/
 which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area-fan.mp3`, `area-tom.mp3`, `area-ep.mp3` (plays anywhere over EPCOT), and `area-hs.mp3` (the Hollywood Boulevard loop, plays anywhere over Hollywood Studios). Ride audio is `audio/ride-<name>.mp3`, heard when you zoom in on the ride: Hollywood Studios has
 `ride-tot.mp3` (Tower of Terror), `ride-rotr.mp3` (Rise of the Resistance), `ride-railway.mp3` (Mickey & Minnie's Runaway
 Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic Stunt Spectacular!) and `ride-muppets.mp3`
-(Muppet*Vision 3D); EPCOT has `ride-lwtl.mp3` (Living with the Land) and `ride-soarin.mp3` (Soarin').
+(Muppet*Vision 3D); EPCOT has `ride-lwtl.mp3` (Living with the Land), `ride-soarin.mp3` (Soarin'),
+`ride-spaceship.mp3` (Spaceship Earth), `ride-cosmic.mp3` (Cosmic Rewind), `ride-testtrack.mp3` (Test Track), `ride-missionspace.mp3`
+(Mission: SPACE), `ride-remy.mp3` (Remy's Ratatouille Adventure) and `ride-fiesta.mp3` (Gran Fiesta Tour).
 Neighbouring lands blend at their edges, the music fades as you zoom out over the lakes, and while any show plays
 its own music (a parade, the fireworks, the water pageant, Luminous, the welcome show, the Flag Retreat or the Kiss
 Goodnight) the park's own sound fades right out: land music, ride audio, nature and the background crowd. It also

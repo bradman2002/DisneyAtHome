@@ -250,7 +250,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   (plain lettering, not the logo), `courtyardFountain`, brick for the building holding PizzeRizzo. Ride audio keys added in
   `RIDEAUD`: soarin, tot, rotr, railway, startours, indy, muppets (the owner's files, git-ignored).
   Later the same day: spaceship, cosmic, testtrack, missionspace, remy, fiesta (EPCOT). 19 Nov: seas (The Seas with Nemo &
-  Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track).
+  Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track). 20 Nov: tron (TRON Lightcycle / Run).
 - Animal Kingdom (owner, 19 Nov 2026: "Time for animal kingdom and all the land in between", "add the resorts as well"):
   `ak.osm` (git-ignored; api.openstreetmap.org/api/0.6/map in 34 pieces: a west strip 28.3330,-81.6125,28.4240,-81.5900 and a
   south strip 28.3330,-81.5900,28.3495,-81.5090) is read last. The map grew west, so the extractor shifts everything right by
@@ -269,7 +269,19 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   and flamingos only inside OSM water, land animals kept out of water/forest), `floatingMtns` over Pandora, `gushmore` at Blizzard Beach; labels in
   render.js. TV park 'ak' with six shots. Area music `audio/area-ak.mp3` (owner's Tree of Life loop, git-ignored), one loop over the whole
   park like EPCOT's and the Studios', on Animal Kingdom's own hours (checked before Magic Kingdom's hours in `areaTargets`). No ride
-  audio or nighttime show for it yet.
+  audio yet. Nighttime show: Tree of Life Awakenings (`js/treeoflife.js`, not an EV event, so no guest gathering): every
+  `tolPeriod()` (15 min) from `tolFirst()` (sunset+30 min, on the quarter hour) until ACLOSE; `tolClock`/`tolSync`/`tolDraw`
+  (wash, shimmering carvings, a spirit animal per 42 s section from `safAnimal` tinted on a small canvas, canopy fireflies),
+  geometry from `TOL_AT` set in `treeOfLife`; audio `audio/tree-of-life.mp3` (owner's, git-ignored; Load audio folder key
+  'treeoflife'); in `showOn`.
+- Test Track (20 Nov, from the owner's aerial photos): `ttBuilding` (dark round walls, white pie-panel roof), the outdoor
+  track `OSM.routes.testtrack` (OSM way 'Test Track' roller_coaster=track) on white stilts via `ttTrack` in short painter-order
+  pieces, `ttPad` (round pad, blue disc) inside the loop; `TTSKIP` drops the map's unnamed duplicate building and the 'roof'
+  over the whole track.
+- Space Mountain: `spaceDome` is one cone rising from its round base; the PeopleMover beam is clipped out of its footprint
+  (it runs indoors) and its cars hidden there (`SMB` in render.js).
+- Friendship boats pass under bridges: `fsBridges` in render.js finds every walkway/road/bridge deck crossing their routes
+  (away from docks) once and repaints those pieces over the boats.
 - Fantasmic's Sorcerer Mickey is his own drawing, `fmSorcerer` (fantasmic.js): red robe, raised white gloves, blue hat with moon
   and stars, sparkles from his hands; not the parade figure from characters.js.
 - The project is named DisneyAtHome (renamed 19 Nov 2026): page title, app name and short name, readme. The launcher file

@@ -624,6 +624,11 @@ if AKC:  # Animal Kingdom: its outline and middle, the Tree of Life and Expediti
         sp_=[ND[i] for i in route];print('safari road',len(sp_),'points, length',round(sum(math.dist(a,b) for a,b in zip(sp_,sp_[1:]))),'gap back to start',round(math.dist(sp_[0],sp_[-1])))
         if len(sp_)>10: out['routes']['safari']=[R1(q) for q in simplify(sp_,.4)]
     print('animal kingdom places',{k:PLACES.get(k) for k in('ak','tol','everest','akl','kidani','csr','blizzard')})
+# Test Track: its elevated outdoor track (the slot-car roller_coaster way), drawn on its stilts with the loop's pad in map-art.js
+tt_=[w for w in WAYS.values() if w['t'].get('name')=='Test Track' and w['t'].get('roller_coaster')=='track']
+if tt_:
+    tp_=pts(max(tt_,key=lambda w:len(w['ids']))['ids']);out['routes']['testtrack']=[R1(q) for q in simplify(tp_,.3)]
+    print('test track outdoor track',len(out['routes']['testtrack']),'pts, length',round(sum(math.dist(a,b) for a,b in zip(tp_,tp_[1:]))))
 CRES={}
 if FULL:
     for key,name in {'bw':"Disney's BoardWalk",'lake':'Crescent Lake','storm':'Stormalong Bay','luna':'Luna Park Pool'}.items():

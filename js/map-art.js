@@ -220,10 +220,37 @@ function tronCanopy(c,e,p,bb){const top=p.map(([x,y])=>[x,y-TRON_LIFT]),path=(ct
   e.strokeStyle='rgba(255,140,50,.95)';e.lineWidth=1;e.beginPath();const n=top.length;for(let i=Math.floor(n*.55);i<Math.floor(n*.8);i++)i===Math.floor(n*.55)?e.moveTo(...top[i]):e.lineTo(...top[i]);e.stroke()}}
 function tronBuilding(c,e,q,hh){extrude(c,e,q.p,hh,'#323a48','#252c38',{noWin:true,noGlow:true,ridge:false});if(e){const top=q.p.map(([x,y])=>[x,y-hh]);e.strokeStyle='rgba(70,200,255,.85)';e.lineWidth=.8;e.beginPath();top.forEach(([x,y],i)=>i?e.lineTo(x,y):e.moveTo(x,y));e.closePath();e.stroke()}}
 function tent(c,x,y,r,h,col){c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.ellipse(x+r*.4,y+1,r*1.1,r*.45,0,0,7);c.fill();const n=10;for(let i=0;i<n;i++)poly4(c,[[x,y-h],[x-r+i*2*r/n,y],[x-r+(i+1)*2*r/n,y]],i%2?col:'#fff');c.fillStyle='#f0c040';c.fillRect(x-.3,y-h-3,.6,3)}
-function spaceDome(c,e,x,y,R){c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.ellipse(x+R*.3,y+R*.25,R*1.05,R*.55,0,0,7);c.fill();c.fillStyle='#d9dee6';c.beginPath();c.ellipse(x,y+R*.15,R,R*.5,0,0,7);c.fill();
- const g=c.createLinearGradient(x-R,0,x+R,0);g.addColorStop(0,'#ffffff');g.addColorStop(.6,'#e8edf3');g.addColorStop(1,'#b3bdcb');c.fillStyle=g;c.beginPath();c.moveTo(x-R,y+R*.15);c.quadraticCurveTo(x-R*.45,y-R*.85,x,y-R*1.05);c.quadraticCurveTo(x+R*.45,y-R*.85,x+R,y+R*.15);c.closePath();c.fill();
- c.strokeStyle='#9aa5b4';c.lineWidth=.5;for(let i=-6;i<=6;i++){c.beginPath();c.moveTo(x+i*R/6.5,y+R*.15+Math.abs(i)*.3);c.quadraticCurveTo(x+i*R/16,y-R*.6,x,y-R*1.05);c.stroke()}
- e.fillStyle='rgba(140,200,255,.8)';for(let i=-5;i<=5;i+=2)e.fillRect(x+i*R/6-.4,y+R*.1,.8,2)}
+/* Space Mountain: one white cone rising straight from its round base (no separate disc under it), lit from the left,
+   with ribs running from the top down to the rim, a pale band round the foot and its little blue lights along the bottom */
+function spaceDome(c,e,x,y,R){const Hc=R*1.05,ry=R*.48,A=(t)=>[x+R*Math.cos(t),y+ry*Math.sin(t)];
+ c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.ellipse(x+R*.38,y+ry*.3,R*1.1,ry*1.08,0,0,7);c.fill();
+ const g=c.createLinearGradient(x-R,0,x+R,0);g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#eef1f5');g.addColorStop(1,'#aeb8c6');
+ c.fillStyle=g;c.beginPath();c.ellipse(x,y,R,ry,0,0,Math.PI);c.quadraticCurveTo(x-R*.4,y-Hc*.5,x,y-Hc);c.quadraticCurveTo(x+R*.4,y-Hc*.5,x+R,y);c.closePath();c.fill();
+ c.strokeStyle='rgba(150,160,175,.75)';c.lineWidth=Math.max(.3,R*.013);for(let k=1;k<18;k++){const[px,py]=A(k/18*Math.PI);c.beginPath();c.moveTo(px,py);c.quadraticCurveTo(x+(px-x)*.42,y-Hc*.5+(py-y)*.45,x,y-Hc);c.stroke()}
+ c.strokeStyle='#cfd5de';c.lineWidth=R*.07;c.beginPath();c.ellipse(x,y-R*.02,R*.985,ry*.97,0,.05,Math.PI-.05);c.stroke();
+ c.fillStyle='#e9edf2';c.beginPath();c.arc(x,y-Hc,R*.035,0,7);c.fill();
+ e.fillStyle='rgba(140,200,255,.8)';for(let k=2;k<18;k+=2){const[px,py]=A(k/18*Math.PI);e.fillRect(px-.4,py-1.6,.8,1.6)}}
+/* Test Track as it looks now: a round show building with dark walls and a white roof in pie-slice panels, and its outdoor
+   track (OSM.routes.testtrack) on white stilts - round the building's rim and out to the loop over a round pad with a blue
+   disc painted on it. The track is painted in short pieces so the building hides the part behind it */
+function ttBuilding(c,e,q,bb,S2){const hh=13*S2,x=(bb[0]+bb[2])/2,y=(bb[1]+bb[3])/2;extrude(c,e,q.p,hh,'#2e3238','#e6e9ec',{noWin:true,ridge:false});
+ const n=q.p.length;for(let i=0;i<n;i+=Math.max(1,Math.round(n/14))){const[a,b]=q.p[i],[a2,b2]=q.p[(i+Math.max(1,Math.round(n/28)))%n];c.fillStyle=(i/Math.max(1,Math.round(n/14)))%2?'rgba(120,128,140,.16)':'rgba(255,255,255,.18)';
+  c.beginPath();c.moveTo(x,y-hh);c.lineTo(a,b-hh);c.lineTo(a2,b2-hh);c.closePath();c.fill()}
+ c.strokeStyle='rgba(110,118,128,.55)';c.lineWidth=.35;for(let i=0;i<n;i+=Math.max(1,Math.round(n/14))){c.beginPath();c.moveTo(x,y-hh);c.lineTo(q.p[i][0],q.p[i][1]-hh);c.stroke()}
+ c.fillStyle='#9aa2ac';for(let i=0;i<12;i++){const a=i*2.4,r=(bb[2]-bb[0])*.18*(1+(i%3)*.5);c.fillRect(x+Math.cos(a)*r-.8,y-hh+Math.sin(a)*r-.6,1.6,1.2)}
+ e.fillStyle='rgba(80,170,255,.55)';for(let i=0;i<n;i+=2){const[a,b]=q.p[i];if(b>y)e.fillRect(a-.4,b-hh*.55,.8,.8)}}
+const TT_E=()=>4.5*OSM.S*.78;
+const TTSKIP=(()=>{const t=OSM.routes&&OSM.routes.testtrack,q=OSM.buildings.find(q=>q.n==='Test Track');if(!t||!q)return()=>false;const B=[bbox(t),bbox(q.p)];
+ return bb=>B.some(b=>Math.abs(bb[0]-b[0])<7&&Math.abs(bb[1]-b[1])<7&&Math.abs(bb[2]-b[2])<7&&Math.abs(bb[3]-b[3])<7)})();
+function ttPad(c){const t=OSM.routes&&OSM.routes.testtrack;if(!t)return;const lp=t.filter(p=>p[0]>t[0][0]+90);if(lp.length<6)return;const b=bbox(lp),x=(b[0]+b[2])/2,y=(b[1]+b[3])/2,r=Math.min(b[2]-b[0],b[3]-b[1])/2;
+ c.fillStyle='#8e9196';c.beginPath();c.arc(x,y,r*.95,0,7);c.fill();c.fillStyle='#2f6fc0';c.beginPath();c.arc(x,y,r*.48,0,7);c.fill();
+ c.strokeStyle='rgba(220,236,255,.85)';c.lineWidth=.9;for(const k of[.18,.3,.4]){c.beginPath();c.arc(x,y,r*k,-.4,4.4);c.stroke()}}
+function ttTrack(c,e,B,vis){const t=OSM.routes&&OSM.routes.testtrack;if(!t||!vis(bbox(t)))return;const E=TT_E();
+ for(let i=0;i<t.length-1;i+=4){const seg=t.slice(i,Math.min(t.length,i+5));let ym=-1e9;for(const p of seg)ym=Math.max(ym,p[1]);
+  B.push({y:ym,f:()=>{c.lineCap='round';c.lineJoin='round';c.strokeStyle='rgba(30,35,40,.22)';c.lineWidth=2.6;c.beginPath();seg.forEach(([x,y],j)=>j?c.lineTo(x+E*.5,y):c.moveTo(x+E*.5,y));c.stroke();
+   c.strokeStyle='#e9ecef';c.lineWidth=.55;for(const[x,y]of seg.slice(0,-1)){c.beginPath();c.moveTo(x,y);c.lineTo(x,y-E);c.stroke()}
+   for(const[col,w]of[['#7d858f',2.6],['#cfd4da',1.9],['#3d434b',.35]]){c.strokeStyle=col;c.lineWidth=w;c.beginPath();seg.forEach(([x,y],j)=>j?c.lineTo(x,y-E):c.moveTo(x,y-E));c.stroke()}
+   e.fillStyle='rgba(90,180,255,.75)';for(const[x,y]of seg)e.fillRect(x-.35,y-E-.35,.7,.7)}})}}
 /* ---------- EPCOT ----------
    Its own look: Future World's white and silver show buildings, each World Showcase pavilion in its country's colours
    (found from the pavilion buildings' names in the map data), and Spaceship Earth as a faceted silver sphere. */
@@ -534,7 +561,8 @@ function akResOf(x,y){const P=OSM.places;if(!P.ak)return null;
  for(const[k,key,r]of[['akl','akl',190],['akl','kidani',170],['csr','csr',300],['asr','asports',230],['asr','amusic',230],['asr','amovies',230]]){const q=P[key];if(q&&Math.hypot(q[0]-x,q[1]-y)<r)return k}return null}
 /* the Tree of Life: a broad trunk carved with animals (suggested by lines of lighter wood) under a wide, layered canopy;
    at night its carvings glow softly as in the evening Awakenings */
-function treeOfLife(c,e,x,y,R,S2){const H=44*S2,top=y-H,r=seeded(1998);
+let TOL_AT=null;
+function treeOfLife(c,e,x,y,R,S2){const H=44*S2,top=y-H,r=seeded(1998);TOL_AT={x,y,R,H};
  c.fillStyle='rgba(30,50,30,.28)';c.beginPath();c.ellipse(x+R*.5,y+R*.15,R*1.15,R*.5,0,0,7);c.fill();
  /* roots and trunk */
  const tw=R*.32;c.fillStyle='#8a6a4a';c.beginPath();c.moveTo(x-tw*2.2,y);c.quadraticCurveTo(x-tw*.9,y-H*.15,x-tw,y-H*.55);c.lineTo(x-tw*.6,top+H*.12);c.lineTo(x+tw*.6,top+H*.12);c.lineTo(x+tw,y-H*.55);c.quadraticCurveTo(x+tw*.9,y-H*.15,x+tw*2.2,y);c.closePath();c.fill();
@@ -733,6 +761,7 @@ function paintMap(rx,ry,rw,rh,mss){
  {const T_=mkPath(OSM.routes.tram);c.strokeStyle='#8b8e94';c.lineWidth=.35;for(const off of[-.7,.7]){c.beginPath();for(let d=0;d<T_.L;d+=2){const[x,y,a]=T_.at(d);d?c.lineTo(x-Math.sin(a)*off,y+Math.cos(a)*off):c.moveTo(x-Math.sin(a)*off,y+Math.cos(a)*off)}c.stroke()}}
  const race=OSM.lines.filter(l=>l.k==='race');
  if(OSM.routes.safari){const sp=OSM.routes.safari;if(vis(bbOf(sp))){for(const[col,w]of[['rgba(90,70,40,.25)',5.5],['#c9ae7c',4],['rgba(150,120,80,.5)',.5]]){c.strokeStyle=col;c.lineWidth=w;c.lineJoin='round';c.lineCap='round';pathOf(c,sp);c.stroke()}}} /* Kilimanjaro Safaris' dirt road through the savannas (its trucks are drawn live in render.js) */
+ if(OSM.routes.testtrack)ttPad(c); /* the pad inside Test Track's loop */
  for(const[col,w]of[['rgba(30,40,30,.25)',7],['#5d636d',5],['#ffffff',.4]]){c.strokeStyle=col;c.lineWidth=w;if(w<1)c.setLineDash([2,2]);for(const l of race)for(const p of lp(l)){pathOf(c,p);c.stroke()}c.setLineDash([])}
  for(const l of race)for(const p of lp(l)){b.lineWidth=9;pathOf(b,p);b.stroke()}
  /* buildings, rockwork and trees, painted north-to-south so nearer things overlap farther ones */
@@ -747,6 +776,8 @@ function paintMap(rx,ry,rw,rh,mss){
   if(q.k==='tent'){B.push({y:bb[3],f:()=>tent(c,cx_,bb[3],(bb[2]-bb[0])/2,hh+4,['#d65a8a','#5a8ad6','#e2a321','#7b4fc0'][hs%4])});continue}
   if(land.startsWith('ep')&&q.n==='The Land'){const qq=q;B.push({y:bb[3],f:()=>landPavilion(c,e,qq,bb,S2)});continue}
   if(land.startsWith('ep')&&q.k==='greenhouse'&&bb[0]>3650+(OSM.dx||0)&&bb[2]<3900+(OSM.dx||0)&&bb[1]>5450&&bb[3]<5700)continue; /* The Land's round greenhouse: part of its painting */
+  if(!q.n&&TTSKIP(bb))continue; /* the map's unnamed copy of Test Track's building and the 'roof' it draws over the whole outdoor track */
+  if(land.startsWith('ep')&&q.n==='Test Track'){const qq=q;B.push({y:bb[3],f:()=>ttBuilding(c,e,qq,bb,S2)});continue}
   if(land.startsWith('ep')&&q.n==='Spaceship Earth'){B.push({y:bb[3],f:()=>spaceshipEarth(c,e,cx_,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2,S2)});continue}
   if(land==='ep_mexico'&&q.n==='Mexico Pavilion'){B.push({y:bb[3],f:()=>mexicoPyramid(c,e,q.p,S2)});continue}
   if(q.n==='Walt Disney World Dolphin Resort'){const qq=q;B.push({y:bb[3],f:()=>dolphinResort(c,e,qq,S2)});continue}
@@ -796,6 +827,7 @@ function paintMap(rx,ry,rw,rh,mss){
   else{B.push({y:bb[3],f:()=>castleArt(c,e,cx_,oy,k,.9)});
    if(!(MAP.castleMSS>=mss)){const cw_=74*k,ch_=80*k,cc=document.createElement('canvas');cc.width=Math.ceil(cw_*mss);cc.height=Math.ceil(ch_*mss);const ccx=cc.getContext('2d');ccx.scale(mss,mss);castleArt(ccx,null,cw_/2,ch_-4,k,.9);
     MAP.castle=cc;MAP.castleBox=[cx_-cw_/2,oy-ch_+4,cw_,ch_];MAP.castleMSS=mss}}}
+ ttTrack(c,e,B,vis); /* Test Track's outdoor track on its stilts */
  // Space Mountain on its real footprint
  {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p),rx=(bb[2]-bb[0])/2;B.push({y:bb[3],f:()=>spaceDome(c,e,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,rx)})}}
  // details OpenStreetMap doesn't model: flume mountain, mine mountain, treehouse, TRON canopy
@@ -822,7 +854,9 @@ function paintMap(rx,ry,rw,rh,mss){
  B.sort((p,q)=>p.y-q.y).forEach(o=>o.f());
  /* elevated tracks over everything: PeopleMover and monorail beams */
  const beam=(p,w,col)=>{c.strokeStyle='rgba(30,40,40,.18)';c.lineWidth=w+2;c.save();c.translate(2,2);pathOf(c,p);c.stroke();c.restore();c.strokeStyle=tone(col,-.25);c.lineWidth=w+.8;pathOf(c,p);c.stroke();c.strokeStyle=col;c.lineWidth=w;pathOf(c,p);c.stroke()};
- beam(OSM.routes.pm,2.4,'#dfe5ec');for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');late.forEach(f=>f());
+ {const q=OSM.buildings.find(q=>q.n==='Space Mountain');c.save();if(q){const bb=bbox(q.p),x=(bb[0]+bb[2])/2,y=(bb[1]+bb[3])/2,k=1.08;c.beginPath();c.rect(-1e5,-1e5,3e5,3e5);q.p.forEach(([u,v],i)=>c[i?'lineTo':'moveTo'](x+(u-x)*k,y+(v-y)*k));c.closePath();c.clip('evenodd')}beam(OSM.routes.pm,2.4,'#dfe5ec');c.restore()} /* inside Space Mountain the PeopleMover is indoors */
+ {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p);if(vis(bb)){MAP.nulE=MAP.nulE||document.createElement('canvas').getContext('2d');spaceDome(c,MAP.nulE,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2)}}} /* the PeopleMover runs into Space Mountain, so the dome is painted again over its beam */
+for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');late.forEach(f=>f());
  /* real street lamps */
  MAP.lamps=OSM.lamps;for(const[x,y]of MAP.lamps){c.fillStyle='rgba(70,80,75,.55)';c.fillRect(x-.18,y-2.6,.36,2.6);c.fillStyle='#fffaf0';c.beginPath();c.arc(x,y-2.9,.5,0,7);c.fill()}
  return{base,glow}}

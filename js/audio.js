@@ -52,7 +52,7 @@ function lvl(k,v,tc){const l=AU.L[k];if(!isFinite(v))v=0;if(l)l.g.gain.setTarget
 /* Is a show's music playing where you can hear it? Then the park's own sound (land music, ride audio, nature and the
    general crowd) fades right out and leaves the show alone. The water pageant and Luminous only count when the map is
    near them. */
-function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||(typeof fmPlaying==='function'&&fmPlaying()&&fmNear()>.1)||
+function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||(typeof fmPlaying==='function'&&fmPlaying()&&fmNear()>.1)||(typeof tolPlaying==='function'&&tolPlaying()&&tolNear()>.1)||
  (typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying())||(typeof kissPlaying==='function'&&kissPlaying())}
 function auTick(){if(!AU.ready||FF)return;
  // a large jump in simulated time means a seek or a fast speed: resync state without firing stale one-shots
@@ -119,7 +119,7 @@ setInterval(areaTick,120);
    "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
    name: happily-ever-after.mp3, minnies-christmas-fireworks.mp3, let-the-magic-begin.mp3, kiss-goodnight.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
-   electrical-water-pageant.mp3, luminous.mp3, fantasmic.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
+   electrical-water-pageant.mp3, luminous.mp3, fantasmic.mp3, tree-of-life.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 function pickAudioFolder(){const i=document.createElement('input');i.type='file';i.multiple=true;i.webkitdirectory=true;i.onchange=()=>loadAudioFiles([...i.files]);i.click()}
@@ -132,6 +132,7 @@ async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.te
   else if(nm==='let-the-magic-begin.mp3'){key='welcome';use=()=>{WELC.a.src='picked';WELC.a.audio.src=URL.createObjectURL(f);WELC.a.audio.load()}}
   else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
   else if(nm==='fantasmic.mp3'){key='fantasmic';use=()=>{FM.a.src='picked';FM.a.audio.src=URL.createObjectURL(f);FM.a.audio.load()}}
+  else if(nm==='tree-of-life.mp3'){key='treeoflife';use=()=>{TOL.a.src='picked';TOL.a.audio.src=URL.createObjectURL(f);TOL.a.audio.load()}}
   else if(nm==='luminous.mp3'){key='luminous';use=()=>{LUM.a.src='picked';LUM.a.audio.src=URL.createObjectURL(f);LUM.a.audio.load()}}
   else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.id;use=()=>parUse(P,f,f.name)}
    else if(/^ride-(\w+)\.mp3$/.test(nm)){const k=/^ride-(\w+)\.mp3$/.exec(nm)[1];key='ride-'+k;use=()=>{RA.bad[k]=0;RA.url[k]=URL.createObjectURL(f)}}
@@ -159,7 +160,7 @@ const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirat
  'The Twilight Zone Tower of Terror':'tot','Star Wars: Rise of the Resistance':'rotr',"Mickey and Minnie's Runaway Railway":'railway','Star Tours: The Adventures Continue':'startours',
  'Indiana Jones Epic Stunt Spectacular!':'indy',"Jim Henson's Muppet*Vision 3-D":'muppets',
  'Spaceship Earth':'spaceship','Guardians Of The Galaxy: Cosmic Rewind':'cosmic','Test Track':'testtrack','Mission: SPACE':'missionspace','Remy’s Ratatouille Adventure':'remy',
- 'Gran Fiesta Tour Starring The Three Caballeros':'fiesta','The Seas with Nemo & Friends':'seas','Rock ’n’ Roller Coaster Starring The Muppets':'rnrc'};
+ 'Gran Fiesta Tour Starring The Three Caballeros':'fiesta','The Seas with Nemo & Friends':'seas','Rock ’n’ Roller Coaster Starring The Muppets':'rnrc','TRON Lightcycle / Run':'tron'};
 const RA={bad:{},heard:{}};let rideLevel=0;
 const rideAt=a=>a&&RIDEAUD[a.osm];
 async function rideSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('ride-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}

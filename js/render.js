@@ -57,7 +57,7 @@ const SSE_GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=3
 function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
- paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();
+ paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();tolSync();
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k; /* TV mode glides between shots */
   if(Math.abs(cam.tm-cam.m)<cam.m*.0015)cam.m=cam.tm;if(Math.abs(cam.tx-cam.x)<.04)cam.x=cam.tx;if(Math.abs(cam.ty-cam.y)<.04)cam.y=cam.ty} /* then settle exactly, rather than creeping closer by ever-smaller amounts (which kept the picture shimmering) */
@@ -79,7 +79,7 @@ function frame(rdt){
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
- drawPageant(now,1);lumDraw(now);fmDraw(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
+ drawPageant(now,1);lumDraw(now);fmDraw(now);tolDraw(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint
  // castle projections during Happily Ever After
@@ -103,6 +103,7 @@ const BAYLAKE=P_.disc?[P_.disc[0]-10,P_.disc[1]+190]:null; // label spot on open
 const TRONP=(()=>{const{cv}=tronParts();if(!cv)return null;
  const b=bbox(cv.p),pts=[];for(let X=b[0]+5;X<=b[2]-5;X+=4){const ys=[];const p=cv.p;for(let i=0;i<p.length;i++){const a=p[i],c2=p[(i+1)%p.length];if((a[0]-X)*(c2[0]-X)<=0&&a[0]!==c2[0])ys.push(a[1]+(c2[1]-a[1])*(X-a[0])/(c2[0]-a[0]))}if(ys.length>=2)pts.push([X,(Math.min(...ys)+Math.max(...ys))/2])}
  return pts.length>3?mkPath(pts):null})();
+const SMB=(()=>{const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(!q)return null;const b=bbox(q.p);return[(b[0]+b[2])/2,(b[1]+b[3])/2,(b[2]-b[0])/2,(b[3]-b[1])/2]})();
 const PMP=mkPath(OSM.routes.pm),RACEP=mkPath(OSM.routes.race),TRAMP=mkPath(OSM.routes.tram);
 // Jungle Cruise: boats follow the river, a little inside its outer bank
 const JCP=OSM.routes.jungle&&OSM.routes.jungle.length>3?mkPath(OSM.routes.jungle):(()=>{const a=OSM.areas.find(q=>q.k==='water'&&q.n==='Jungle Cruise');if(!a)return null;const[cx0,cy0]=polyC(a.o);return mkPath([...a.o,a.o[0]].map(([x,y])=>[x+(cx0-x)*.14,y+(cy0-y)*.14]))})();
@@ -172,13 +173,29 @@ function drawSafariAnimals(){if(!SAFAN.length)return;const z=zf(),hw=cw/2/z+30,h
   const tt=T/(30/a.sp)+a.ph,mv=a.k==='lion'||a.k==='cheetah'||a.k==='croc'||a.k==='hippo'?.4:2.2,x=a.x+Math.sin(tt)*mv,y=a.y+Math.sin(tt*.7)*mv*.4,
    f=Math.cos(tt)>=0?1:-1,g=Math.max(0,Math.sin(tt*2.3+a.ph))*(a.k==='giraffe'?4:2.2);
   c.save();c.translate(x,y);c.scale(sc*f,sc);if(a.k!=='hippo'&&a.k!=='croc'){c.fillStyle='rgba(30,30,20,.22)';c.beginPath();c.ellipse(0,0,2.6,.7,0,0,6.283);c.fill()}safAnimal(c,a.k,g);c.restore()}}
+/* the Friendship boats pass under the bridges: every walkway, road or bridge deck the boats' routes cross (away from their
+   docks) is worked out once and repainted over the boats, matching the map's own colours */
+let FSX=null;
+function fsBridges(){if(!FSX){FSX={p:[],a:[]};const RW={road1:8.5,road2:6.5,road3:3.8};
+  for(const R of BOATR.filter(R=>R.fs)){const smp=[];for(let d=0;d<R.p.L;d+=3)smp.push(R.p.at(d));const rb=bbox(smp.map(q=>[q[0],q[1]])),dock=(x,y)=>R.st.some(d=>{const q=R.p.at(Math.min(d,R.p.L-.01));return Math.hypot(q[0]-x,q[1]-y)<30});
+   const X=(a,b,c_,d_)=>{const r=[b[0]-a[0],b[1]-a[1]],s_=[d_[0]-c_[0],d_[1]-c_[1]],den=r[0]*s_[1]-r[1]*s_[0];if(!den)return null;const t=((c_[0]-a[0])*s_[1]-(c_[1]-a[1])*s_[0])/den,u=((c_[0]-a[0])*r[1]-(c_[1]-a[1])*r[0])/den;return t>=0&&t<=1&&u>=0&&u<=1?[a[0]+t*r[0],a[1]+t*r[1]]:null};
+   const test=(pl,w,col,edge)=>{for(let i=0;i<pl.length-1;i++){const a=pl[i],b=pl[i+1];if(Math.max(a[0],b[0])<rb[0]||Math.min(a[0],b[0])>rb[2]||Math.max(a[1],b[1])<rb[1]||Math.min(a[1],b[1])>rb[3])continue;
+     for(let j=0;j<smp.length-1;j++){const h=X(a,b,smp[j],smp[j+1]);if(!h||dock(h[0],h[1]))continue;const L=Math.hypot(b[0]-a[0],b[1]-a[1]),ux=(b[0]-a[0])/L,uy=(b[1]-a[1])/L,d0=Math.min(14,Math.hypot(h[0]-a[0],h[1]-a[1])),d1=Math.min(14,Math.hypot(b[0]-h[0],b[1]-h[1]));
+      FSX.p.push({a:[h[0]-ux*d0,h[1]-uy*d0],b:[h[0]+ux*d1,h[1]+uy*d1],w,col,edge});break}}};
+   for(const q of OSM.paths)if(!q.a)test(q.p,q.w,q.q?'#e3d6c8':'#ede1d6','#cdbcae');
+   for(const l of OSM.lines)if(RW[l.k])for(const pl of l.p)test(pl,RW[l.k],l.k==='road3'?'#c3c5cb':'#b3b7c0','rgba(90,96,104,.9)');
+   for(const a of OSM.areas)if(a.k==='bridge'){const b=bbox(a.o);if(smp.some(q=>q[0]>b[0]-3&&q[0]<b[2]+3&&q[1]>b[1]-3&&q[1]<b[3]+3&&!dock(q[0],q[1])))FSX.a.push(a)}}}
+ const z=zf(),hw=cw/2/z+30,hh=ch/2/z+30,c=cx,on=([x,y])=>Math.abs(x-cam.x)<hw&&Math.abs(y-cam.y)<hh;c.lineCap='butt';
+ for(const pass of[0,1])for(const q of FSX.p)if(on(q.a)){c.strokeStyle=pass?q.col:q.edge;c.lineWidth=q.w+(pass?0:1.2);c.beginPath();c.moveTo(...q.a);c.lineTo(...q.b);c.stroke()}
+ for(const a of FSX.a)if(on(a.o[0])){c.beginPath();a.o.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle='#dccbb4';c.fill();c.strokeStyle='#b9a68d';c.lineWidth=.6;c.stroke()}
+ c.lineCap='round'}
 function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600;drawSafariAnimals();drawSafari();
  // spinning rides
  for(const a of SPIN){const run=aStat(a)==='Operating'&&a.ri.length>0,ang=run?t*1.4:0;for(let i=0;i<8;i++){const q=ang+i/8*6.283,x=a.x+Math.cos(q)*12,y=a.y+Math.sin(q)*5.5-(run?4:0);
    cx.fillStyle=['#ff6b8a','#ffd34d','#4ecdc4','#7b6cff'][i%4];cx.beginPath();cx.ellipse(x,y,2.3,1.6,0,0,7);cx.fill()}
   cx.fillStyle='#f0c040';cx.fillRect(a.x-.6,a.y-12,1.2,12);for(let i=0;i<8;i++){cx.fillStyle=i%2?'#e84a6a':'#fff';cx.beginPath();cx.moveTo(a.x,a.y-15);cx.arc(a.x,a.y-12,7,Math.PI+i/8*Math.PI,Math.PI+(i+1)/8*Math.PI);cx.fill()}}
  // PeopleMover trains and Speedway cars on their real tracks
- for(let i=0;i<6;i++){const[x,y,an]=PMP.at(((t*9+i*PMP.L/6)%PMP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e8eef5';cx.fillRect(-3,-1.3,6,2.6);cx.fillStyle='#4f84b2';cx.fillRect(-3,-.3,6,.7);cx.restore()}
+ for(let i=0;i<6;i++){const[x,y,an]=PMP.at(((t*9+i*PMP.L/6)%PMP.L));if(SMB&&(x-SMB[0])**2/SMB[2]**2+(y-SMB[1])**2/SMB[3]**2<1.15)continue; /* indoors through Space Mountain */cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e8eef5';cx.fillRect(-3,-1.3,6,2.6);cx.fillStyle='#4f84b2';cx.fillRect(-3,-.3,6,.7);cx.restore()}
  if(open)for(let i=0;i<6;i++){const[x,y,an]=RACEP.at(((t*14+i*RACEP.L/6)%RACEP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle=['#e84a3c','#f2c14e','#4f84b2','#3fa060','#ff8fc8','#fff'][i];cx.fillRect(-1.6,-1,3.2,2);cx.restore()}
  // Jungle Cruise launches circling the river
  if(open&&JCP)for(let i=0;i<3;i++){const[x,y,an]=JCP.at(((t*4+i*JCP.L/3)%JCP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e9dcc0';cx.fillRect(-4,-1.8,8,3.6);cx.fillStyle='#3f7a4f';cx.fillRect(-4,-2.6,8,1.2);cx.restore()}
@@ -215,6 +232,7 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
    cx.fillStyle='#fbf8f0';cx.beginPath();cx.moveTo(-7,-2.6);cx.lineTo(5,-2.6);cx.lineTo(8,0);cx.lineTo(5,2.6);cx.lineTo(-7,2.6);cx.fill();cx.fillStyle=R.col;cx.fillRect(-5,-2.6,9,5.2);cx.fillStyle='#f4e7b8';cx.fillRect(-4,-1.6,7,3.2);cx.restore()}
  for(const f of FERRY){const[x,y,an]=ferXY(f);cx.save();cx.translate(x,y);cx.rotate(an+(f.dir<0?Math.PI:0));if(f.st==='run'){cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.moveTo(-16,0);cx.lineTo(-44,-6);cx.lineTo(-44,6);cx.fill()}
   cx.fillStyle='#fbf8f0';cx.beginPath();cx.moveTo(-18,-6);cx.lineTo(14,-6);cx.lineTo(20,0);cx.lineTo(14,6);cx.lineTo(-18,6);cx.fill();cx.fillStyle='#3a7bd5';cx.fillRect(-18,3,32,2);cx.fillStyle='#fff';cx.fillRect(-10,-4,18,7);cx.fillStyle='#c9463d';cx.fillRect(-3,-7,3,5);cx.restore()}
+ fsBridges();
  for(const b of BUS){const[bx,by2,ba]=busXY(b);cx.save();cx.translate(bx,by2);cx.rotate(ba);cx.fillStyle='#fff';cx.fillRect(-8,-2.6,16,5.2);cx.fillStyle='#3a7bd5';cx.fillRect(-8,1,16,1.2);cx.fillStyle='#9fd0ff';for(let i=0;i<4;i++)cx.fillRect(-6.5+i*3.4,-1.8,2.4,1.6);cx.restore()}
  {const w=EV.find(e=>e.id==='welcome'),fl=EV.find(e=>e.id==='flag');
   if(w&&w.ph==='live'){const s=OSM.S*2.1;WELCOME_CAST.forEach((who,i)=>drawChar(cx,s,(P_.stage[0]+(i-(WELCOME_CAST.length-1)/2)*7)/s,(P_.stage[1]+2)/s,who,t)); // the welcome show: the characters on the castle stage,

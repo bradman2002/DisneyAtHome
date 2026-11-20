@@ -100,7 +100,7 @@ Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic
 (Muppet*Vision 3D); EPCOT has `ride-lwtl.mp3` (Living with the Land), `ride-soarin.mp3` (Soarin'),
 `ride-spaceship.mp3` (Spaceship Earth), `ride-cosmic.mp3` (Cosmic Rewind), `ride-testtrack.mp3` (Test Track), `ride-missionspace.mp3`
 (Mission: SPACE), `ride-remy.mp3` (Remy's Ratatouille Adventure), `ride-fiesta.mp3` (Gran Fiesta Tour) and `ride-seas.mp3` (The Seas with
-Nemo & Friends); Hollywood Studios also has `ride-rnrc.mp3` (Rock 'n' Roller Coaster).
+Nemo & Friends); Hollywood Studios also has `ride-rnrc.mp3` (Rock 'n' Roller Coaster), and Magic Kingdom `ride-tron.mp3` (TRON Lightcycle / Run).
 Neighbouring lands blend at their edges, the music fades as you zoom out over the lakes, and while any show plays
 its own music (a parade, the fireworks, the water pageant, Luminous, the welcome show, the Flag Retreat or the Kiss
 Goodnight) the park's own sound fades right out: land music, ride audio, nature and the background crowd. It also
@@ -186,7 +186,10 @@ data on, its waits and closures are the real ones too.
 live): fireworks go up from barges and from all round the shore on the music's beats (the bigger ones in mirrored
 pairs), each barge's fans of water jets rise and fall with the music in patterns that change with each section, the
 bursts flash on the water, flame bursts from the barges on the biggest beats and searchlights rake the sky. EPCOT's guests gather round the promenade to watch. Put your copy of the soundtrack at
-`audio/luminous.mp3` (or include it in Load audio folder); like the other Disney music it is never committed. When both
+`audio/luminous.mp3` (or include it in Load audio folder); like the other Disney music it is never committed.
+Animal Kingdom has **Tree of Life Awakenings** after dark: every quarter hour from half an hour after sunset until the park
+closes, light washes over the Tree of Life, glowing spirit animals rise out of its bark and fireflies swirl through its
+canopy. Its soundtrack is `audio/tree-of-life.mp3` (your own copy, never committed), heard when the map is close to the tree. When both
 nighttime shows run at once, you hear the one the map is looking at, and TV mode cuts between them. To see it any time, press
 **Start Luminous now** (in Entertainment, or on the show's star on the map): it starts a few seconds later, right
 where the clock is, and the map flies to the lagoon.

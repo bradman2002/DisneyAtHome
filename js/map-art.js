@@ -222,10 +222,14 @@ function tronBuilding(c,e,q,hh){extrude(c,e,q.p,hh,'#323a48','#252c38',{noWin:tr
 function tent(c,x,y,r,h,col){c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.ellipse(x+r*.4,y+1,r*1.1,r*.45,0,0,7);c.fill();const n=10;for(let i=0;i<n;i++)poly4(c,[[x,y-h],[x-r+i*2*r/n,y],[x-r+(i+1)*2*r/n,y]],i%2?col:'#fff');c.fillStyle='#f0c040';c.fillRect(x-.3,y-h-3,.6,3)}
 /* Space Mountain: one white cone rising straight from its round base (no separate disc under it), lit from the left,
    with ribs running from the top down to the rim, a pale band round the foot and its little blue lights along the bottom */
-function spaceDome(c,e,x,y,R){const Hc=R*1.05,ry=R*.48,A=(t)=>[x+R*Math.cos(t),y+ry*Math.sin(t)];
+/* the dome's outline as drawn (round base seen at a slant, then the cone): shared by the dome, the PeopleMover beam's cut-out
+   and the hidden PeopleMover cars, so the track runs right up to the dome and disappears exactly at its edge */
+function domePath(p,x,y,R){const Hc=R*1.35;p.ellipse(x,y,R,R*.95,0,0,Math.PI);p.quadraticCurveTo(x-R*.4,y-Hc*.5,x,y-Hc);p.quadraticCurveTo(x+R*.4,y-Hc*.5,x+R,y);p.closePath()}
+const SMDOME=()=>{const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(!q)return null;const b=bbox(q.p);return[(b[0]+b[2])/2,(b[1]+b[3])/2,(b[2]-b[0])/2]};
+function spaceDome(c,e,x,y,R){const Hc=R*1.35,ry=R*.95,A=(t)=>[x+R*Math.cos(t),y+ry*Math.sin(t)];
  c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.ellipse(x+R*.38,y+ry*.3,R*1.1,ry*1.08,0,0,7);c.fill();
  const g=c.createLinearGradient(x-R,0,x+R,0);g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#eef1f5');g.addColorStop(1,'#aeb8c6');
- c.fillStyle=g;c.beginPath();c.ellipse(x,y,R,ry,0,0,Math.PI);c.quadraticCurveTo(x-R*.4,y-Hc*.5,x,y-Hc);c.quadraticCurveTo(x+R*.4,y-Hc*.5,x+R,y);c.closePath();c.fill();
+ c.fillStyle=g;c.beginPath();domePath(c,x,y,R);c.fill();
  c.strokeStyle='rgba(150,160,175,.75)';c.lineWidth=Math.max(.3,R*.013);for(let k=1;k<18;k++){const[px,py]=A(k/18*Math.PI);c.beginPath();c.moveTo(px,py);c.quadraticCurveTo(x+(px-x)*.42,y-Hc*.5+(py-y)*.45,x,y-Hc);c.stroke()}
  c.strokeStyle='#cfd5de';c.lineWidth=R*.07;c.beginPath();c.ellipse(x,y-R*.02,R*.985,ry*.97,0,.05,Math.PI-.05);c.stroke();
  c.fillStyle='#e9edf2';c.beginPath();c.arc(x,y-Hc,R*.035,0,7);c.fill();
@@ -854,7 +858,7 @@ function paintMap(rx,ry,rw,rh,mss){
  B.sort((p,q)=>p.y-q.y).forEach(o=>o.f());
  /* elevated tracks over everything: PeopleMover and monorail beams */
  const beam=(p,w,col)=>{c.strokeStyle='rgba(30,40,40,.18)';c.lineWidth=w+2;c.save();c.translate(2,2);pathOf(c,p);c.stroke();c.restore();c.strokeStyle=tone(col,-.25);c.lineWidth=w+.8;pathOf(c,p);c.stroke();c.strokeStyle=col;c.lineWidth=w;pathOf(c,p);c.stroke()};
- {const q=OSM.buildings.find(q=>q.n==='Space Mountain');c.save();if(q){const bb=bbox(q.p),x=(bb[0]+bb[2])/2,y=(bb[1]+bb[3])/2,k=1.08;c.beginPath();c.rect(-1e5,-1e5,3e5,3e5);q.p.forEach(([u,v],i)=>c[i?'lineTo':'moveTo'](x+(u-x)*k,y+(v-y)*k));c.closePath();c.clip('evenodd')}beam(OSM.routes.pm,2.4,'#dfe5ec');c.restore()} /* inside Space Mountain the PeopleMover is indoors */
+ {const d=SMDOME();c.save();if(d){c.beginPath();c.rect(-1e5,-1e5,3e5,3e5);domePath(c,d[0],d[1],d[2]*.97);c.clip('evenodd')}beam(OSM.routes.pm,2.4,'#dfe5ec');c.restore()} /* the PeopleMover runs right up to Space Mountain and goes indoors at the dome's edge */
  {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p);if(vis(bb)){MAP.nulE=MAP.nulE||document.createElement('canvas').getContext('2d');spaceDome(c,MAP.nulE,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2)}}} /* the PeopleMover runs into Space Mountain, so the dome is painted again over its beam */
 for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');late.forEach(f=>f());
  /* real street lamps */

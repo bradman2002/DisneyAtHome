@@ -243,6 +243,11 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   checkbox in Sound & settings (`mk-keepmap` in localStorage). `detailTick` then never lets tiles or close-ups go, keeps up to 12
   temporary patches, and with nothing wanted on screen paints the next unpainted close-up or tile (all 69 in about 20 s). It
   costs about 0.3 GB at MSS 2 and about 0.5 GB at MSS 3. It doesn't speed up the first open (that's the 7.5 MB data file and the park layers).
+- Keep the audio in memory (owner, 20 Nov 2026: "Add an option to keep the audio in memory. The default for that and map
+  should be not kept in memory"): `AUDKEEP` in audio.js (`mk-keepaudio`, read at load, so it applies on the next load), checkbox
+  `#keepAudio` in the Your music card. On: `streamUrl` fetches whole files into blob URLs held in `AUDKEEP.mem` (show tracks at
+  startup, rides/area when first heard), `rideFree` keeps them. Off (default): streaming as before; area music silent 60 s is
+  released (`AM.pos` remembers its place, `dataset.gone` stops its error handler). Both memory options default to off.
 - Muppets Courtyard before it closed (owner, 18 Nov 2026): `muppets.osm` is OpenStreetMap at 2023-06-01 (Overpass `[date:...]`) for
   the ways whose middle is in 28.3522,-81.5608,28.3556,-81.5580; the extractor reads it before `hs.osm` and drops today's construction
   site (way 1416883582) and "The Glob Theater" (1576253220) via `SKIP_WAYS`. Muppet*Vision 3D is attraction land `ga` with a fixed

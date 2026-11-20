@@ -103,7 +103,7 @@ const BAYLAKE=P_.disc?[P_.disc[0]-10,P_.disc[1]+190]:null; // label spot on open
 const TRONP=(()=>{const{cv}=tronParts();if(!cv)return null;
  const b=bbox(cv.p),pts=[];for(let X=b[0]+5;X<=b[2]-5;X+=4){const ys=[];const p=cv.p;for(let i=0;i<p.length;i++){const a=p[i],c2=p[(i+1)%p.length];if((a[0]-X)*(c2[0]-X)<=0&&a[0]!==c2[0])ys.push(a[1]+(c2[1]-a[1])*(X-a[0])/(c2[0]-a[0]))}if(ys.length>=2)pts.push([X,(Math.min(...ys)+Math.max(...ys))/2])}
  return pts.length>3?mkPath(pts):null})();
-const SMB=(()=>{const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(!q)return null;const b=bbox(q.p);return[(b[0]+b[2])/2,(b[1]+b[3])/2,(b[2]-b[0])/2,(b[3]-b[1])/2]})();
+const SMB=(()=>{const d=SMDOME();if(!d)return null;const p=new Path2D();domePath(p,d[0],d[1],d[2]*.97);return p})(),SMCTX=document.createElement('canvas').getContext('2d');
 const PMP=mkPath(OSM.routes.pm),RACEP=mkPath(OSM.routes.race),TRAMP=mkPath(OSM.routes.tram);
 // Jungle Cruise: boats follow the river, a little inside its outer bank
 const JCP=OSM.routes.jungle&&OSM.routes.jungle.length>3?mkPath(OSM.routes.jungle):(()=>{const a=OSM.areas.find(q=>q.k==='water'&&q.n==='Jungle Cruise');if(!a)return null;const[cx0,cy0]=polyC(a.o);return mkPath([...a.o,a.o[0]].map(([x,y])=>[x+(cx0-x)*.14,y+(cy0-y)*.14]))})();
@@ -195,7 +195,7 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
    cx.fillStyle=['#ff6b8a','#ffd34d','#4ecdc4','#7b6cff'][i%4];cx.beginPath();cx.ellipse(x,y,2.3,1.6,0,0,7);cx.fill()}
   cx.fillStyle='#f0c040';cx.fillRect(a.x-.6,a.y-12,1.2,12);for(let i=0;i<8;i++){cx.fillStyle=i%2?'#e84a6a':'#fff';cx.beginPath();cx.moveTo(a.x,a.y-15);cx.arc(a.x,a.y-12,7,Math.PI+i/8*Math.PI,Math.PI+(i+1)/8*Math.PI);cx.fill()}}
  // PeopleMover trains and Speedway cars on their real tracks
- for(let i=0;i<6;i++){const[x,y,an]=PMP.at(((t*9+i*PMP.L/6)%PMP.L));if(SMB&&(x-SMB[0])**2/SMB[2]**2+(y-SMB[1])**2/SMB[3]**2<1.15)continue; /* indoors through Space Mountain */cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e8eef5';cx.fillRect(-3,-1.3,6,2.6);cx.fillStyle='#4f84b2';cx.fillRect(-3,-.3,6,.7);cx.restore()}
+ for(let i=0;i<6;i++){const[x,y,an]=PMP.at(((t*9+i*PMP.L/6)%PMP.L));if(SMB&&SMCTX.isPointInPath(SMB,x,y))continue; /* indoors through Space Mountain */cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e8eef5';cx.fillRect(-3,-1.3,6,2.6);cx.fillStyle='#4f84b2';cx.fillRect(-3,-.3,6,.7);cx.restore()}
  if(open)for(let i=0;i<6;i++){const[x,y,an]=RACEP.at(((t*14+i*RACEP.L/6)%RACEP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle=['#e84a3c','#f2c14e','#4f84b2','#3fa060','#ff8fc8','#fff'][i];cx.fillRect(-1.6,-1,3.2,2);cx.restore()}
  // Jungle Cruise launches circling the river
  if(open&&JCP)for(let i=0;i<3;i++){const[x,y,an]=JCP.at(((t*4+i*JCP.L/3)%JCP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e9dcc0';cx.fillRect(-4,-1.8,8,3.6);cx.fillStyle='#3f7a4f';cx.fillRect(-4,-2.6,8,1.2);cx.restore()}

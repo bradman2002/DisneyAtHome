@@ -46,6 +46,10 @@ For a screen that runs all day, also tick **Keep the whole map in memory** in â˜
 normally drawn piece by piece as you reach each part and let go after 90 seconds away. With this on, every part is
 painted in the background in the first 20 seconds or so and kept, so panning and zooming anywhere is instant. It uses
 about half a gigabyte of memory, and it's remembered.
+Both memory settings are off unless you tick them. **Keep the audio in memory** (â˜° Sound & settings, under Your music)
+fetches each recording whole and holds on to it, so music and ride tracks start and jump instantly and aren't fetched
+again; off, recordings stream, a ride's track is let go when it fades out and area music is let go after a minute of
+silence (picking up where it was when it comes back). It's remembered and applies when the page next loads.
 
 To put it on a TV:
 - Simplest: connect this Mac to the TV (cable or AirPlay) and double-click **Start TV.command**. It starts the

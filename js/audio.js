@@ -93,7 +93,7 @@ function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(
    The files are long (25 to 60 minutes) and simply loop; each keeps its place while it is silent. A missing file is
    skipped. */
 const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3',hs:'audio/area-hs.mp3',ak:'audio/area-ak.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT; hs: Hollywood Studios (the Hollywood Boulevard loop for now), heard anywhere over that park; ak: Animal Kingdom (the Tree of Life loop), heard anywhere over it during its own hours */
-const AM={el:{},vol:{},bad:{}};
+const AM={el:{},vol:{},bad:{},pos:{},off:{}};
 function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(typeof AKR!=='undefined'&&AKR&&!SV.on&&cam.x>AKR[0]-250&&cam.x<AKR[2]+250&&cam.y>AKR[1]-250&&cam.y<AKR[3]+250){if(T>=AOPEN*3600-1800&&T<=ACLOSE*3600+900)t.ak=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Animal Kingdom: one loop for the whole park, on its own hours (it closes earlier) */
  if(T<OPEN*3600-1800||T>CLOSE*3600+900)return t;
@@ -110,9 +110,12 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
 function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=showOn(),
   duck=(show?0:1)*(1-.8*(typeof rideLevel==='number'?rideLevel:0)),base=(AU.mute?0:AU.v.master*AU.v.music)*(playing?1:0)*(speed>30?.4:1);
  for(const k in AREA){if(AM.bad[k])continue;const want=t[k]*duck*base,v=AM.vol[k]=(AM.vol[k]||0)+(want-(AM.vol[k]||0))*.12;let a=AM.el[k];
-  if(v>.006){if(!a){a=AM.el[k]=new Audio(AREA[k]);a.loop=true;a.preload='auto';a.addEventListener('error',()=>{if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
+  if(v>.006){if(!a){a=AM.el[k]=new Audio();a.loop=true;a.preload='auto';(AUDKEEP.on?streamUrl(AREA[k]):Promise.resolve(null)).then(u=>{if(!a.src)a.src=u||AREA[k]});
+    a.addEventListener('loadedmetadata',()=>{if(AM.pos[k]&&isFinite(a.duration))a.currentTime=AM.pos[k]%a.duration},{once:true}); /* back where it was when it was let go */
+    a.addEventListener('error',()=>{if(a.dataset.gone)return;if(a.dataset.saved){AM.bad[k]=1;return}a.dataset.saved=1;areaSaved(k).then(b=>{if(b){a.src=URL.createObjectURL(b);a.play().catch(()=>{})}else{AM.bad[k]=1;console.warn('Area music not found:',AREA[k])}})} /* not on the site (GitHub Pages): use the copy kept in this browser by Load audio folder */)}
    setVol(a,v);if(a.paused)a.play().catch(()=>{})}
-  else if(a&&!a.paused){setVol(a,0);a.pause()}}}
+  else if(a&&!a.paused){setVol(a,0);a.pause();AM.off[k]=Date.now()}
+  else if(a&&!AUDKEEP.on&&Date.now()-(AM.off[k]||0)>60e3){AM.pos[k]=a.currentTime;a.dataset.gone=1;if(a.src.startsWith('blob:'))URL.revokeObjectURL(a.src);a.removeAttribute('src');a.load();delete AM.el[k]}}} /* silent for a minute: let it go */
 setInterval(areaTick,120);
 /* ===== YOUR AUDIO, KEPT IN THIS BROWSER =====
    The Disney music is never put on the website itself (it is Disney's, and a public site would be giving it away). Instead,
@@ -190,8 +193,15 @@ function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monor
    tools/serve.py do): the player reads it straight from the server and can jump anywhere, without the whole file sitting in
    memory. Otherwise the whole file is fetched once into memory (a blob), which also lets it start anywhere. Resolves to
    the URL to play, or null when the file isn't there. */
+/* "Keep the audio in memory" (Your music, remembered; off unless you turn it on, and applied when the page next loads):
+   every recording is fetched whole once and held in memory, so it starts and jumps instantly and ride tracks are not
+   fetched again. Off, recordings stream from the server, a ride's track is let go when it fades out, and area music
+   that has been silent for a minute is let go too (it picks up where it was when it comes back). */
+var AUDKEEP={on:false,mem:{}};try{AUDKEEP.on=localStorage.getItem('mk-keepaudio')==='1'}catch(e){}
+function setKeepAudio(on){try{localStorage.setItem('mk-keepaudio',on?'1':'0')}catch(e){}}
 const STREAMS={};
-async function streamUrl(path){if(STREAMS[path])return path;try{const r=await fetch(path,{headers:{Range:'bytes=0-1'},cache:'no-store'});
+async function streamUrl(path){if(AUDKEEP.on){if(AUDKEEP.mem[path])return AUDKEEP.mem[path];try{const r=await fetch(path,{cache:'no-store'});if(r.ok)return AUDKEEP.mem[path]=URL.createObjectURL(await r.blob())}catch(e){}return null}
+ if(STREAMS[path])return path;try{const r=await fetch(path,{headers:{Range:'bytes=0-1'},cache:'no-store'});
   if(r.status===206){STREAMS[path]=1;try{r.body&&r.body.cancel()}catch(e){}return path}if(r.ok)return URL.createObjectURL(await r.blob())}catch(e){}return null}
 const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
 RA.pos={};RA.url={};RA.tmp={};RA.cur=null;RA.lvl=0;RA.loading=null;
@@ -200,7 +210,7 @@ function unlockRide(){const a=rideEl();if(RA.cur||RA.unlocked)return;try{a.src=S
 async function rideUrl(k){if(RA.url[k])return RA.url[k];const u=await streamUrl('audio/ride-'+k+'.mp3');
  if(u){RA.url[k]=u;if(u.startsWith('blob:'))RA.tmp[k]=1}else{const b=await rideSaved(k);if(b){RA.url[k]=URL.createObjectURL(b);RA.tmp[k]=1}else RA.bad[k]=1}return RA.url[k]}
 /* a ride recording held whole in memory is let go once it has faded out (it is fetched again next time); streamed ones cost nothing to keep */
-function rideFree(k){if(!RA.tmp[k])return;URL.revokeObjectURL(RA.url[k]);delete RA.url[k];delete RA.tmp[k];const a=rideEl();a.src=SILENT}
+function rideFree(k){if(!RA.tmp[k]||AUDKEEP.on)return;URL.revokeObjectURL(RA.url[k]);delete RA.url[k];delete RA.tmp[k];const a=rideEl();a.src=SILENT}
 /* The monorail recording has silent stretches (the train standing at a station, doors open), up to 10 s long. Starting
    in one (it starts at a random point) meant nothing was heard until the next announcement, so a start inside one jumps
    to its end. Measured from the owner's file (672 s); a different file (another length) is left alone. */

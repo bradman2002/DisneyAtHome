@@ -16,9 +16,10 @@ function rideRegion(){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const k of['resort',
  const M=900;return[Math.max(0,x0-M),Math.max(0,y0-M),Math.min(OSM.W,x1+M),Math.min(OSM.H,y1+M)]}
 const rideHex=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]};
 /* ---- small 3D helpers ---- */
-function rideTri(A,a,b,c,col){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
- for(const p of[a,b,c])A.push(p[0],p[1],p[2],col[0],col[1],col[2],nx,ny,nz)}
-const rideQuad=(A,a,b,c,d,col)=>{rideTri(A,a,b,c,col);rideTri(A,a,c,d,col)};
+function rideTri(A,a,b,c,col,t){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
+ const f=t?t[6]:0;[a,b,c].forEach((p,i)=>A.push(p[0],p[1],p[2],col[0],col[1],col[2],nx,ny,nz,t?t[i*2]:0,t?t[i*2+1]:0,f))}
+/* a quad; uv (optional) = [ua,va,ub,vb,uc,vc,ud,vd] in map units along the wall and up it, kind 1 = a wall with windows, 2 = a plain wall */
+const rideQuad=(A,a,b,c,d,col,uv,k)=>{if(!uv){rideTri(A,a,b,c,col);rideTri(A,a,c,d,col);return}rideTri(A,a,b,c,col,[uv[0],uv[1],uv[2],uv[3],uv[4],uv[5],k]);rideTri(A,a,c,d,col,[uv[0],uv[1],uv[4],uv[5],uv[6],uv[7],k])};
 /* a box along a segment (map x,y -> world x,z), w wide, from height y0 to y1 */
 function rideSeg(A,ax,az,bx,bz,w,y0,y1,col,ends){const L=Math.hypot(bx-ax,bz-az)||1,px=-(bz-az)/L*w/2,pz=(bx-ax)/L*w/2;
  const p=[[ax+px,az+pz],[bx+px,bz+pz],[bx-px,bz-pz],[ax-px,az-pz]];
@@ -26,6 +27,9 @@ function rideSeg(A,ax,az,bx,bz,w,y0,y1,col,ends){const L=Math.hypot(bx-ax,bz-az)
  rideQuad(A,[p[0][0],y0,p[0][1]],[p[1][0],y0,p[1][1]],[p[1][0],y1,p[1][1]],[p[0][0],y1,p[0][1]],col);
  rideQuad(A,[p[3][0],y0,p[3][1]],[p[2][0],y0,p[2][1]],[p[2][0],y1,p[2][1]],[p[3][0],y1,p[3][1]],col);
  if(ends){rideQuad(A,[p[0][0],y0,p[0][1]],[p[3][0],y0,p[3][1]],[p[3][0],y1,p[3][1]],[p[0][0],y1,p[0][1]],col);rideQuad(A,[p[1][0],y0,p[1][1]],[p[2][0],y0,p[2][1]],[p[2][0],y1,p[2][1]],[p[1][0],y1,p[1][1]],col)}}
+/* a footprint without its repeated closing point or doubled points; and a polygon's signed area */
+function rideClean(p){const P=[];for(const q of p){const l=P[P.length-1];if(!l||Math.hypot(q[0]-l[0],q[1]-l[1])>.05)P.push(q)}while(P.length>3&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<=.05)P.pop();return P}
+function rideArea(P){let A=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];A+=a[0]*b[1]-b[0]*a[1]}return A/2}
 /* ear clipping, for the flat roofs */
 function rideEar(P0){const P=[];for(const q of P0){const l=P[P.length-1];if(!l||Math.hypot(q[0]-l[0],q[1]-l[1])>.05)P.push(q)}while(P.length>3&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<=.05)P.pop(); /* repeated points out */
  for(let i=0;i<P.length&&P.length>3;){const a=P[(i+P.length-1)%P.length],b=P[i],c=P[(i+1)%P.length];if(Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))<1e-6)P.splice(i,1);else i++} /* and points in a straight line */
@@ -67,9 +71,20 @@ function rideSolids(R){const A=[],S=OSM.S||1.02,inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1
    continue}
   const land=Object.keys(OSM.lands||{}).find(k=>ptIn(cx_,cy_,OSM.lands[k]))||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   const wall=rideHex(st[0][hs%st[0].length]),roof=rideHex(q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length]),H=Math.max(3,(q.k==='roof'?Math.min(q.h,4):q.h)*S);
-  const P=q.p[0][0]===q.p[q.p.length-1][0]&&q.p[0][1]===q.p[q.p.length-1][1]?q.p.slice(0,-1):q.p;
-  for(let i=0;i<P.length;i++){const a=P[i],c=P[(i+1)%P.length];if(a[0]===c[0]&&a[1]===c[1])continue;rideQuad(A,[a[0],0,a[1]],[c[0],0,c[1]],[c[0],H,c[1]],[a[0],H,a[1]],wall)}
-  for(const[a,b2,c]of rideEar(P))rideTri(A,[a[0],H,a[1]],[b2[0],H,b2[1]],[c[0],H,c[1]],roof)}
+  const P=rideClean(q.p);if(P.length<3)continue;const win=H>=5&&q.k!=='roof'?1:2;let u=0;
+  for(let i=0;i<P.length;i++){const a=P[i],c=P[(i+1)%P.length],L=Math.hypot(c[0]-a[0],c[1]-a[1]);rideQuad(A,[a[0],0,a[1]],[c[0],0,c[1]],[c[0],H,c[1]],[a[0],H,a[1]],wall,[u,0,u+L,0,u+L,H,u,H],win);u+=L}
+  let cx2=0,cz2=0;for(const[x,y]of P){cx2+=x;cz2+=y}cx2/=P.length;cz2/=P.length;
+  let sg=0,convex=true;for(let i=0;i<P.length;i++){const a=P[i],b2=P[(i+1)%P.length],c=P[(i+2)%P.length],cr=(b2[0]-a[0])*(c[1]-b2[1])-(b2[1]-a[1])*(c[0]-b2[0]);if(Math.abs(cr)<1e-6)continue;const s2=Math.sign(cr);if(sg&&s2!==sg)convex=false;sg=s2}
+  const span=Math.sqrt(Math.abs(rideArea(P))),pitched=convex&&P.length<=14&&H<30&&q.k!=='roof'&&land!=='cont'&&land!=='tom'&&span<70;
+  if(pitched){ /* a hipped roof: eaves a little out from the walls, sloping up to a short ridge */
+   const rise=Math.min(9,span*.32),out=P.map(([x,y])=>{const d=Math.hypot(x-cx2,y-cz2)||1,k=1+.7/d;return[cx2+(x-cx2)*k,cz2+(y-cz2)*k]}),inn=P.map(([x,y])=>[cx2+(x-cx2)*.28,cz2+(y-cz2)*.28]),dk=roof.map(v=>v*.82);
+   for(let i=0;i<P.length;i++){const j=(i+1)%P.length;rideQuad(A,[out[i][0],H,out[i][1]],[out[j][0],H,out[j][1]],[inn[j][0],H+rise,inn[j][1]],[inn[i][0],H+rise,inn[i][1]],roof);
+    rideQuad(A,[out[i][0],H-.35,out[i][1]],[out[j][0],H-.35,out[j][1]],[out[j][0],H,out[j][1]],[out[i][0],H,out[i][1]],dk)} /* the eaves' edge */
+   for(const[a,b2,c]of rideEar(inn))rideTri(A,[a[0],H+rise,a[1]],[b2[0],H+rise,b2[1]],[c[0],H+rise,c[1]],roof)}
+  else{ /* a flat roof inside a low parapet, with a little rooftop plant on the bigger ones */
+   for(const[a,b2,c]of rideEar(P))rideTri(A,[a[0],H,a[1]],[b2[0],H,b2[1]],[c[0],H,c[1]],roof.map(v=>v*.92));u=0;
+   for(let i=0;i<P.length;i++){const a=P[i],c=P[(i+1)%P.length],L=Math.hypot(c[0]-a[0],c[1]-a[1]);rideQuad(A,[a[0],H,a[1]],[c[0],H,c[1]],[c[0],H+.9,c[1]],[a[0],H+.9,a[1]],wall,[u,H,u+L,H,u+L,H+.9,u,H+.9],2);u+=L}
+   if(span>22&&q.k!=='roof'){const g=rideHex('#9aa0a6');rideSeg(A,cx2-2,cz2,cx2+2,cz2,3,H,H+2,g,true)}}}
  /* the beams (the lines the trains run on), their pylons, and the stations' platforms and canopies */
  const beam=rideHex('#eef1f4'),pyl=rideHex('#d4d9df'),MI=OSM.monoIn;
  for(const k of['resort','express','epcot']){if(!OSM.mono[k])continue;const P=mkPath(OSM.mono[k]);let last=null,acc=0;
@@ -80,27 +95,41 @@ function rideSolids(R){const A=[],S=OSM.S||1.02,inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1
    const a=l.p.at(Math.max(0,d-32)),b=l.p.at(Math.min(l.p.L-.01,d+32)),L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nx=-(b[1]-a[1])/L,nz=(b[0]-a[0])/L;
    for(const o of[-3.6]){rideSeg(A,a[0]+nx*o,a[1]+nz*o,b[0]+nx*o,b[1]+nz*o,4,RIDE_BH-1.4,RIDE_BH-.9,plat,true)}
    if(s!=='cont')rideSeg(A,a[0]-nx*1,a[1]-nz*1,b[0]-nx*1,b[1]-nz*1,11,RIDE_BH+5.2,RIDE_BH+5.8,can,true)}}
- return new Float32Array(A)}
-/* the trees (from the map's own crowns when it has worked them out) and the street lamps, as round points */
-function ridePoints(R){const T_=[],L_=[],inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1]&&y<R[3],G=['#3f7a35','#4f8a3e','#5a9a44','#46803a','#6aa84c'].map(rideHex);
- const src=MAP.crowns&&MAP.crowns.length?MAP.crowns:OSM.trees.map(([x,y])=>[x,y,3.4]);
- for(const t of src){const[x,y,r]=t;if(!inR(x,y))continue;const c=G[hsh(Math.round(x*7+y*13))%G.length],rr=(r||3.4)*.95;T_.push(x,rr*1.5,y,rr*2.2,c[0],c[1],c[2])}
- for(const[x,y]of OSM.lamps||[])if(inR(x,y))L_.push(x,4.2,y,1.4,1,.9,.62);
+
+ return A}
+/* the trees (the map's own, with its kinds: crown, pine, palm) and the street lamps. Any tree that would reach the
+   beams is left out. Crowns are a cluster of leafy round points on a trunk; pines stacked cones; palms a tall thin trunk
+   with drooping fronds. Trees deep in a forest get no trunk (it can't be seen) */
+function ridePoints(R,A){const T_=[],L_=[],inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1]&&y<R[3],G=['#3f7a35','#4f8a3e','#5a9a44','#46803a','#6aa84c','#3a6e30'].map(rideHex);
+ const grid=new Map(),cell=24,key=(i,j)=>i*100000+j;for(const k of['resort','express','epcot']){if(!OSM.mono[k])continue;const P=mkPath(OSM.mono[k]);for(let d=0;d<P.L;d+=4){const[x,y]=P.at(Math.min(d,P.L-.01));if(!inR(x,y))continue;const kk=key(Math.floor(x/cell),Math.floor(y/cell));(grid.get(kk)||grid.set(kk,[]).get(kk)).push([x,y])}}
+ const nearBeam=(x,y,r)=>{const i=Math.floor(x/cell),j=Math.floor(y/cell);for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const L=grid.get(key(i+a,j+b));if(L)for(const p of L)if((p[0]-x)**2+(p[1]-y)**2<r*r)return true}return false};
+ const src=MAP.crowns&&MAP.crowns.length?MAP.crowns:OSM.trees.map(([x,y])=>[x,y,3.4,'crown',0,false]),trunk=rideHex('#6b5040'),palmT=rideHex('#8a7356'),frond=rideHex('#4f8f3a'),pineC=rideHex('#2f5e2c');let cones=0;
+ for(const t of src){const[x,y,r0,k,,inF]=t;if(!inR(x,y))continue;const r=(r0||3.4)*.95,h=hsh(Math.round(x*7+y*13)),seed=(h%1000)/1000,c=G[h%G.length];
+  if(nearBeam(x,y,(k==='palm'?r*1.7:r*1.25)+2.2))continue; /* clear of the track */
+  if(k==='palm'){const H=r*2.6,lx=(seed-.5)*1.2,lz=((h>>>10)%100/100-.5)*1.2,tx=x+lx,tz=y+lz;rideSeg(A,x,y,x+.01,y,.55,0,H,palmT);rideSeg(A,x,y,tx,tz,.45,H*.6,H,palmT);
+   for(let f=0;f<7;f++){const an=f/7*6.283+seed*6,L=r*1.7,ex=tx+Math.cos(an)*L,ez=tz+Math.sin(an)*L,mx=tx+Math.cos(an)*L*.5,mz=tz+Math.sin(an)*L*.5,px=-Math.sin(an)*.55,pz=Math.cos(an)*.55;
+    rideTri(A,[tx,H+.2,tz],[mx+px,H+.35,mz+pz],[mx-px,H+.35,mz-pz],frond);rideQuad(A,[mx+px,H+.35,mz+pz],[ex,H-L*.45,ez],[ex,H-L*.45,ez],[mx-px,H+.35,mz-pz],frond)}continue}
+  if(k==='pine'&&cones<20000){cones++;const H=r*3.2,N=7;if(!inF)rideSeg(A,x,y,x+.01,y,.5,0,H*.3,trunk);
+   for(const[y0,y1,rr]of[[H*.22,H*.7,r*1.05],[H*.5,H,r*.7]]){for(let i=0;i<N;i++){const a0=i/N*6.283,a1=(i+1)/N*6.283;rideTri(A,[x+Math.cos(a0)*rr,y0,y+Math.sin(a0)*rr],[x,y1,y],[x+Math.cos(a1)*rr,y0,y+Math.sin(a1)*rr],pineC.map(v=>v*(.85+.3*((i+h)%3)/2)))}}continue}
+  const top=r*1.55;if(!inF)rideSeg(A,x,y,x+.01,y,.45,0,top,trunk);
+  T_.push(x,top,y,r*2.1,c[0],c[1],c[2],seed);
+  for(let n=0;n<(inF?1:3);n++){const an=seed*6.283+n*2.1,o=r*.5,c2=G[(h>>>(n*3+4))%G.length];T_.push(x+Math.cos(an)*o,top+(n-1)*r*.28,y+Math.sin(an)*o,r*1.45,c2[0],c2[1],c2[2],(seed*7+n*.37)%1)}}
+ for(const[x,y]of OSM.lamps||[])if(inR(x,y)){L_.push(x,4.2,y,1.4,1,.9,.62,0);A&&rideSeg(A,x,y,x+.01,y,.32,0,4,rideHex('#3f4640'));rideSeg(A,x-.35,y,x+.35,y,.5,3.9,4.5,rideHex('#e8e2cc'),true)}
  return{t:new Float32Array(T_),l:new Float32Array(L_)}}
 /* ---- WebGL ---- */
-const RIDE_VS_LIT='attribute vec3 p;attribute vec3 c;attribute vec3 n;uniform mat4 M;uniform vec3 E;varying vec3 vc;varying vec3 vn;varying vec3 vp;void main(){gl_Position=M*vec4(p,1.);vc=c;vn=n;vp=p;}';
-const RIDE_FS_LIT='precision highp float;varying vec3 vc;varying vec3 vn;varying vec3 vp;uniform vec3 E;uniform vec3 L;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;void main(){float vf=distance(vp,E);float d=abs(dot(normalize(vn),L));vec3 col=vc*(AC+SC*d);float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
+const RIDE_VS_LIT='attribute vec3 p;attribute vec3 c;attribute vec3 n;attribute vec3 t;uniform mat4 M;uniform vec3 E;varying vec3 vc;varying vec3 vn;varying vec3 vp;varying vec3 vt;void main(){gl_Position=M*vec4(p,1.);vc=c;vn=n;vp=p;vt=t;}';
+const RIDE_FS_LIT='precision highp float;varying vec3 vc;varying vec3 vn;varying vec3 vp;varying vec3 vt;uniform vec3 E;uniform vec3 L;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform float NI;float hs(vec2 q){return fract(sin(dot(q,vec2(12.9898,78.233)))*43758.5453);}void main(){float vf=distance(vp,E);float d=abs(dot(normalize(vn),L));vec3 base=vc;vec3 em=vec3(0.);if(vt.z>.5){base*=.72+.28*smoothstep(0.,3.5,vt.y);if(vt.z<1.5&&vt.y>1.4){vec2 g=vec2(vt.x/3.1,(vt.y-.6)/3.4);vec2 f=fract(g);float w=step(.24,f.x)*step(f.x,.76)*step(.28,f.y)*step(f.y,.78);float r=hs(floor(g));vec3 gl=mix(vec3(.2,.27,.34),vec3(.42,.52,.6),r*.6+.2*d);base=mix(base,gl,w*.9);em=w*NI*step(.42,r)*vec3(1.,.8,.48)*(.55+.45*r);}}vec3 col=base*(AC+SC*d)+em;float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
 const RIDE_VS_TEX='attribute vec3 p;attribute vec2 u;uniform mat4 M;uniform vec3 E;varying vec2 vu;varying vec3 vp;void main(){gl_Position=M*vec4(p,1.);vu=u;vp=p;}';
-const RIDE_FS_TEX='precision highp float;varying vec2 vu;varying vec3 vp;uniform vec3 E;uniform sampler2D T;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform vec3 G;uniform float MODE;void main(){vec3 col;if(MODE<.5)col=texture2D(T,vu).rgb;else if(MODE<1.5)col=G;else{vec4 t=texture2D(T,vu);if(t.a<.45)discard;col=t.rgb;}col*=AC+SC*.9;float vf=distance(vp,E);float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
-const RIDE_VS_PT='attribute vec3 p;attribute float s;attribute vec3 c;uniform mat4 M;uniform vec3 E;uniform float K;uniform float MX;varying vec3 vc;varying float vf;void main(){vec4 q=M*vec4(p,1.);gl_Position=q;vf=distance(p,E);gl_PointSize=clamp(s*K/max(q.w,.1),1.,MX);vc=c;}';
-const RIDE_FS_PT='precision mediump float;varying vec3 vc;varying float vf;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform float EM;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;vec3 col;if(EM>.5){col=vc*(1.-r*2.);}else{float sh=.92+.45*(-d.x-d.y)-r*.35;col=vc*sh*(AC+SC*.85);}float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,EM>.5?f*.5:f),1.);}';
+const RIDE_FS_TEX='precision highp float;varying vec2 vu;varying vec3 vp;uniform vec3 E;uniform sampler2D T;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform vec3 G;uniform float MODE;float hs(vec2 q){return fract(sin(dot(q,vec2(12.9898,78.233)))*43758.5453);}float vn(vec2 q){vec2 i=floor(q),f=fract(q);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}void main(){vec3 col;if(MODE<.5){col=texture2D(T,vu).rgb;col*=.9+.14*vn(vp.xz*.12)+.08*vn(vp.xz*1.1);}else if(MODE<1.5)col=G;else{vec4 t=texture2D(T,vu);if(t.a<.45)discard;col=t.rgb;}col*=AC+SC*.9;float vf=distance(vp,E);float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
+const RIDE_VS_PT='attribute vec3 p;attribute float s;attribute vec3 c;attribute float q;uniform mat4 M;uniform vec3 E;uniform float K;uniform float MX;varying vec3 vc;varying float vf;varying float vq;void main(){vec4 o=M*vec4(p,1.);gl_Position=o;vf=distance(p,E);gl_PointSize=clamp(s*K/max(o.w,.1),1.,MX);vc=c;vq=q;}';
+const RIDE_FS_PT='precision highp float;varying vec3 vc;varying float vf;varying float vq;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform float EM;float hs(vec2 q){return fract(sin(dot(q,vec2(12.9898,78.233)))*43758.5453);}float vn(vec2 q){vec2 i=floor(q),f=fract(q);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}void main(){vec2 d=gl_PointCoord-.5;float r=length(d);vec3 col;if(EM>.5){if(r>.5)discard;col=vc*(1.-r*r*4.);}else{vec2 o=vec2(vq*31.,vq*17.);float n=vn(gl_PointCoord*6.+o),m=vn(gl_PointCoord*15.+o*1.7);if(r>.5-.13*n)discard;float sh=.9+.55*(-d.x-d.y*1.3)-r*.45;col=vc*sh*(.72+.45*m)*(AC+SC*.85);}float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,EM>.5?f*.5:f),1.);}';
 const RIDE_VS_SKY='attribute vec2 p;varying float vy;void main(){gl_Position=vec4(p,.9999,1.);vy=p.y;}';
 const RIDE_FS_SKY='precision mediump float;varying float vy;uniform vec3 TC;uniform vec3 HC;uniform float HY;void main(){float f=clamp((vy-HY)/max(.05,1.-HY),0.,1.);gl_FragColor=vec4(mix(HC,TC,pow(f,.7)),1.);}';
 function rideProg(gl,vs,fs){const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o};
  const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
  const u={},a={};const nu=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS),na=gl.getProgramParameter(p,gl.ACTIVE_ATTRIBUTES);for(let i=0;i<nu;i++){const n=gl.getActiveUniform(p,i).name;u[n]=gl.getUniformLocation(p,n)}for(let i=0;i<na;i++){const n=gl.getActiveAttrib(p,i).name;a[n]=gl.getAttribLocation(p,n)}return{p,u,a}}
 function rideBuf(gl,data,dyn){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,dyn?gl.DYNAMIC_DRAW:gl.STATIC_DRAW);return b}
-function rideAttrs(gl,P,buf,spec){for(let i=0;i<4;i++)gl.disableVertexAttribArray(i);gl.bindBuffer(gl.ARRAY_BUFFER,buf);const st=spec.reduce((s,x)=>s+x[1],0)*4;let o=0;for(const[n,k]of spec){const l=P.a[n];if(l!==undefined&&l>=0){gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,k,gl.FLOAT,false,st,o)}o+=k*4}}
+function rideAttrs(gl,P,buf,spec){for(let i=0;i<5;i++)gl.disableVertexAttribArray(i);gl.bindBuffer(gl.ARRAY_BUFFER,buf);const st=spec.reduce((s,x)=>s+x[1],0)*4;let o=0;for(const[n,k]of spec){const l=P.a[n];if(l!==undefined&&l>=0){gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,k,gl.FLOAT,false,st,o)}o+=k*4}}
 function rideBuild(){const cv=document.getElementById('rideCv');let gl=cv.getContext('webgl2',{antialias:true,alpha:false})||cv.getContext('webgl',{antialias:true,alpha:false});if(!gl)return false;
  const R=rideRegion(),G={gl,R,v2:typeof WebGL2RenderingContext!=='undefined'&&gl instanceof WebGL2RenderingContext};
  G.lit=rideProg(gl,RIDE_VS_LIT,RIDE_FS_LIT);G.tex=rideProg(gl,RIDE_VS_TEX,RIDE_FS_TEX);G.pt=rideProg(gl,RIDE_VS_PT,RIDE_FS_PT);G.sky=rideProg(gl,RIDE_VS_SKY,RIDE_FS_SKY);
@@ -111,8 +140,8 @@ function rideBuild(){const cv=document.getElementById('rideCv');let gl=cv.getCon
  gc.width=gc.height=0;
  const[x0,y0,x1,y1]=R,E=7000;G.ground=rideBuf(gl,new Float32Array([x0,0,y0,0,0,x1,0,y0,1,0,x1,0,y1,1,1,x0,0,y0,0,0,x1,0,y1,1,1,x0,0,y1,0,1]));
  G.outer=rideBuf(gl,new Float32Array([x0-E,-.3,y0-E,0,0,x1+E,-.3,y0-E,0,0,x1+E,-.3,y1+E,0,0,x0-E,-.3,y0-E,0,0,x1+E,-.3,y1+E,0,0,x0-E,-.3,y1+E,0,0]));
- const S=rideSolids(R);G.solid=rideBuf(gl,S);G.nSolid=S.length/9;const pts=ridePoints(R);G.trees=rideBuf(gl,pts.t);G.nTrees=pts.t.length/7;G.lamps=rideBuf(gl,pts.l);G.nLamps=pts.l.length/7;
- G.dyn=rideBuf(gl,new Float32Array(9),true);G.skyB=rideBuf(gl,new Float32Array([-1,-1,1,-1,1,1,-1,-1,1,1,-1,1]));
+ const SA=rideSolids(R),pts=ridePoints(R,SA),S=new Float32Array(SA);G.solid=rideBuf(gl,S);G.nSolid=S.length/12;G.trees=rideBuf(gl,pts.t);G.nTrees=pts.t.length/8;G.lamps=rideBuf(gl,pts.l);G.nLamps=pts.l.length/8;
+ G.dyn=rideBuf(gl,new Float32Array(12),true);G.skyB=rideBuf(gl,new Float32Array([-1,-1,1,-1,1,1,-1,-1,1,1,-1,1]));
  const ci=typeof CASTLE_IMG!=='undefined'&&CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:(MAP.castle||null),cb=OSM.buildings.find(q=>q.n==='Cinderella Castle');
  if(ci&&cb){G.ct=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,G.ct);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,ci);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
   const b=bbox(cb.p),H=58*(OSM.S||1.02),Wd=H*(ci.naturalWidth||ci.width)/(ci.naturalHeight||ci.height);G.castle={x:(b[0]+b[2])/2,z:(b[1]+b[3])/2+(b[3]-b[1])*.2,H,W:Wd};G.cb=rideBuf(gl,new Float32Array(30),true)}
@@ -142,19 +171,19 @@ function rideFrame(dt){const G=RIDE.gl,m=MONO[RIDE.i];if(!G||!m){rideLeave();ret
   gl.uniform1f(P.u.MODE,1);rideAttrs(gl,P,G.outer,[['p',3],['u',2]]);gl.drawArrays(gl.TRIANGLES,0,6);
   gl.uniform1f(P.u.MODE,0);rideAttrs(gl,P,G.ground,[['p',3],['u',2]]);gl.drawArrays(gl.TRIANGLES,0,6)}
  /* solids, then the other trains */
- {const P=G.lit;common(P);gl.uniform3fv(P.u.L,[.42,.8,.43]);rideAttrs(gl,P,G.solid,[['p',3],['c',3],['n',3]]);gl.drawArrays(gl.TRIANGLES,0,G.nSolid);
+ {const P=G.lit;common(P);gl.uniform3fv(P.u.L,[.42,.8,.43]);gl.uniform1f(P.u.NI,Math.max(0,Math.min(1,(nf-.25)*1.6)));rideAttrs(gl,P,G.solid,[['p',3],['c',3],['n',3],['t',3]]);gl.drawArrays(gl.TRIANGLES,0,G.nSolid);
   const D=[],wh=rideHex('#f7f7f4'),glass=rideHex('#26303c');for(const o of MONO){if(o===m||o.l==='epcot'&&!G.v2)continue;const col=rideHex(o.col);
    for(let k=0;k<6;k++){const[cx_,cz]=monoXY(o,22.5-k*9),q0=monoXY(o,22.5-k*9-4.1),q1=monoXY(o,22.5-k*9+4.1);if(Math.hypot(cx_-ex,cz-ez)>2600)continue;
     const MI=OSM.monoIn;if(MI&&cx_>MI[0]&&cx_<MI[2]&&cz>MI[1]&&cz<MI[3]&&Math.hypot(cx_-ex,cz-ez)>60)continue;
     rideSeg(D,q0[0],q0[1],q1[0],q1[1],2.9,RIDE_BH,RIDE_BH+3.3,wh,true);rideSeg(D,q0[0],q0[1],q1[0],q1[1],3.0,RIDE_BH+1.1,RIDE_BH+1.7,col,true);rideSeg(D,q0[0],q0[1],q1[0],q1[1],3.0,RIDE_BH+2.1,RIDE_BH+2.8,glass,true)}}
-  if(D.length){gl.bindBuffer(gl.ARRAY_BUFFER,G.dyn);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(D),gl.DYNAMIC_DRAW);rideAttrs(gl,P,G.dyn,[['p',3],['c',3],['n',3]]);gl.drawArrays(gl.TRIANGLES,0,D.length/9)}}
+  if(D.length){gl.bindBuffer(gl.ARRAY_BUFFER,G.dyn);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(D),gl.DYNAMIC_DRAW);rideAttrs(gl,P,G.dyn,[['p',3],['c',3],['n',3],['t',3]]);gl.drawArrays(gl.TRIANGLES,0,D.length/12)}}
  /* the castle, standing up and turned to face the train */
  if(G.castle){const c=G.castle,P=G.tex,yw=Math.atan2(c.z-ez,c.x-ex),rx=-Math.sin(yw)*c.W/2,rz=Math.cos(yw)*c.W/2;
   const v=new Float32Array([c.x-rx,0,c.z-rz,0,1,c.x+rx,0,c.z+rz,1,1,c.x+rx,c.H,c.z+rz,1,0,c.x-rx,0,c.z-rz,0,1,c.x+rx,c.H,c.z+rz,1,0,c.x-rx,c.H,c.z-rz,0,0]);
   common(P);gl.bindTexture(gl.TEXTURE_2D,G.ct);gl.uniform1i(P.u.T,0);gl.uniform1f(P.u.MODE,2);if(nf>.4)gl.uniform3fv(P.u.AC,[.55,.5,.75]);gl.bindBuffer(gl.ARRAY_BUFFER,G.cb);gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);rideAttrs(gl,P,G.cb,[['p',3],['u',2]]);gl.drawArrays(gl.TRIANGLES,0,6)}
  /* trees, then the lamps after dark */
- {const P=G.pt;common(P);gl.uniform1f(P.u.K,H/2/Math.tan(fovy/2));gl.uniform1f(P.u.MX,G.ptMax);gl.uniform1f(P.u.EM,0);rideAttrs(gl,P,G.trees,[['p',3],['s',1],['c',3]]);gl.drawArrays(gl.POINTS,0,G.nTrees);
-  if(nf>.3&&G.nLamps){gl.uniform1f(P.u.EM,1);rideAttrs(gl,P,G.lamps,[['p',3],['s',1],['c',3]]);gl.drawArrays(gl.POINTS,0,G.nLamps)}}
+ {const P=G.pt;common(P);gl.uniform1f(P.u.K,H/2/Math.tan(fovy/2));gl.uniform1f(P.u.MX,G.ptMax);gl.uniform1f(P.u.EM,0);rideAttrs(gl,P,G.trees,[['p',3],['s',1],['c',3],['q',1]]);gl.drawArrays(gl.POINTS,0,G.nTrees);
+  if(nf>.3&&G.nLamps){gl.uniform1f(P.u.EM,1);rideAttrs(gl,P,G.lamps,[['p',3],['s',1],['c',3],['q',1]]);gl.drawArrays(gl.POINTS,0,G.nLamps)}}
  rideHud(m)}
 const rideTime=s=>{s=Math.max(0,Math.round(s));return s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:`${s} s`};
 function rideHud(m){const l=MLINE[m.l],L=l.p.L,t=document.getElementById('rideTtl'),s=document.getElementById('rideSt');if(!t)return;

@@ -304,6 +304,12 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `#rideTtl/#rideSt`, `body.riding` hides the bar and nav. Trains now ease in/out of stations in `transport` (`m.v`, so
   monoEta is a few seconds optimistic). The card button `#dRide` is on Resort/Express trains only (EPCOT's line runs outside
   the ground texture).
+  Realism pass (owner, 20 Nov: "make the buildings and trees look more realistic ... some trees clip through the track"):
+  vertex = p,c,n,t(u,v,kind) (12 floats); walls carry u/v so the lit shader draws window grids (lit at random after dark,
+  `NI`) and a darker foot; convex footprints get hipped roofs with eaves (not cont/tom/roof kinds), others a flat roof with a
+  parapet. Trees use the map's kinds: crowns = trunk + 3-4 leafy noise point sprites (seed attribute `q`), pines = 2 stacked
+  cones, palms = trunk + 7 drooping fronds; any tree within ~r+2 of a beam (grid of beam samples) is dropped. Ground texture
+  gets world-space noise.
 - Short phones (owner, 20 Nov: "optimize ... for the closed iPhone Duo screen", about 466 x 678 points): a
   `@media(max-width:760px) and (max-height:760px)` block at the end of style.css (slimmer #bar/#nav/#time, sheet 80%).
 - Friendship boats pass under bridges: `fsBridges` in render.js finds every walkway/road/bridge deck crossing their routes

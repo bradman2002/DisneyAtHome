@@ -26,7 +26,7 @@ fi
 
 # where to put the window: the top-left corner of the second screen if there is one, else of the main screen
 POS=$(osascript -l JavaScript -e 'ObjC.import("AppKit");var s=$.NSScreen.screens,m=s.objectAtIndex(0).frame,t=s.objectAtIndex(s.count>1?1:0).frame;Math.round(t.origin.x)+","+Math.round(m.size.height-(t.origin.y+t.size.height))' 2>/dev/null)
-echo "Magic Kingdom Simulator: TV mode at $URL"
+echo "DisneyAtHome: TV mode at $URL"
 echo "Press Command-Q in the full-screen window to stop."
 # its own Chrome profile, so this never touches your normal Chrome windows; kiosk = full screen with no browser bars;
 # the autoplay setting lets the sound start without a click

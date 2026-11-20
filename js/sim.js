@@ -1,7 +1,7 @@
 /* Magic Kingdom resort-area simulator — park data, path graph and guest/attraction/transport simulation.
    Shared globals (classic scripts, so the site also works when opened straight from disk). */
 'use strict';
-/* ===== Magic Kingdom Simulator — structure: DATA / GRAPH / STATIC ART / SIM / AUDIO / RENDER / UI.
+/* ===== DisneyAtHome — structure: DATA / GRAPH / STATIC ART / SIM / AUDIO / RENDER / UI.
    A new park = new DATA block (lands, nodes, edges, attractions, venues, events). ===== */
 const $=s=>document.querySelector(s),W=OSM.W,H=OSM.H,K=12,MKR=OSM.regions?OSM.regions[0]:[0,0,W,H],EPR=OSM.regions&&OSM.regions[1],HSR=OSM.regions&&(OSM.nparks||2)>2?OSM.regions[2]:null; /* HSR: Hollywood Studios */ /* MKR: the Magic Kingdom resort area; EPR: Epcot (the map between them is blank for now) */
 let OPEN=9,CLOSE=22,EOPEN=9,ECLOSE=21,HOPEN=9,HCLOSE=21,LIVENOW=false,CROWDX=1; /* EOPEN/ECLOSE: EPCOT's hours */ // park hours (live mode sets today's real ones); LIVENOW: real wait times and closures apply right now (see live.js)

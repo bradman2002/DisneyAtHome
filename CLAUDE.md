@@ -1,4 +1,4 @@
-# Magic Kingdom Simulator — project brief
+# DisneyAtHome — project brief
 
 A personal website: an illustrated, simulated Walt Disney World Magic Kingdom (plus EPCOT and Hollywood Studios), plus the resort area around
 Seven Seas Lagoon and Bay Lake (the monorail loop, the Transportation and Ticket Center, the Contemporary,
@@ -159,7 +159,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   falls back to `FM_SCENES` fractions. Guests sit in the
   seats (`spot0` 'fmic'; `spot()` skips the pavement test there). Start it by hand from Entertainment or its sheet.
 - Mobile app (owner, 17 Nov 2026: "make it so it can act more like an app on mobile"): `manifest.webmanifest` (name
-  "Magic Kingdom Simulator", short "Park Sim", standalone, relative start_url/scope so GitHub Pages works), icons in `images/`
+  "DisneyAtHome", short "DisneyAtHome", standalone, relative start_url/scope so GitHub Pages works), icons in `images/`
   (an original castle-and-fireworks drawing, made in code; no Disney artwork), iOS meta tags, and `sw.js`: network first for
   the site's own files with a cached copy for offline, never storing `audio/` or byte-range requests (the owner's music stays
   off it). It registers 3 s after start-up, not on the load event (streaming music can hold that off). ☰ has "Install as an
@@ -251,6 +251,10 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `RIDEAUD`: soarin, tot, rotr, railway, startours, indy, muppets (the owner's files, git-ignored).
   Later the same day: spaceship, cosmic, testtrack, missionspace, remy, fiesta (EPCOT). 19 Nov: seas (The Seas with Nemo &
   Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track).
+- Fantasmic's Sorcerer Mickey is his own drawing, `fmSorcerer` (fantasmic.js): red robe, raised white gloves, blue hat with moon
+  and stars, sparkles from his hands; not the parade figure from characters.js.
+- The project is named DisneyAtHome (renamed 19 Nov 2026): page title, app name and short name, readme. The launcher file
+  names (`Start Simulator.command` etc.) and folder names were left as they are.
 - Cosmic Rewind's wait sits at (4240,5450), over its pavilion (sim.js): its map outline runs out to the show building backstage.
 - Spaceship Earth at night: the baked glow is only a faint halo and uplighting; `sseNight` (render.js) draws a slow colour
   wash and 150 twinkling lights live each frame, from `SSE_AT` (set when map-art paints the sphere). Remy's osm name has a curly

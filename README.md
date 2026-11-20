@@ -1,4 +1,4 @@
-# Magic Kingdom Simulator
+# DisneyAtHome
 
 A simulated, illustrated Magic Kingdom and the resort area around it: aerial map with wait-time
 callouts, Seven Seas Lagoon, the monorail loop (Express and Resort lines) with the Contemporary,

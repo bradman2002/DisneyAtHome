@@ -98,6 +98,39 @@ function fmBoat(G,a,t,al){const ib=G.ib,rx=(ib[2]-ib[0])/2+11,ry=(ib[3]-ib[1])/2
  cx.fillStyle='#ffe9a0';for(let i=0;i<9;i++)cx.fillRect(x-L*.55+i*L*.14,y-1.6,.5,.5);
  if(typeof drawChar==='function'){const s=OSM.S*2.2;cx.save();for(const[w,dx]of[['mickey',-3],['minnie',-1],['donald',1.2],['goofy',3.4]])drawChar(cx,s,(x+dx)/s,(y-4.5)/s,w,t);cx.restore()}
  cx.restore()}
+/* Sorcerer Mickey on the mountain's peak, feet at (px,py): red robe, white gloves raised as he conducts, the tall blue
+   hat with its moon and stars, and sparkles streaming up from his hands. Drawn in map units, k per figure unit
+   (he stands about 2.8 units to the hat's tip). on: fade in/out */
+function fmSorcerer(px,py,t,on){const c=cx,k=OSM.S*4.4,X=x=>px+x*k,Y=y=>py+y*k,sw=Math.sin(t*1.6)*.12,sw2=Math.sin(t*1.6+1.3)*.1;
+ const E=(x,y,rx,ry,col,a)=>{c.fillStyle=col;c.beginPath();c.ellipse(X(x),Y(y),rx*k,ry*k,a||0,0,7);c.fill()},
+  Pg=(pts,col)=>{c.fillStyle=col;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(X(x),Y(y)):c.moveTo(X(x),Y(y)));c.closePath();c.fill()},
+  L=(pts,col,w)=>{c.strokeStyle=col;c.lineWidth=w*k;c.lineCap='round';c.lineJoin='round';c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(X(x),Y(y)):c.moveTo(X(x),Y(y)));c.stroke()},
+  star=(x,y,r,col)=>{c.fillStyle=col;c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*.45:r;c.lineTo(X(x)+Math.cos(a)*q*k,Y(y)+Math.sin(a)*q*k)}c.closePath();c.fill()};
+ const hL=[-.66,-1.92+sw],hR=[.64,-2.0-sw2];
+ c.save();c.globalAlpha=on;
+ /* the spotlight on him */
+ {const g=c.createRadialGradient(X(0),Y(-1.3),k*.2,X(0),Y(-1.3),k*1.9);g.addColorStop(0,'rgba(255,250,215,.55)');g.addColorStop(1,'rgba(255,250,215,0)');c.fillStyle=g;c.beginPath();c.arc(X(0),Y(-1.3),k*1.9,0,7);c.fill()}
+ /* shoes, robe (lit from the front-left), sleeves and gloves */
+ E(-.24,-.05,.2,.09,'#e9a92a');E(.26,-.05,.2,.09,'#d99a22');
+ Pg([[-.24,-1.18],[.24,-1.18],[.52,-.08],[.2,-.02],[-.2,-.02],[-.52,-.08]],'#c92a3c');
+ Pg([[.02,-1.18],[.24,-1.18],[.52,-.08],[.2,-.02],[.04,-.04]],'#9e1d2e');
+ L([[-.14,-1.05],[-.2,-.2]],'rgba(255,255,255,.12)',.05);
+ for(const[h,s0]of[[hL,-1],[hR,1]]){const sh=[s0*.22,-1.12],el=[(sh[0]+h[0])/2+s0*.1,(sh[1]+h[1])/2+.06];L([sh,el,h],'#b5243a',.17);L([el,[h[0]-(h[0]-el[0])*.25,h[1]-(h[1]-el[1])*.25]],'#c92a3c',.2);
+  E(h[0],h[1],.12,.13,'#fff');E(h[0]-s0*.02,h[1]+.12,.1,.05,'#e8e8f0');L([[h[0]-s0*.05,h[1]-.08],[h[0]-s0*.05,h[1]-.2]],'#fff',.06)}
+ /* head: ears, face, eyes, nose and a smile */
+ E(-.36,-1.64,.17,.17,'#17151a');E(.36,-1.64,.17,.17,'#17151a');E(0,-1.47,.28,.27,'#17151a');
+ E(0,-1.39,.22,.17,'#f6d9bd');E(-.075,-1.52,.075,.11,'#f6d9bd');E(.075,-1.52,.075,.11,'#f6d9bd');
+ E(-.07,-1.5,.04,.07,'#fff');E(.07,-1.5,.04,.07,'#fff');E(-.065,-1.49,.022,.04,'#17151a');E(.075,-1.49,.022,.04,'#17151a');
+ E(0,-1.405,.06,.042,'#17151a');c.strokeStyle='#17151a';c.lineWidth=.035*k;c.beginPath();c.arc(X(0),Y(-1.38),.12*k,.3,Math.PI-.3);c.stroke();
+ /* the hat: a tall blue cone, tipped a little, with a crescent moon and stars */
+ const tip=[.14+sw*.2,-2.85];Pg([[-.3,-1.64],[.3,-1.66],tip],'#2c4cc0');Pg([[.05,-1.65],[.3,-1.66],tip],'#22399a');E(0,-1.65,.31,.06,'#2c4cc0');
+ c.save();c.fillStyle='#f6e8a8';c.beginPath();c.arc(X(-.04),Y(-2.05),.1*k,0,7);c.fill();c.fillStyle='#2c4cc0';c.beginPath();c.arc(X(.0),Y(-2.08),.085*k,0,7);c.fill();c.restore();
+ star(.09,-2.32,.07,'#fdf6d0');star(-.1,-1.82,.055,'#fdf6d0');star(.15,-1.9,.045,'#fdf6d0');star(.08,-2.6,.04,'#fdf6d0');
+ /* sparkles streaming up from his gloves */
+ c.globalCompositeOperation='lighter';
+ for(const[h,s0]of[[hL,-1],[hR,1]])for(let i=0;i<14;i++){const ph=(t*.45+i/14+(s0>0?.5:0))%1,a=-Math.PI/2+s0*(.35+ph*.5)+Math.sin(t*2+i)*.25,r=ph*1.7,x=h[0]+Math.cos(a)*r+Math.sin(ph*9+i)*.08,y=h[1]+Math.sin(a)*r,al=(1-ph)*on;
+  c.globalAlpha=al*.9;star(x,y,.07*(1-ph*.6),i%3?'#fff6c8':'#bfe0ff');c.globalAlpha=al*.35;E(x,y,.16*(1-ph*.5),.16*(1-ph*.5),'#ffe9a0')}
+ c.restore()}
 function fmDraw(now){const st=fmClock(),G=fmGeo();if(st===null||!G||SV.on)return;const L=fmLen();if(st>L+10)return;const f=Math.max(0,st)/L,[kind,[h1,h2]]=fmAt(st),t=now/1000,env=fmEnv(st),beat=fmBeat(st),pre=kind==='pre',on=Math.min(1,st/6,(L+8-st)/8)*(pre?.25:1),A=on*Math.max(.35,nf)*(fmCh()?.55+.6*env:1);
  if(A<=0)return;if(pre){cx.save();cx.globalCompositeOperation='lighter';const g=cx.createRadialGradient(G.sc[0],G.sc[1],1,G.sc[0],G.sc[1],G.reach*.8);g.addColorStop(0,'rgba(120,130,255,.25)');g.addColorStop(1,'rgba(120,130,255,0)');cx.fillStyle=g;cx.beginPath();cx.arc(G.sc[0],G.sc[1],G.reach*.8,0,7);cx.fill();cx.restore();return} /* the announcement: just a glow on the island */
  cx.save();cx.globalCompositeOperation='lighter';
@@ -113,7 +146,5 @@ function fmDraw(now){const st=fmClock(),G=fmGeo();if(st===null||!G||SV.on)return
  cx.restore();
  /* figures on the island: the dragon, Sorcerer Mickey on the peak, the riverboat in the finale */
  if(kind==='dragon')fmDragon(G,t,on,Math.max(0,Math.sin(t*1.4)));
- if((kind==='intro'||kind==='mickey'||kind==='end')&&typeof drawChar==='function'){const s=OSM.S*3,[px,py]=G.peak;cx.save();cx.globalAlpha=on;
-  const g=cx.createRadialGradient(px,py-3,1,px,py-3,12);g.addColorStop(0,'rgba(255,255,230,.6)');g.addColorStop(1,'rgba(255,255,230,0)');cx.fillStyle=g;cx.beginPath();cx.arc(px,py-3,12,0,7);cx.fill();
-  drawChar(cx,s,px/s,py/s,'mickey',t);cx.fillStyle='#2f4fb8';cx.beginPath();cx.moveTo(px-2.4,py-6.4);cx.lineTo(px+.4,py-12.5);cx.lineTo(px+2.2,py-6.4);cx.closePath();cx.fill();cx.fillStyle='#f6e8a8';cx.beginPath();cx.arc(px-.4,py-8.4,.45,0,7);cx.arc(px+.9,py-10.2,.35,0,7);cx.fill();cx.restore()}
+ if(kind==='intro'||kind==='mickey'||kind==='end')fmSorcerer(G.peak[0],G.peak[1],t,on);
  if(kind==='finale'){const C=fmCh(),t0=C?C.scenes.find(q=>q[1]==='finale')[0]:L*.8,a=(st-t0)/40*Math.PI*2;fmBoat(G,a,t,on)}}

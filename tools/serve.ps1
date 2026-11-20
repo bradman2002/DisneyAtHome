@@ -23,7 +23,7 @@ $types = @{ '.webmanifest'='application/manifest+json'; '.html'='text/html; char
 
 $stamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
 $url = if ($Tv) { "${prefix}?tv&v=$stamp" } else { "${prefix}?v=$stamp" }
-Write-Host "Magic Kingdom Simulator running at $prefix"
+Write-Host "DisneyAtHome running at $prefix"
 
 $browser = $null
 if ($Tv) {

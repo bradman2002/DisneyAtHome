@@ -1,6 +1,6 @@
 {
-  "name": "Magic Kingdom Simulator",
-  "short_name": "Park Sim",
+  "name": "DisneyAtHome",
+  "short_name": "DisneyAtHome",
   "description": "An illustrated, live Walt Disney World simulator: Magic Kingdom, EPCOT and Hollywood Studios with real wait times.",
   "start_url": "./",
   "scope": "./",

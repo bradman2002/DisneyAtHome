@@ -103,4 +103,13 @@ body.fs.idle #osmc{opacity:.55}
  #views{top:8px;left:8px}#views button{padding:5px 11px;font-size:12px}
  #fsBar{bottom:104px;right:8px}#fsBar button{width:36px;height:36px}#osmc{top:44px}
  #sheet{height:80%}}
+/* riding in a monorail's front cab (ride.js): the 3D view fills the stage, framed like the cab's window, with the next stop at the top */
+#ride{position:absolute;inset:0;z-index:7;background:#000}#ride[hidden]{display:none}#rideCv{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#rideFrame{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 75% 70% at 50% 42%,transparent 70%,rgba(8,12,18,.55) 100%)}
+#rideFrame::after{content:'';position:absolute;left:-5%;right:-5%;bottom:0;height:13%;background:linear-gradient(#3a3f47,#1d2127);border-radius:50% 50% 0 0/38% 38% 0 0;box-shadow:0 -2px 0 rgba(255,255,255,.15)}
+#rideHud{position:absolute;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none}
+.rideCard{background:rgba(18,24,48,.72);color:#fff;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-radius:14px;padding:8px 14px;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
+.rideCard b{font-size:15px}.rideCard span{font-size:13px;opacity:.9}
+#rideLeave{pointer-events:auto;border:0;border-radius:999px;background:#fff;color:var(--tx);font-weight:700;font-size:14px;padding:9px 16px;box-shadow:var(--sh);white-space:nowrap}
+body.riding #bar,body.riding #nav{display:none}body.riding #app{grid-template-rows:1fr}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}

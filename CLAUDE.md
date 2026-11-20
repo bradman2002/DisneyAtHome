@@ -293,6 +293,17 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   pylons with crossbars), `drawSkyliner` (render.js, cabins out on one cable and back on the other, 55 apart at 5 m/s,
   `skyOpen()` = min(EOPEN,HOPEN)-1 to max(ECLOSE,HCLOSE)+1; `drawSkyliner(true)` after the night tint lights the windows);
   audio key `skyliner` in `rideTargets` (zoom × distance to the nearest cable, `RA.skyPts`).
+- Monorail cab ride (owner, 20 Nov: "I want to ride the monorail around the resort loop", chose the front-cab window view):
+  `js/ride.js`, raw WebGL (webgl2, else webgl1), no library. Built once on first boarding (`rideBuild`): region = resort +
+  express loops + 900; ground texture painted from OSM areas/roads/paths (`rideGround`, ≤4096 px); solids (`rideSolids`:
+  buildings extruded with the map's LANDSTYLE colours and ear-clipped roofs `rideEar`, Space Mountain cone, Contemporary
+  A-frame open at both ends, beams from `OSM.mono` at `RIDE_BH`=9, pylons every 36, station platforms/canopies); trees and
+  lamps as point sprites (`MAP.crowns` or `OSM.trees`); castle billboard from `CASTLE_IMG`. Fog is per-pixel (vp varying).
+  `rideFrame` is called from the render loop instead of the map when `RIDE.on`; eye at `monoXY(m,RIDE_NOSE)`; drag looks
+  around. Boarding sets `follow={k:'m',i}` (so the onboard audio plays) and speed 1; `#ride` overlay in index.html, HUD
+  `#rideTtl/#rideSt`, `body.riding` hides the bar and nav. Trains now ease in/out of stations in `transport` (`m.v`, so
+  monoEta is a few seconds optimistic). The card button `#dRide` is on Resort/Express trains only (EPCOT's line runs outside
+  the ground texture).
 - Short phones (owner, 20 Nov: "optimize ... for the closed iPhone Duo screen", about 466 x 678 points): a
   `@media(max-width:760px) and (max-height:760px)` block at the end of style.css (slimmer #bar/#nav/#time, sheet 80%).
 - Friendship boats pass under bridges: `fsBridges` in render.js finds every walkway/road/bridge deck crossing their routes

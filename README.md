@@ -107,6 +107,12 @@ Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic
 `ride-spaceship.mp3` (Spaceship Earth), `ride-cosmic.mp3` (Cosmic Rewind), `ride-testtrack.mp3` (Test Track), `ride-missionspace.mp3`
 (Mission: SPACE), `ride-remy.mp3` (Remy's Ratatouille Adventure), `ride-fiesta.mp3` (Gran Fiesta Tour) and `ride-seas.mp3` (The Seas with
 Nemo & Friends); Hollywood Studios also has `ride-rnrc.mp3` (Rock 'n' Roller Coaster), and Magic Kingdom `ride-tron.mp3` (TRON Lightcycle / Run).
+**Ride the monorail.** Tap a Resort or Express line train and press **Ride in the front cab**: the map gives way to the view
+out of the lead car's front window, a 3D scene built from the map data around the Seven Seas Lagoon (the ground, every
+building in its land or resort colours, Space Mountain, the Contemporary's A-frame the Resort line runs through, the castle,
+the trees, the beams and pylons and the other trains). The train eases into each station, opens its doors and moves on;
+the panel shows the next stop, the onboard audio plays, and the sky and light follow the time of day. Drag to look around;
+**Leave the monorail** (or Escape) brings the map back, following the train.
 The **Disney Skyliner** runs between EPCOT, the Riviera, Caribbean Beach, Pop Century/Art of Animation and Hollywood Studios
 on its real cables and pylons, its cabins gliding along each line from an hour before those parks open until an hour after
 they close (lit after dark). Zoom in on a line to hear `ride-skyliner.mp3`.

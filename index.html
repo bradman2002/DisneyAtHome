@@ -28,6 +28,8 @@
  </header>
  <main id="stage">
   <canvas id="cv" aria-label="Map of Magic Kingdom"></canvas>
+  <div id="ride" hidden><canvas id="rideCv" aria-label="View from the monorail's front cab"></canvas><div id="rideFrame" aria-hidden="true"></div>
+   <div id="rideHud"><div class="rideCard"><b id="rideTtl"></b><span id="rideSt"></span></div><button id="rideLeave">Leave the monorail</button></div></div>
   <div id="views" role="group" aria-label="View"><button id="vMap" class="on">Map</button><button id="vStreet">Main Street</button></div>
   <div id="fsBar" role="toolbar" aria-label="Full screen controls">
    <button id="fsList" class="fsOnly" aria-label="Wait times list"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
@@ -70,6 +72,7 @@
 <script src="js/pageant.js"></script>
 <script src="js/luminous.js"></script>
 <script src="js/treeoflife.js"></script>
+<script src="js/ride.js"></script>
 <script src="js/choreo-fantasmic.js"></script>
 <script src="js/fantasmic.js"></script>
 <script src="js/live.js"></script>

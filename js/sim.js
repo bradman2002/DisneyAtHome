@@ -291,9 +291,9 @@ function unload(m,x,y,cap){const n=Math.min(Math.floor(pend[m]),cap);pend[m]-=n;
 function board(m,cap){const n=Math.min(Math.floor(dep[m]),cap);dep[m]-=n;return n}
 function transport(dt){
  for(const m of MONO){const l=MLINE[m.l],L=l.p.L;
-  if(m.st==='dwell'){m.tm-=dt;if(m.tm<=0){m.st='run';m.nx=(m.at+1)%l.sd.length}continue}
-  const gap=((l.sd[m.nx]-m.x)%L+L)%L;
-  if(gap>MSPEED*dt){m.x=(m.x+MSPEED*dt)%L;continue}
+  if(m.st==='dwell'){m.tm-=dt;if(m.tm<=0){m.st='run';m.v=0;m.nx=(m.at+1)%l.sd.length}continue}
+  const gap=((l.sd[m.nx]-m.x)%L+L)%L,vt=MSPEED*Math.min(1,Math.max(.12,Math.sqrt(gap/60)));m.v=Math.min(vt,(m.v??MSPEED)+3.5*dt); /* trains ease out of a station and slow into the next (riding in the cab, and on the map) */
+  if(gap>m.v*dt){m.x=(m.x+m.v*dt)%L;continue}
   m.x=l.sd[m.nx];m.st='dwell';m.at=m.nx;const stop=l.stops[m.at];m.tm=DWELL(stop);
   if(l.k==='epcot')m.ld=Math.round(l.cap*rr(.25,.9)); /* EPCOT's trains: a load of guests each way */
   else if(stop==='mk'){unload(0,P_.monostation[0],P_.monostation[1]-6,l.cap);m.ld=board(0,l.cap)}   // arrivals step off, departures board

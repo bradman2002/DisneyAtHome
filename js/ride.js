@@ -1,0 +1,180 @@
+/* ===== RIDE THE MONORAIL: the view from the front cab =====
+   Board a Resort or Express line train (its card: "Ride in the front cab") and the map gives way to the view out of the
+   lead car's front window: a WebGL scene built once from the map data around the Seven Seas Lagoon -
+   - the ground, painted from the map's lawns, forests, water, parking, roads and walkways;
+   - every building as a solid block in the same land or resort colours the map uses, Space Mountain as a white cone and
+     the Contemporary as its A-frame, open at the ends, which the Resort line runs straight through;
+   - Cinderella Castle (its picture, standing up), the trees as round crowns, the street lamps lit after dark;
+   - the monorail beams on their pylons with platforms and canopies at the stations, and the other trains on them.
+   The camera sits at the nose of the lead car, so it follows the train round the loop, easing into and out of each
+   station. Drag to look around (it drifts back to straight ahead). The sky and the light follow the time of day. The
+   onboard audio plays (audio/ride-monorail.mp3) and the panel shows the next stop. Leave with the button or Escape: the
+   map comes back, following the train. */
+const RIDE={on:false,i:-1,gl:null,built:false,yaw:null,look:0,pitch:0,drag:null,idle:0,dyn:null};
+const RIDE_BH=9,RIDE_NOSE=27; /* beam top height, and the cab's distance ahead of a train's position, in map units */
+function rideRegion(){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const k of['resort','express'])for(const[x,y]of OSM.mono[k]||[]){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}
+ const M=900;return[Math.max(0,x0-M),Math.max(0,y0-M),Math.min(OSM.W,x1+M),Math.min(OSM.H,y1+M)]}
+const rideHex=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]};
+/* ---- small 3D helpers ---- */
+function rideTri(A,a,b,c,col){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
+ for(const p of[a,b,c])A.push(p[0],p[1],p[2],col[0],col[1],col[2],nx,ny,nz)}
+const rideQuad=(A,a,b,c,d,col)=>{rideTri(A,a,b,c,col);rideTri(A,a,c,d,col)};
+/* a box along a segment (map x,y -> world x,z), w wide, from height y0 to y1 */
+function rideSeg(A,ax,az,bx,bz,w,y0,y1,col,ends){const L=Math.hypot(bx-ax,bz-az)||1,px=-(bz-az)/L*w/2,pz=(bx-ax)/L*w/2;
+ const p=[[ax+px,az+pz],[bx+px,bz+pz],[bx-px,bz-pz],[ax-px,az-pz]];
+ rideQuad(A,[p[0][0],y1,p[0][1]],[p[1][0],y1,p[1][1]],[p[2][0],y1,p[2][1]],[p[3][0],y1,p[3][1]],col);
+ rideQuad(A,[p[0][0],y0,p[0][1]],[p[1][0],y0,p[1][1]],[p[1][0],y1,p[1][1]],[p[0][0],y1,p[0][1]],col);
+ rideQuad(A,[p[3][0],y0,p[3][1]],[p[2][0],y0,p[2][1]],[p[2][0],y1,p[2][1]],[p[3][0],y1,p[3][1]],col);
+ if(ends){rideQuad(A,[p[0][0],y0,p[0][1]],[p[3][0],y0,p[3][1]],[p[3][0],y1,p[3][1]],[p[0][0],y1,p[0][1]],col);rideQuad(A,[p[1][0],y0,p[1][1]],[p[2][0],y0,p[2][1]],[p[2][0],y1,p[2][1]],[p[1][0],y1,p[1][1]],col)}}
+/* ear clipping, for the flat roofs */
+function rideEar(P0){const P=[];for(const q of P0){const l=P[P.length-1];if(!l||Math.hypot(q[0]-l[0],q[1]-l[1])>.05)P.push(q)}while(P.length>3&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<=.05)P.pop(); /* repeated points out */
+ for(let i=0;i<P.length&&P.length>3;){const a=P[(i+P.length-1)%P.length],b=P[i],c=P[(i+1)%P.length];if(Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))<1e-6)P.splice(i,1);else i++} /* and points in a straight line */
+ const n=P.length;if(n<3)return[];let A=0;for(let i=0;i<n;i++){const a=P[i],b=P[(i+1)%n];A+=a[0]*b[1]-b[0]*a[1]}const s=A>0?1:-1,idx=[...Array(n).keys()],out=[];
+ const cr=(a,b,c)=>((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))*s,inT=(p,a,b,c)=>cr(a,b,p)>=0&&cr(b,c,p)>=0&&cr(c,a,p)>=0;let g=0;
+ while(idx.length>3&&g<n*n){g++;let ok=false;for(let i=0;i<idx.length;i++){const ia=idx[(i+idx.length-1)%idx.length],ib=idx[i],ic=idx[(i+1)%idx.length],a=P[ia],b=P[ib],c=P[ic];
+   if(cr(a,b,c)<=1e-9)continue;let e=true;for(const j of idx){if(j===ia||j===ib||j===ic)continue;if(inT(P[j],a,b,c)){e=false;break}}if(!e)continue;out.push([a,b,c]);idx.splice(i,1);ok=true;break}
+  if(!ok)break}
+ if(idx.length===3)out.push(idx.map(i=>P[i]));else for(let i=1;i<idx.length-1;i++)out.push([P[idx[0]],P[idx[i]],P[idx[i+1]]]); /* stuck (a self-touching outline): fan out what is left */
+ return out}
+/* ---- the ground: the map's areas, roads and walkways painted onto one texture ---- */
+function rideGround(R,maxT){const w=R[2]-R[0],h=R[3]-R[1],K=Math.min(1.6,maxT/Math.max(w,h)),cv=document.createElement('canvas');cv.width=Math.round(w*K);cv.height=Math.round(h*K);
+ const c=cv.getContext('2d');c.scale(K,K);c.translate(-R[0],-R[1]);c.fillStyle='#8fbf5a';c.fillRect(R[0],R[1],w,h);
+ const inR=o=>{const b=bbox(o);return b[2]>R[0]&&b[0]<R[2]&&b[3]>R[1]&&b[1]<R[3]},A=OSM.areas.filter(a=>a.o.length>2&&inR(a.o));
+ const fill=(k,col)=>{for(const a of A)if(a.k===k){areaPath(c,a);c.fillStyle=col;c.fill('evenodd')}};
+ fill('grass','#a6d36c');fill('scrub','#8db560');fill('sand','#eddcaa');fill('parking','#b4b8bf');fill('construction','#c9a77c');fill('garden','#93c862');fill('forest','#3f7330');
+ for(const a of A)if(a.k==='water'){c.save();areaPath(c,a);c.clip('evenodd');areaPath(c,a);c.fillStyle='#4fb3d0';c.fill('evenodd');for(const[lw,col]of[[14,'#62c2da'],[5,'#9fe0e8'],[1.6,'#d8f3f2']]){c.strokeStyle=col;c.lineWidth=lw;areaPath(c,a);c.stroke()}c.restore()}
+ fill('ped','#e6d9cc');
+ const RW={road1:8.5,road2:6.5,road3:3.8};c.lineCap=c.lineJoin='round';
+ for(const pass of[0,1])for(const l of OSM.lines)if(RW[l.k])for(const p of l.p){if(!inR(p))continue;c.strokeStyle=pass?(l.k==='road3'?'#c3c5cb':'#a9adb6'):'#7b8088';c.lineWidth=RW[l.k]+(pass?0:1.2);pathOf(c,p);c.stroke()}
+ for(const q of OSM.paths){if(!inR(q.p))continue;if(q.a){c.fillStyle='#ede1d6';pathOf(c,q.p,1);c.fill()}else{c.strokeStyle=q.q?'#e3d6c8':'#ede1d6';c.lineWidth=q.w;pathOf(c,q.p);c.stroke()}}
+ fill('bridge','#dccbb4');fill('pier','#b98e5e');
+ for(const l of OSM.lines)if(l.k==='rail')for(const p of l.p){if(!inR(p))continue;c.strokeStyle='#8a7357';c.lineWidth=3;pathOf(c,p);c.stroke()}
+ c.fillStyle='rgba(60,60,55,.35)';for(const q of OSM.buildings)if(q.p.length>2&&inR(q.p)){pathOf(c,q.p,1);c.fill()} /* a little shade at each building's foot */
+ return cv}
+/* ---- everything solid: buildings, landmarks, beams, pylons, stations ---- */
+function rideSolids(R){const A=[],S=OSM.S||1.02,inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1]&&y<R[3];
+ const castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle');
+ for(const q of OSM.buildings){if(q.p.length<3)continue;const b=bbox(q.p),cx_=(b[0]+b[2])/2,cy_=(b[1]+b[3])/2;if(!inR(cx_,cy_))continue;
+  if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p)))continue;
+  if(q.n==='Space Mountain'){const r=(b[2]-b[0])/2,H=r*1.3,N=28,col=rideHex('#eef1f5');for(let i=0;i<N;i++){const a0=i/N*6.2832,a1=(i+1)/N*6.2832;rideTri(A,[cx_+Math.cos(a0)*r,0,cy_+Math.sin(a0)*r],[cx_,H,cy_],[cx_+Math.cos(a1)*r,0,cy_+Math.sin(a1)*r],i%2?col:rideHex('#dfe4ea'))}continue}
+  if(/Contemporary Resort$/.test(q.n||'')&&q.h>30){ /* the A-frame along the footprint's longest side, open at both ends */
+   let best=0,ux=1,uz=0;for(let i=0;i<q.p.length;i++){const a=q.p[i],c=q.p[(i+1)%q.p.length],l=Math.hypot(c[0]-a[0],c[1]-a[1]);if(l>best){best=l;ux=(c[0]-a[0])/l;uz=(c[1]-a[1])/l}}
+   const vx=-uz,vz=ux;let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;for(const[x,y]of q.p){const u=(x-cx_)*ux+(y-cy_)*uz,v=(x-cx_)*vx+(y-cy_)*vz;u0=Math.min(u0,u);u1=Math.max(u1,u);v0=Math.min(v0,v);v1=Math.max(v1,v)}
+   const P=(u,v,y)=>[cx_+ux*u+vx*v,y,cy_+uz*u+vz*v],H=q.h*S,vm=(v0+v1)/2,wall=rideHex('#d9dbd8'),glass=rideHex('#8a94a0');
+   rideQuad(A,P(u0,v0,0),P(u1,v0,0),P(u1,vm,H),P(u0,vm,H),wall);rideQuad(A,P(u0,v1,0),P(u1,v1,0),P(u1,vm,H),P(u0,vm,H),wall);
+   for(let k=1;k<14;k++){const f=k/14,y=H*f,va=v0+(vm-v0)*f,vb=v1+(vm-v1)*f;rideSeg(A,...[P(u0,va,0),P(u1,va,0)].flatMap(p=>[p[0],p[2]]),.6,y-.5,y+.3,glass);rideSeg(A,...[P(u0,vb,0),P(u1,vb,0)].flatMap(p=>[p[0],p[2]]),.6,y-.5,y+.3,glass)} /* the balconies' dark bands */
+   rideQuad(A,P(u0,v0+.5,RIDE_BH-4),P(u1,v0+.5,RIDE_BH-4),P(u1,v1-.5,RIDE_BH-4),P(u0,v1-.5,RIDE_BH-4),rideHex('#b9a98e')); /* the Grand Canyon Concourse floor under the beam */
+   continue}
+  const land=Object.keys(OSM.lands||{}).find(k=>ptIn(cx_,cy_,OSM.lands[k]))||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
+  const wall=rideHex(st[0][hs%st[0].length]),roof=rideHex(q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length]),H=Math.max(3,(q.k==='roof'?Math.min(q.h,4):q.h)*S);
+  const P=q.p[0][0]===q.p[q.p.length-1][0]&&q.p[0][1]===q.p[q.p.length-1][1]?q.p.slice(0,-1):q.p;
+  for(let i=0;i<P.length;i++){const a=P[i],c=P[(i+1)%P.length];if(a[0]===c[0]&&a[1]===c[1])continue;rideQuad(A,[a[0],0,a[1]],[c[0],0,c[1]],[c[0],H,c[1]],[a[0],H,a[1]],wall)}
+  for(const[a,b2,c]of rideEar(P))rideTri(A,[a[0],H,a[1]],[b2[0],H,b2[1]],[c[0],H,c[1]],roof)}
+ /* the beams (the lines the trains run on), their pylons, and the stations' platforms and canopies */
+ const beam=rideHex('#eef1f4'),pyl=rideHex('#d4d9df'),MI=OSM.monoIn;
+ for(const k of['resort','express','epcot']){if(!OSM.mono[k])continue;const P=mkPath(OSM.mono[k]);let last=null,acc=0;
+  for(let d=0;d<=P.L;d+=6){const[x,y]=P.at(Math.min(d,P.L-.01));if(last&&(inR(x,y)||inR(last[0],last[1]))){rideSeg(A,last[0],last[1],x,y,1.5,RIDE_BH-1.9,RIDE_BH,beam);acc+=6;
+    const inside=MI&&x>MI[0]-6&&x<MI[2]+6&&y>MI[1]-6&&y<MI[3]+6;if(acc>=36&&!inside){acc=0;rideSeg(A,x-.6,y,x+.6,y,1.2,0,RIDE_BH-1.9,pyl,true)}}last=[x,y]}}
+ const plat=rideHex('#cfc8bd'),can=rideHex('#f4f4f2');
+ for(const s of['ttc','poly','gf','mk','cont']){const q=P_[s];if(!q)continue;for(const k of['resort','express']){const l=MLINE[k];if(!l||l.stops.indexOf(s)<0)continue;const d=l.p.proj(...q);
+   const a=l.p.at(Math.max(0,d-32)),b=l.p.at(Math.min(l.p.L-.01,d+32)),L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nx=-(b[1]-a[1])/L,nz=(b[0]-a[0])/L;
+   for(const o of[-3.6]){rideSeg(A,a[0]+nx*o,a[1]+nz*o,b[0]+nx*o,b[1]+nz*o,4,RIDE_BH-1.4,RIDE_BH-.9,plat,true)}
+   if(s!=='cont')rideSeg(A,a[0]-nx*1,a[1]-nz*1,b[0]-nx*1,b[1]-nz*1,11,RIDE_BH+5.2,RIDE_BH+5.8,can,true)}}
+ return new Float32Array(A)}
+/* the trees (from the map's own crowns when it has worked them out) and the street lamps, as round points */
+function ridePoints(R){const T_=[],L_=[],inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1]&&y<R[3],G=['#3f7a35','#4f8a3e','#5a9a44','#46803a','#6aa84c'].map(rideHex);
+ const src=MAP.crowns&&MAP.crowns.length?MAP.crowns:OSM.trees.map(([x,y])=>[x,y,3.4]);
+ for(const t of src){const[x,y,r]=t;if(!inR(x,y))continue;const c=G[hsh(Math.round(x*7+y*13))%G.length],rr=(r||3.4)*.95;T_.push(x,rr*1.5,y,rr*2.2,c[0],c[1],c[2])}
+ for(const[x,y]of OSM.lamps||[])if(inR(x,y))L_.push(x,4.2,y,1.4,1,.9,.62);
+ return{t:new Float32Array(T_),l:new Float32Array(L_)}}
+/* ---- WebGL ---- */
+const RIDE_VS_LIT='attribute vec3 p;attribute vec3 c;attribute vec3 n;uniform mat4 M;uniform vec3 E;varying vec3 vc;varying vec3 vn;varying vec3 vp;void main(){gl_Position=M*vec4(p,1.);vc=c;vn=n;vp=p;}';
+const RIDE_FS_LIT='precision highp float;varying vec3 vc;varying vec3 vn;varying vec3 vp;uniform vec3 E;uniform vec3 L;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;void main(){float vf=distance(vp,E);float d=abs(dot(normalize(vn),L));vec3 col=vc*(AC+SC*d);float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
+const RIDE_VS_TEX='attribute vec3 p;attribute vec2 u;uniform mat4 M;uniform vec3 E;varying vec2 vu;varying vec3 vp;void main(){gl_Position=M*vec4(p,1.);vu=u;vp=p;}';
+const RIDE_FS_TEX='precision highp float;varying vec2 vu;varying vec3 vp;uniform vec3 E;uniform sampler2D T;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform vec3 G;uniform float MODE;void main(){vec3 col;if(MODE<.5)col=texture2D(T,vu).rgb;else if(MODE<1.5)col=G;else{vec4 t=texture2D(T,vu);if(t.a<.45)discard;col=t.rgb;}col*=AC+SC*.9;float vf=distance(vp,E);float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
+const RIDE_VS_PT='attribute vec3 p;attribute float s;attribute vec3 c;uniform mat4 M;uniform vec3 E;uniform float K;uniform float MX;varying vec3 vc;varying float vf;void main(){vec4 q=M*vec4(p,1.);gl_Position=q;vf=distance(p,E);gl_PointSize=clamp(s*K/max(q.w,.1),1.,MX);vc=c;}';
+const RIDE_FS_PT='precision mediump float;varying vec3 vc;varying float vf;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform float EM;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;vec3 col;if(EM>.5){col=vc*(1.-r*2.);}else{float sh=.92+.45*(-d.x-d.y)-r*.35;col=vc*sh*(AC+SC*.85);}float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,EM>.5?f*.5:f),1.);}';
+const RIDE_VS_SKY='attribute vec2 p;varying float vy;void main(){gl_Position=vec4(p,.9999,1.);vy=p.y;}';
+const RIDE_FS_SKY='precision mediump float;varying float vy;uniform vec3 TC;uniform vec3 HC;uniform float HY;void main(){float f=clamp((vy-HY)/max(.05,1.-HY),0.,1.);gl_FragColor=vec4(mix(HC,TC,pow(f,.7)),1.);}';
+function rideProg(gl,vs,fs){const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o};
+ const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+ const u={},a={};const nu=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS),na=gl.getProgramParameter(p,gl.ACTIVE_ATTRIBUTES);for(let i=0;i<nu;i++){const n=gl.getActiveUniform(p,i).name;u[n]=gl.getUniformLocation(p,n)}for(let i=0;i<na;i++){const n=gl.getActiveAttrib(p,i).name;a[n]=gl.getAttribLocation(p,n)}return{p,u,a}}
+function rideBuf(gl,data,dyn){const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,data,dyn?gl.DYNAMIC_DRAW:gl.STATIC_DRAW);return b}
+function rideAttrs(gl,P,buf,spec){for(let i=0;i<4;i++)gl.disableVertexAttribArray(i);gl.bindBuffer(gl.ARRAY_BUFFER,buf);const st=spec.reduce((s,x)=>s+x[1],0)*4;let o=0;for(const[n,k]of spec){const l=P.a[n];if(l!==undefined&&l>=0){gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,k,gl.FLOAT,false,st,o)}o+=k*4}}
+function rideBuild(){const cv=document.getElementById('rideCv');let gl=cv.getContext('webgl2',{antialias:true,alpha:false})||cv.getContext('webgl',{antialias:true,alpha:false});if(!gl)return false;
+ const R=rideRegion(),G={gl,R,v2:typeof WebGL2RenderingContext!=='undefined'&&gl instanceof WebGL2RenderingContext};
+ G.lit=rideProg(gl,RIDE_VS_LIT,RIDE_FS_LIT);G.tex=rideProg(gl,RIDE_VS_TEX,RIDE_FS_TEX);G.pt=rideProg(gl,RIDE_VS_PT,RIDE_FS_PT);G.sky=rideProg(gl,RIDE_VS_SKY,RIDE_FS_SKY);
+ const maxT=Math.min(4096,gl.getParameter(gl.MAX_TEXTURE_SIZE)),gc=rideGround(R,maxT);G.gt=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,G.gt);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,gc);
+ if(G.v2){gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR)}else gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+ const an=gl.getExtension('EXT_texture_filter_anisotropic');if(an)gl.texParameterf(gl.TEXTURE_2D,an.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(8,gl.getParameter(an.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+ gc.width=gc.height=0;
+ const[x0,y0,x1,y1]=R,E=7000;G.ground=rideBuf(gl,new Float32Array([x0,0,y0,0,0,x1,0,y0,1,0,x1,0,y1,1,1,x0,0,y0,0,0,x1,0,y1,1,1,x0,0,y1,0,1]));
+ G.outer=rideBuf(gl,new Float32Array([x0-E,-.3,y0-E,0,0,x1+E,-.3,y0-E,0,0,x1+E,-.3,y1+E,0,0,x0-E,-.3,y0-E,0,0,x1+E,-.3,y1+E,0,0,x0-E,-.3,y1+E,0,0]));
+ const S=rideSolids(R);G.solid=rideBuf(gl,S);G.nSolid=S.length/9;const pts=ridePoints(R);G.trees=rideBuf(gl,pts.t);G.nTrees=pts.t.length/7;G.lamps=rideBuf(gl,pts.l);G.nLamps=pts.l.length/7;
+ G.dyn=rideBuf(gl,new Float32Array(9),true);G.skyB=rideBuf(gl,new Float32Array([-1,-1,1,-1,1,1,-1,-1,1,1,-1,1]));
+ const ci=typeof CASTLE_IMG!=='undefined'&&CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:(MAP.castle||null),cb=OSM.buildings.find(q=>q.n==='Cinderella Castle');
+ if(ci&&cb){G.ct=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,G.ct);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,ci);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  const b=bbox(cb.p),H=58*(OSM.S||1.02),Wd=H*(ci.naturalWidth||ci.width)/(ci.naturalHeight||ci.height);G.castle={x:(b[0]+b[2])/2,z:(b[1]+b[3])/2+(b[3]-b[1])*.2,H,W:Wd};G.cb=rideBuf(gl,new Float32Array(30),true)}
+ G.ptMax=(gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)||[1,64])[1];RIDE.gl=G;RIDE.built=true;return true}
+/* ---- matrices ---- */
+function rideMat(fovy,asp,eye,yaw,pitch){const n=.5,f=9000,t=1/Math.tan(fovy/2),P=[t/asp,0,0,0,0,t,0,0,0,0,(f+n)/(n-f),-1,0,0,2*f*n/(n-f),0];
+ const fx=Math.cos(pitch)*Math.cos(yaw),fy=Math.sin(pitch),fz=Math.cos(pitch)*Math.sin(yaw);let rx=-fz,rz=fx;const rl=Math.hypot(rx,rz)||1;rx/=rl;rz/=rl;const ux=-rz*fy,uy=rz*fx-rx*fz,uz=rx*fy;
+ const V=[rx,ux,-fx,0,0,uy,-fy,0,rz,uz,-fz,0,-(rx*eye[0]+rz*eye[2]),-(ux*eye[0]+uy*eye[1]+uz*eye[2]),fx*eye[0]+fy*eye[1]+fz*eye[2],1],M=new Float32Array(16);
+ for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=P[k*4+j]*V[i*4+k];M[i*4+j]=s}return M}
+/* ---- the light and the sky at this time of day ---- */
+function rideLight(){const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t),n=Math.min(1,nf),g=gf;
+ let TC=mix([.36,.62,.88],[.4,.45,.72],g),HC=mix([.82,.91,.96],[.97,.7,.48],g),AC=mix([.58,.6,.64],[.55,.48,.48],g),SC=mix([.5,.48,.42],[.62,.42,.28],g);
+ TC=mix(TC,[.02,.04,.1],n);HC=mix(HC,[.1,.14,.26],n);AC=mix(AC,[.16,.18,.28],n);SC=mix(SC,[.06,.06,.1],n);return{TC,HC,AC,SC}}
+/* ---- each frame ---- */
+function rideFrame(dt){const G=RIDE.gl,m=MONO[RIDE.i];if(!G||!m){rideLeave();return}const gl=G.gl,cv=gl.canvas,dpr=Math.min(2,devicePixelRatio||1),W=Math.round(cv.clientWidth*dpr),H=Math.round(cv.clientHeight*dpr);
+ if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}gl.viewport(0,0,W,H);
+ const[ex,ez]=monoXY(m,RIDE_NOSE),a=monoXY(m,RIDE_NOSE-6),b=monoXY(m,RIDE_NOSE+20),hd=Math.atan2(b[1]-a[1],b[0]-a[0]);
+ if(RIDE.yaw===null)RIDE.yaw=hd;let dd=hd-RIDE.yaw;dd=Math.atan2(Math.sin(dd),Math.cos(dd));RIDE.yaw+=dd*Math.min(1,dt*5);
+ if(!RIDE.drag){RIDE.idle+=dt;if(RIDE.idle>2.5){RIDE.look*=Math.max(0,1-dt*1.2);RIDE.pitch*=Math.max(0,1-dt*1.2)}}
+ const asp=W/H,fovy=asp<1?1.25:Math.max(.75,2*Math.atan(Math.tan(.62)/asp)),pitch=-.09+RIDE.pitch,eye=[ex,RIDE_BH+3.1,ez],M=rideMat(fovy,asp,eye,RIDE.yaw+RIDE.look,pitch),Lt=rideLight(),FR=[350,3200];
+ gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);gl.clearColor(...Lt.HC,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ /* sky */
+ {const P=G.sky;gl.useProgram(P.p);gl.depthMask(false);rideAttrs(gl,P,G.skyB,[['p',2]]);gl.uniform3fv(P.u.TC,Lt.TC);gl.uniform3fv(P.u.HC,Lt.HC);gl.uniform1f(P.u.HY,Math.tan(-pitch)/Math.tan(fovy/2));gl.drawArrays(gl.TRIANGLES,0,6);gl.depthMask(true)}
+ const common=P=>{gl.useProgram(P.p);gl.uniformMatrix4fv(P.u.M,false,M);gl.uniform3fv(P.u.E,eye);gl.uniform3fv(P.u.FC,Lt.HC);gl.uniform2fv(P.u.FR,FR);if(P.u.AC)gl.uniform3fv(P.u.AC,Lt.AC);if(P.u.SC)gl.uniform3fv(P.u.SC,Lt.SC)};
+ /* ground */
+ {const P=G.tex;common(P);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,G.gt);gl.uniform1i(P.u.T,0);gl.uniform3fv(P.u.G,[.32,.5,.24]);
+  gl.uniform1f(P.u.MODE,1);rideAttrs(gl,P,G.outer,[['p',3],['u',2]]);gl.drawArrays(gl.TRIANGLES,0,6);
+  gl.uniform1f(P.u.MODE,0);rideAttrs(gl,P,G.ground,[['p',3],['u',2]]);gl.drawArrays(gl.TRIANGLES,0,6)}
+ /* solids, then the other trains */
+ {const P=G.lit;common(P);gl.uniform3fv(P.u.L,[.42,.8,.43]);rideAttrs(gl,P,G.solid,[['p',3],['c',3],['n',3]]);gl.drawArrays(gl.TRIANGLES,0,G.nSolid);
+  const D=[],wh=rideHex('#f7f7f4'),glass=rideHex('#26303c');for(const o of MONO){if(o===m||o.l==='epcot'&&!G.v2)continue;const col=rideHex(o.col);
+   for(let k=0;k<6;k++){const[cx_,cz]=monoXY(o,22.5-k*9),q0=monoXY(o,22.5-k*9-4.1),q1=monoXY(o,22.5-k*9+4.1);if(Math.hypot(cx_-ex,cz-ez)>2600)continue;
+    const MI=OSM.monoIn;if(MI&&cx_>MI[0]&&cx_<MI[2]&&cz>MI[1]&&cz<MI[3]&&Math.hypot(cx_-ex,cz-ez)>60)continue;
+    rideSeg(D,q0[0],q0[1],q1[0],q1[1],2.9,RIDE_BH,RIDE_BH+3.3,wh,true);rideSeg(D,q0[0],q0[1],q1[0],q1[1],3.0,RIDE_BH+1.1,RIDE_BH+1.7,col,true);rideSeg(D,q0[0],q0[1],q1[0],q1[1],3.0,RIDE_BH+2.1,RIDE_BH+2.8,glass,true)}}
+  if(D.length){gl.bindBuffer(gl.ARRAY_BUFFER,G.dyn);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(D),gl.DYNAMIC_DRAW);rideAttrs(gl,P,G.dyn,[['p',3],['c',3],['n',3]]);gl.drawArrays(gl.TRIANGLES,0,D.length/9)}}
+ /* the castle, standing up and turned to face the train */
+ if(G.castle){const c=G.castle,P=G.tex,yw=Math.atan2(c.z-ez,c.x-ex),rx=-Math.sin(yw)*c.W/2,rz=Math.cos(yw)*c.W/2;
+  const v=new Float32Array([c.x-rx,0,c.z-rz,0,1,c.x+rx,0,c.z+rz,1,1,c.x+rx,c.H,c.z+rz,1,0,c.x-rx,0,c.z-rz,0,1,c.x+rx,c.H,c.z+rz,1,0,c.x-rx,c.H,c.z-rz,0,0]);
+  common(P);gl.bindTexture(gl.TEXTURE_2D,G.ct);gl.uniform1i(P.u.T,0);gl.uniform1f(P.u.MODE,2);if(nf>.4)gl.uniform3fv(P.u.AC,[.55,.5,.75]);gl.bindBuffer(gl.ARRAY_BUFFER,G.cb);gl.bufferData(gl.ARRAY_BUFFER,v,gl.DYNAMIC_DRAW);rideAttrs(gl,P,G.cb,[['p',3],['u',2]]);gl.drawArrays(gl.TRIANGLES,0,6)}
+ /* trees, then the lamps after dark */
+ {const P=G.pt;common(P);gl.uniform1f(P.u.K,H/2/Math.tan(fovy/2));gl.uniform1f(P.u.MX,G.ptMax);gl.uniform1f(P.u.EM,0);rideAttrs(gl,P,G.trees,[['p',3],['s',1],['c',3]]);gl.drawArrays(gl.POINTS,0,G.nTrees);
+  if(nf>.3&&G.nLamps){gl.uniform1f(P.u.EM,1);rideAttrs(gl,P,G.lamps,[['p',3],['s',1],['c',3]]);gl.drawArrays(gl.POINTS,0,G.nLamps)}}
+ rideHud(m)}
+const rideTime=s=>{s=Math.max(0,Math.round(s));return s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:`${s} s`};
+function rideHud(m){const l=MLINE[m.l],L=l.p.L,t=document.getElementById('rideTtl'),s=document.getElementById('rideSt');if(!t)return;
+ t.textContent=`Monorail ${m.nm} · ${l.n} line`;
+ if(m.st==='dwell')s.textContent=`Doors open at ${STOPNAME[l.stops[m.at]]} · leaving in ${rideTime(m.tm)}`;
+ else{const gap=((l.sd[m.nx]-m.x)%L+L)%L;s.textContent=`Next stop: ${STOPNAME[l.stops[m.nx]]} · about ${rideTime(gap/MSPEED+3)}`}}
+/* ---- boarding and leaving ---- */
+function rideBoard(i){const m=MONO[i];if(!m||m.l==='epcot')return;const box=document.getElementById('ride');
+ if(!RIDE.built){toast('Boarding…');setTimeout(()=>{let ok=false;try{ok=rideBuild()}catch(e){console.warn('Ride view could not start',e)}if(!ok){toast('This browser can’t show the cab view (no WebGL)');return}rideBoard(i)},30);return}
+ if(typeof TV!=='undefined'&&TV.on&&typeof tvStop==='function')tvStop();if(SV.on)setView(false);
+ RIDE.on=true;RIDE.i=i;RIDE.yaw=null;RIDE.look=RIDE.pitch=0;follow={k:'m',i};sel=null;if(typeof closeSheet==='function')closeSheet();
+ if(typeof liveUnfollow==='function'&&typeof LIVE!=='undefined'&&LIVE.follow&&speed!==1)liveUnfollow();speed=1;playing=true;if(typeof sync==='function')sync();
+ if(typeof AU!=='undefined'&&!AU.ready&&typeof auInit==='function')auInit();if(typeof unlockRide==='function')unlockRide();
+ box.hidden=false;document.body.classList.add('riding')}
+function rideLeave(){if(!RIDE.on)return;RIDE.on=false;const box=document.getElementById('ride');if(box)box.hidden=true;document.body.classList.remove('riding');
+ const m=MONO[RIDE.i];if(m){follow={k:'m',i:RIDE.i};const[x,y]=monoXY(m);cam.x=cam.tx=x;cam.y=cam.ty=y;cam.tm=Math.max(cam.tm,3);cam.m=cam.tm}}
+/* drag to look around; Escape leaves */
+{const cv=document.getElementById('rideCv');if(cv){
+ cv.addEventListener('pointerdown',e=>{RIDE.drag={x:e.clientX,y:e.clientY,l:RIDE.look,p:RIDE.pitch};RIDE.idle=0;cv.setPointerCapture(e.pointerId)});
+ cv.addEventListener('pointermove',e=>{const d=RIDE.drag;if(!d)return;const k=2.4/Math.max(320,cv.clientWidth);RIDE.look=Math.max(-2.6,Math.min(2.6,d.l-(e.clientX-d.x)*k*1.6));RIDE.pitch=Math.max(-.6,Math.min(.45,d.p+(e.clientY-d.y)*k));RIDE.idle=0});
+ for(const ev of['pointerup','pointercancel'])cv.addEventListener(ev,()=>{RIDE.drag=null;RIDE.idle=0})}
+ const lv=document.getElementById('rideLeave');if(lv)lv.onclick=rideLeave;
+ document.addEventListener('keydown',e=>{if(RIDE.on&&e.key==='Escape'){e.stopPropagation();rideLeave()}},true)}

@@ -58,6 +58,7 @@ function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
  paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();tolSync();
+ if(typeof RIDE!=='undefined'&&RIDE.on){rideFrame(rdt);BUB=[];return} /* riding in a monorail's front cab (ride.js) */
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k; /* TV mode glides between shots */
   if(Math.abs(cam.tm-cam.m)<cam.m*.0015)cam.m=cam.tm;if(Math.abs(cam.tx-cam.x)<.04)cam.x=cam.tx;if(Math.abs(cam.ty-cam.y)<.04)cam.y=cam.ty} /* then settle exactly, rather than creeping closer by ever-smaller amounts (which kept the picture shimmering) */

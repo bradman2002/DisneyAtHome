@@ -14,7 +14,9 @@ Run from the site folder:  python3 tools/osm_extract.py"""
 import xml.etree.ElementTree as ET, math, json, collections, heapq
 
 import os
-SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['muppets.osm'] if os.path.exists('muppets.osm') and os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['east.osm'] if os.path.exists('east.osm') and os.path.exists('hs.osm') else [])+(['springs.osm'] if os.path.exists('springs.osm') and os.path.exists('east.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
+SRCS=['map.osm']+(['epcot.osm'] if os.path.exists('epcot.osm') else [])+(['gap.osm'] if os.path.exists('gap.osm') and os.path.exists('epcot.osm') else [])+(['muppets.osm'] if os.path.exists('muppets.osm') and os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['hs.osm'] if os.path.exists('hs.osm') and os.path.exists('gap.osm') else [])+(['east.osm'] if os.path.exists('east.osm') and os.path.exists('hs.osm') else [])+(['springs.osm'] if os.path.exists('springs.osm') and os.path.exists('east.osm') else [])+(['ak.osm'] if os.path.exists('ak.osm') and os.path.exists('springs.osm') else []);  # hs.osm: Hollywood Studios and the land round it, from api.openstreetmap.org/api/0.6/map in pieces (bbox 28.3490,-81.5905,28.3660,-81.5360), merged
+  # ak.osm: Animal Kingdom, its resorts (Animal Kingdom Lodge, Coronado Springs, the All-Stars) and the land round them: a strip west of
+  # the rest (bbox 28.3330,-81.6125,28.4240,-81.5900) and one along the south (28.3330,-81.5900,28.3495,-81.5090), merged the same way
   # springs.osm: Disney Springs, Typhoon Lagoon and the land north of them (bbox 28.3490,-81.5330,28.4240,-81.5090), merged the same way
   # east.osm: a strip east of EPCOT, its parking lots and roads (bbox 28.3490,-81.5450,28.4240,-81.5330), merged the same way
   # muppets.osm: Muppets Courtyard on Grand Avenue as it was before it closed in 2024 (OpenStreetMap history at 2023-06-01 from
@@ -25,6 +27,8 @@ OUT='js/park-osm.js'
 # The projection is pinned to a fixed corner (not the file's bounds), so coordinates stay put when the data is refreshed.
 # OX/OY place that corner on the canvas: the park sits in the north, the lagoon and resorts to the south, west and east.
 S=1.02; OX=470; OY=62; W=3090; H=2290
+# with Animal Kingdom the map reaches further west: everything moves right by DX (the JS reads it as OSM.dx for its few fixed spots)
+DX=2210 if 'ak.osm' in SRCS else 0; OX+=DX; W+=DX
 minlon=-81.58572; maxlat=28.42266; cl=math.cos(math.radians(28.4187))
 def proj(lon,lat): return (OX+(lon-minlon)*cl*111320*S, OY+(maxlat-lat)*111320*S)
 ND={}; NT={}; WAYS={}; RELS=[]; seen_rel=set()
@@ -107,7 +111,7 @@ def chain(way_ids):
             if s[0]==cur[0]: cur=s[::-1][:-1]+cur;segs.pop(i);changed=True;break
     return pts(cur)
 # ---------------- regions: the Magic Kingdom area, and Epcot (from its theme-park outline) ----------------
-REGIONS=[(0,0,W,H)]
+REGIONS=[(DX,0,W,H)]  # the Magic Kingdom area (from DX: the strip west of it is Animal Kingdom's)
 def epcot_outline(key='epcot'):
     for wid,w in WAYS.items():
         t=w['t']
@@ -130,6 +134,12 @@ if HSC:  # Hollywood Studios: a third park region, south-west of EPCOT past the 
     REGIONS.append((min(xs)-M,min(ys)-M,max(xs)+M,max(ys)+M))
     W=max(W,int(max(xs)+M+40));H=max(H,int(max(ys)+M+40))
     print('Hollywood Studios region',[round(v) for v in REGIONS[-1]],'map',W,'x',H)
+AKC=epcot_outline('animal kingdom') if 'ak.osm' in SRCS else None
+if AKC:  # Animal Kingdom: a fourth park region, west of Hollywood Studios
+    xs=[q[0] for q in AKC];ys=[q[1] for q in AKC];M=70
+    REGIONS.append((min(xs)-M,min(ys)-M,max(xs)+M,max(ys)+M))
+    W=max(W,int(max(xs)+M+40));H=max(H,int(max(ys)+M+40))
+    print('Animal Kingdom region',[round(v) for v in REGIONS[-1]],'map',W,'x',H)
 PARKS=list(REGIONS)
 def inpark(x,y): return any(r[0]<=x<=r[2] and r[1]<=y<=r[3] for r in PARKS)
 if EPC and 'gap.osm' in SRCS:  # the land between the parks is filled in too: content everywhere on the map
@@ -137,6 +147,7 @@ if EPC and 'gap.osm' in SRCS:  # the land between the parks is filled in too: co
     if HSC: H=max(H,int(proj(-81.56,28.3490)[1]))  # down to the bottom of the Hollywood Studios data
     if 'springs.osm' in SRCS: W=max(W,int(proj(-81.5095,28.4)[0]))  # out to the east end of Disney Springs
     if 'east.osm' in SRCS: W=max(W,int(proj(-81.5340,28.4)[0]))  # land east of EPCOT, so its edge isn't the end of the world
+    if AKC: H=max(H,int(proj(-81.56,28.3335)[1]))  # down past the All-Star resorts
     FULL=True;REGIONS.append((0,0,W,H));print('filled in: whole map',W,'x',H)
 def inreg(x,y,m=0): return any(r[0]-m<=x<=r[2]+m and r[1]-m<=y<=r[3]+m for r in REGIONS)
 def clip_box(p,m=60): return any(inreg(x,y,m) for x,y in p)
@@ -270,7 +281,7 @@ print('railroad chain points',len(RRP),'closed gap',round(math.dist(RRP[0],RRP[-
 st_main=proj(-81.58122,28.41665) # placeholder, replaced below
 def in_park(q):
     x,y=q
-    return inside(q,RRP) or (OX+300*S<x<OX+800*S and OY+650*S<y<OY+856*S) or bool(EPC and inside(q,EPC)) or bool(HSC and inside(q,HSC))  # EPCOT, Hollywood Studios: inside their park outlines
+    return inside(q,RRP) or (OX+300*S<x<OX+800*S and OY+650*S<y<OY+856*S) or bool(EPC and inside(q,EPC)) or bool(HSC and inside(q,HSC)) or bool(AKC and inside(q,AKC))  # EPCOT, Hollywood Studios: inside their park outlines
 paths=[];G=collections.defaultdict(set)
 for wid,w in WAYS.items():
     t=w['t'];hw=t.get('highway')
@@ -311,6 +322,16 @@ if HSC:  # and Hollywood Studios' own
             for c_ in left[:]:
                 best=min(((math.dist(ND[a],ND[b]),a,b) for a in c_[::2] for b in hsc[::3]),default=None)
                 if best and best[0]<60: G[best[1]].add(best[2]);G[best[2]].add(best[1]);main|=set(c_);hsc=hsc+c_;left.remove(c_);grew=True;print('  joined a piece of',len(c_),'nodes, gap',round(best[0],1))
+if AKC:  # and Animal Kingdom's, joining stray pieces the same way
+    akc=max((c for c in comps if inside(ND[c[0]],AKC)),key=len,default=None)
+    if akc:
+        main|=set(akc);print('Animal Kingdom walk graph',len(akc),'nodes')
+        left=[c_ for c_ in comps if c_ is not akc and len(c_)>=12 and inside(ND[c_[0]],AKC)];grew=True
+        while grew:
+            grew=False
+            for c_ in left[:]:
+                best=min(((math.dist(ND[a],ND[b]),a,b) for a in c_[::2] for b in akc[::3]),default=None)
+                if best and best[0]<60: G[best[1]].add(best[2]);G[best[2]].add(best[1]);main|=set(c_);akc=akc+c_;left.remove(c_);grew=True;print('  joined a piece of',len(c_),'nodes, gap',round(best[0],1))
 print('walk graph',len(G),'nodes; components',[len(c) for c in comps[:6]])
 # collapse degree-2 chains, keeping a node every ~14 units so walking follows the curves
 keep={u for u in main if len(G[u])!=2}
@@ -416,7 +437,14 @@ HS_ATTR=['The Twilight Zone Tower of Terror','Rock ’n’ Roller Coaster Starri
 HS_VEN=['Pizza Rizzo',"Mama Melrose's Ristorante Italiano","50's Prime Time Cafe",'Hollywood and Vine','The Hollywood Brown Derby','ABC Commissary','Roundup Rodeo BBQ','Sci-Fi Dine-In Theater','Docking Bay 7 Food and Cargo','Ronto Roasters',"Woody's Lunch Box",
  'Backlot Express',"Oga's Cantina","Min and Bill's Dockside Diner","Rosie's All-American Café","Catalina Eddie's","Mickey's of Hollywood",'Tower Hotel Gifts','Dok-Ondar’s Den of Antiquities','Celebrity 5 & 10']
 if HSC: ATTR=ATTR+HS_ATTR
-VEN=(HS_VEN if HSC else [])+(EP_VEN if EPC else [])+['Emporium','Main Street Confectionery',"Casey's Corner",'The Plaza Restaurant','The Crystal Palace','Agrabah Bazaar','Columbia Harbor House','Pecos Bill Tale Tale Inn and Café','Frontier Trading Post','Be Our Guest Restaurant','Storybook Treats',"Cosmic Ray's Starlight Café","Mickey's Star Traders"]
+# Animal Kingdom: its rides, trails and theatre shows (names as in OpenStreetMap; Harambe Theatre is Festival of the Lion King's,
+# Theater In The Wild is Finding Nemo's), and its restaurants
+AK_ATTR=['Avatar Flight of Passage',"Na'vi River Journey",'Kilimanjaro Safaris','Expedition Everest: Legend of the Forbidden Mountain','Kali River Rapids',
+ 'Zootopia: Better Zoogether!','Wildlife Express Train','Gorilla Falls Exploration Trail','Maharajah Jungle Trek','Harambe Theatre','Theater In The Wild',
+ 'The Oasis Exhibits','Discovery Island Trails']
+AK_VEN=["Satu'li Canteen",'Flame Tree Barbecue','Pizzafari','Harambe Market','Yak & Yeti Restaurant','Tiffins','Yak & Yeti Local Foods Cafe','Tamu Tamu Refreshments']
+if AKC: ATTR=ATTR+AK_ATTR
+VEN=(AK_VEN if AKC else [])+(HS_VEN if HSC else [])+(EP_VEN if EPC else [])+['Emporium','Main Street Confectionery',"Casey's Corner",'The Plaza Restaurant','The Crystal Palace','Agrabah Bazaar','Columbia Harbor House','Pecos Bill Tale Tale Inn and Café','Frontier Trading Post','Be Our Guest Restaurant','Storybook Treats',"Cosmic Ray's Starlight Café","Mickey's Star Traders"]
 POS={}
 for n in ATTR+VEN:
     b=place(n)
@@ -441,10 +469,20 @@ if HSC:  # Hollywood Studios' entrance: just inside its ticket booths (toward th
     if b_:
         hc=centroid(HSC);bx,by=b_[1];d_=math.dist((bx,by),hc) or 1;ux,uy=(hc[0]-bx)/d_,(hc[1]-by)/d_
         hsgate=nearest((bx+ux*16,by+uy*16));PLACES['hsout']=[round(-ux,3),round(-uy,3)];PLACES['hsbooth']=R1(b_[1]);print('Hollywood Studios gate node',hsgate,NODES[hsgate],'outward',PLACES['hsout'])
+akgate=None
+if AKC:  # Animal Kingdom's entrance: where its outline comes nearest the bus station, a little way in toward the park's middle
+    bs_=next((ND[i] for i,t in NT.items() if t.get('name')=="Disney's Animal Kingdom Bus Station"),None) or (lambda b:b and b[1])(find_named("Disney's Animal Kingdom Bus Station"))
+    ac=centroid(AKC)
+    if bs_:
+        e_=min(AKC,key=lambda q:math.dist(q,bs_));d_=math.dist(e_,ac) or 1;ux,uy=(ac[0]-e_[0])/d_,(ac[1]-e_[1])/d_
+        akgate=nearest((e_[0]+ux*20,e_[1]+uy*20));PLACES['akout']=[round(-ux,3),round(-uy,3)];PLACES['akbooth']=R1(e_);PLACES['akbus']=R1(bs_)
+        print('Animal Kingdom gate node',akgate,NODES[akgate],'outward',PLACES['akout'])
 landnodes={k:nearest(PLACES[k]) for k in('adv','fr','lib','fan','tom') if k in PLACES}
 json.dump({'places':PLACES,'pos':POS,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,'land':landnodes},open('osm_places.json','w'),indent=0)
 # land boundaries (place=locality polygons named after the lands)
 LANDNAMES={'Main Street, U.S.A.':'ms','Adventureland':'adv','Frontierland':'fr','Liberty Square':'lib','Fantasyland':'fan','Tomorrowland':'tom',
+ # Animal Kingdom's lands (Discovery Island is an island, found below; DinoLand is closed for its rebuild)
+ 'Oasis':'oa','Pandora: The World of Avatar':'pa','Africa':'af','Asia':'as',
  # Hollywood Studios' areas (Commissary Lane and Pixar Place are folded into their neighbours)
  'Hollywood Boulevard':'hb','Echo Lake':'el','Grand Avenure':'ga','Grand Avenue':'ga','Star Wars: Galaxy’s Edge':'sw',"Star Wars: Galaxy's Edge":'sw','Toy Story Land':'ts','Animation Courtyard':'ac','Sunset Boulevard':'sb'}
 LANDS={}
@@ -457,6 +495,11 @@ for rl in RELS:
     if t.get('place')=='locality' and t.get('name') in LANDNAMES and LANDNAMES[t['name']] not in LANDS:
         rg=rings_from([ref for ty,ref,role in rl['m'] if ty=='way' and role in('outer','')])
         if rg: LANDS[LANDNAMES[t['name']]]=[R1(q) for q in simplify(max(rg,key=len),1)]
+if AKC:  # Discovery Island, the island in the middle of Animal Kingdom (not Bay Lake's)
+    for wid,w in WAYS.items():
+        t=w['t']
+        if t.get('place')=='island' and t.get('name')=='Discovery Island' and w['ids'][0]==w['ids'][-1] and inside(centroid(pts(w['ids'])[:-1]),AKC):
+            LANDS['di']=[R1(q) for q in simplify(pts(w['ids'])[:-1],1)];break
 print('land polygons',list(LANDS))
 # monorail: the two passenger loops around Seven Seas Lagoon, each as one closed line.
 # Express (outer beam): TTC -> Magic Kingdom -> TTC.  Resort (inner beam): TTC -> Polynesian -> Grand Floridian -> Magic Kingdom -> Contemporary -> TTC.
@@ -560,6 +603,12 @@ if HSC:  # Hollywood Studios: its outline and its middle, and the Millennium Fal
     if f_ and len(f_[2])>3: out['falcon']=[R1(q) for q in simplify(f_[2],.3)];print('Millennium Falcon outline',len(out['falcon']))
 # the Epcot resorts on Crescent Lake: the BoardWalk's outline and the lake (to lay the boardwalk's planks along the shore),
 # Stormalong Bay and the Beach/Yacht Club dock (the Yacht Club's lighthouse), for the painted details in map-art.js
+if AKC:  # Animal Kingdom: its outline and middle, the Tree of Life and Expedition Everest's mountain (for the painted landmarks)
+    PLACES['ak']=R1(centroid(AKC));out['ak']=[R1(q) for q in simplify(AKC,.8)]
+    for key,name in {'tol':'Tree of Life','everest':'Expedition Everest: Legend of the Forbidden Mountain','akl':"Disney's Animal Kingdom Lodge-Jambo House",'kidani':"Disney's Animal Kingdom Villas - Kidani Village",'csr':"Disney's Coronado Springs Resort",'blizzard':"Disney's Blizzard Beach",'asports':"Disney's All-Star Sports Resort",'amusic':"Disney's All-Star Music Resort",'amovies':"Disney's All-Star Movies Resort"}.items():
+        b_=place(name)
+        if b_: PLACES[key]=R1(b_[1])
+    print('animal kingdom places',{k:PLACES.get(k) for k in('ak','tol','everest','akl','kidani','csr','blizzard')})
 CRES={}
 if FULL:
     for key,name in {'bw':"Disney's BoardWalk",'lake':'Crescent Lake','storm':'Stormalong Bay','luna':'Luna Park Pool'}.items():
@@ -581,8 +630,8 @@ if 'springs.osm' in SRCS:
     tl=next((w for w in WAYS.values() if w['t'].get('name')=="Disney's Typhoon Lagoon" and w['t'].get('leisure')=='water_park'),None)
     if tl: PLACES['typhoon']=R1(centroid(pts(tl['ids'])[:-1]))
     print('disney springs',len(out.get('springs',[])),{k:PLACES.get(k) for k in('ds','dsballoon','dscoke','dsmarket','dswest','typhoon')})
-data_extra={'crescent':out.get('crescent'),'springs':out.get('springs'),'regions':[[round(v) for v in r] for r in REGIONS],'nparks':len(PARKS),'epcot':out.get('epcot'),'hs':out.get('hs'),'falcon':out.get('falcon'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
- 'keys':{'epgate':epgate,'hsgate':hsgate,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
+data_extra={'crescent':out.get('crescent'),'springs':out.get('springs'),'regions':[[round(v) for v in r] for r in REGIONS],'nparks':len(PARKS),'epcot':out.get('epcot'),'hs':out.get('hs'),'ak':out.get('ak'),'dx':DX,'falcon':out.get('falcon'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
+ 'keys':{'epgate':epgate,'hsgate':hsgate,'akgate':akgate,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
 # compact JS
 data={'W':W,'H':H,'S':S,'areas':out['areas'],'buildings':out['buildings'],'lines':out['lines'],'paths':out['paths'],'trees':out['trees'],'lamps':out['lamps'],'routes':out['routes'],'monoLines':out['monoLines'],'nodes':NODES,'edges':EDGES,**data_extra}
 js='/* Magic Kingdom resort-area geometry from OpenStreetMap (© OpenStreetMap contributors, ODbL — openstreetmap.org/copyright).\n   Converted to map units (1 unit = '+str(round(1/S,3))+' m), north up. Generated by osm_extract.py. */\nconst OSM='+json.dumps(data,separators=(',',':'))+';\n'

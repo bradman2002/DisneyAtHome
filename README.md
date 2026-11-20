@@ -94,7 +94,7 @@ click, tap or key press starts everything.
 ## Area music
 
 Each land's background music plays as you look at it: put your copies at `audio/area-ms.mp3` (Main Street,
-which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area-fan.mp3`, `area-tom.mp3`, `area-ep.mp3` (plays anywhere over EPCOT), and `area-hs.mp3` (the Hollywood Boulevard loop, plays anywhere over Hollywood Studios). Ride audio is `audio/ride-<name>.mp3`, heard when you zoom in on the ride: Hollywood Studios has
+which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area-fan.mp3`, `area-tom.mp3`, `area-ep.mp3` (plays anywhere over EPCOT), and `area-hs.mp3` (the Hollywood Boulevard loop, plays anywhere over Hollywood Studios), and `area-ak.mp3` (the Tree of Life loop, plays anywhere over Animal Kingdom during its hours). Ride audio is `audio/ride-<name>.mp3`, heard when you zoom in on the ride: Hollywood Studios has
 `ride-tot.mp3` (Tower of Terror), `ride-rotr.mp3` (Rise of the Resistance), `ride-railway.mp3` (Mickey & Minnie's Runaway
 Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic Stunt Spectacular!) and `ride-muppets.mp3`
 (Muppet*Vision 3D); EPCOT has `ride-lwtl.mp3` (Living with the Land), `ride-soarin.mp3` (Soarin'),
@@ -147,6 +147,13 @@ from 7 AM to 10 PM, about 120 feet high, as the real one does.
 ## EPCOT
 
 Hollywood Studios is on the map too, south-west of EPCOT past the Swan and Dolphin, with the land around it (Caribbean
+
+Animal Kingdom is on the map too, west of Hollywood Studios with all the land between, plus its resorts: Animal
+Kingdom Lodge and Kidani Village, Coronado Springs, the All-Star resorts and Blizzard Beach. Its lands (Oasis, Discovery
+Island, Pandora, Africa and Asia) have their own colours; the Tree of Life, Expedition Everest's snowy peaks, Pandora's
+floating mountains and Blizzard Beach's Mount Gushmore are drawn by hand. Its rides, trails and shows have waits and
+guests (the park opens 8 am to 7 pm unless Live gives today's hours), Live mode reads its real waits, and TV mode can
+show it on its own (Sound & settings → TV mode → Animal Kingdom). Its map data is `ak.osm` (not committed).
 
 Disney Springs is on the map as well, east of EPCOT past the land between them, with its lake, its shops in their mix of colours, the tethered balloon going up and down, and Typhoon Lagoon next door. It's scenery: guests in the simulation stay in the three parks.
 

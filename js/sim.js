@@ -3,19 +3,20 @@
 'use strict';
 /* ===== DisneyAtHome — structure: DATA / GRAPH / STATIC ART / SIM / AUDIO / RENDER / UI.
    A new park = new DATA block (lands, nodes, edges, attractions, venues, events). ===== */
-const $=s=>document.querySelector(s),W=OSM.W,H=OSM.H,K=12,MKR=OSM.regions?OSM.regions[0]:[0,0,W,H],EPR=OSM.regions&&OSM.regions[1],HSR=OSM.regions&&(OSM.nparks||2)>2?OSM.regions[2]:null; /* HSR: Hollywood Studios */ /* MKR: the Magic Kingdom resort area; EPR: Epcot (the map between them is blank for now) */
-let OPEN=9,CLOSE=22,EOPEN=9,ECLOSE=21,HOPEN=9,HCLOSE=21,LIVENOW=false,CROWDX=1; /* EOPEN/ECLOSE: EPCOT's hours */ // park hours (live mode sets today's real ones); LIVENOW: real wait times and closures apply right now (see live.js)
+const $=s=>document.querySelector(s),W=OSM.W,H=OSM.H,K=12,MKR=OSM.regions?OSM.regions[0]:[0,0,W,H],EPR=OSM.regions&&OSM.regions[1],HSR=OSM.regions&&(OSM.nparks||2)>2?OSM.regions[2]:null,AKR=OSM.regions&&(OSM.nparks||2)>3?OSM.regions[3]:null,MDX=OSM.dx||0; /* HSR: Hollywood Studios; AKR: Animal Kingdom; MDX: how far right the map moved when Animal Kingdom was added (for the few fixed spots below) */ /* MKR: the Magic Kingdom resort area; EPR: Epcot (the map between them is blank for now) */
+let OPEN=9,CLOSE=22,EOPEN=9,ECLOSE=21,HOPEN=9,HCLOSE=21,AOPEN=8,ACLOSE=19,LIVENOW=false,CROWDX=1; /* EOPEN/ECLOSE: EPCOT's hours */ // park hours (live mode sets today's real ones); LIVENOW: real wait times and closures apply right now (see live.js)
  // K = real guests represented by one party on the map; CROWDX scales arrivals (live mode sets it from how busy the real park is)
 /* ===== DATA: built from the OpenStreetMap geometry in park-osm.js (real walkways, buildings and positions) ===== */
 const P_=OSM.places,POS=OSM.pos;
 const ptIn=(x,y,poly)=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[xi,yi]=poly[i],[xj,yj]=poly[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c};
 const polyC=p=>{let x=0,y=0;for(const q of p){x+=q[0];y+=q[1]}return[x/p.length,y/p.length]};
-const LANDNAME={ms:'Main Street, U.S.A.',adv:'Adventureland',fr:'Frontierland',lib:'Liberty Square',fan:'Fantasyland',tom:'Tomorrowland',wc:'World Celebration',wd:'World Discovery',wn:'World Nature',ws:'World Showcase',hb:'Hollywood Boulevard',el:'Echo Lake',ga:'Grand Avenue',sw:'Star Wars: Galaxy’s Edge',ts:'Toy Story Land',ac:'Animation Courtyard',sb:'Sunset Boulevard'};
-const EPL=new Set(['wc','wd','wn','ws']),HSL=new Set(['hb','el','ga','sw','ts','ac','sb']),parkOf=l=>EPL.has(l)?1:HSL.has(l)?2:0; /* EPCOT's neighbourhoods and Hollywood Studios' lands; park 0 = Magic Kingdom, 1 = EPCOT, 2 = Hollywood Studios */
+const LANDNAME={ms:'Main Street, U.S.A.',adv:'Adventureland',fr:'Frontierland',lib:'Liberty Square',fan:'Fantasyland',tom:'Tomorrowland',wc:'World Celebration',wd:'World Discovery',wn:'World Nature',ws:'World Showcase',hb:'Hollywood Boulevard',el:'Echo Lake',ga:'Grand Avenue',sw:'Star Wars: Galaxy’s Edge',ts:'Toy Story Land',ac:'Animation Courtyard',sb:'Sunset Boulevard',oa:'Oasis',di:'Discovery Island',pa:'Pandora – The World of Avatar',af:'Africa',as:'Asia'};
+const EPL=new Set(['wc','wd','wn','ws']),HSL=new Set(['hb','el','ga','sw','ts','ac','sb']),AKL=new Set(['oa','di','pa','af','as']),parkOf=l=>EPL.has(l)?1:HSL.has(l)?2:AKL.has(l)?3:0; /* EPCOT's neighbourhoods, Hollywood Studios' and Animal Kingdom's lands; park 0 = Magic Kingdom, 1 = EPCOT, 2 = Hollywood Studios, 3 = Animal Kingdom */
 // label/ambience centre for each land (inside its real boundary, near its main plaza)
 const LC={ms:[P_.mainst[0],P_.mainst[1]+40],hub:P_.hub,adv:POS['The Magic Carpets of Aladdin'].c,fr:[POS['Country Bear Musical Jamboree'].c[0]-30,POS['Country Bear Musical Jamboree'].c[1]-30],lib:[POS['The Hall of Presidents'].c[0]-25,POS['The Hall of Presidents'].c[1]+18],fan:[P_.castle[0]+60,P_.castle[1]-110],tom:[POS['Astro Orbiter'].c[0]+10,POS['Astro Orbiter'].c[1]-70]};
 if(P_.sse&&POS['Test Track']){LC.wc=[P_.sse[0],P_.sse[1]+120];LC.wd=[POS['Test Track'].c[0]+10,POS['Test Track'].c[1]-85];LC.wn=[POS['Living with the Land'].c[0]+60,POS['Living with the Land'].c[1]+80];LC.ws=[POS['The American Adventure'].c[0],POS['The American Adventure'].c[1]-120]}
-if(OSM.hs)for(const k of HSL)if(OSM.lands[k])LC[k]=polyC(OSM.lands[k]); /* Hollywood Studios: each area's middle, from its outline in the map data */
+if(OSM.hs)for(const k of HSL)if(OSM.lands[k])LC[k]=polyC(OSM.lands[k]);
+if(OSM.ak)for(const k of AKL)if(OSM.lands[k])LC[k]=polyC(OSM.lands[k]); /* Animal Kingdom's lands too */ /* Hollywood Studios: each area's middle, from its outline in the map data */
 const PARK={name:'Magic Kingdom',
 LANDS:Object.fromEntries(Object.entries(LC).map(([k,c])=>[k,[k==='hub'?'Central Hub':LANDNAME[k],c[0],c[1]]])),
 SC:{ms:['#f3e0c8','#a9433f'],hub:['#eadfc8','#8a6a3a'],adv:['#d8b46a','#6e8a3a'],fr:['#a8754a','#5a4030'],lib:['#e6e1d4','#4b5f7f'],fan:['#f1d6e4','#8c63b5'],tom:['#d7e3ec','#4f84b2'],wc:['#e9edf2','#6a5aa8'],wd:['#e2e6ee','#c0563a'],wn:['#e2efdc','#3f8a5a'],ws:['#efe2c8','#a8693f'],hb:['#f3e3cf','#c0463a'],el:['#e3edf2','#3f7fa8'],ga:['#eadfd2','#7a5a8a'],sw:['#dccab0','#7a5a3a'],ts:['#f6e8c8','#d9473f'],ac:['#e9e2f2','#5a6ad0'],sb:['#f2dcc8','#b0532f']},
@@ -41,7 +42,12 @@ A:[['Jungle Cruise','Jungle Cruise','adv',1800,540,1.0,'box'],['Pirates of the C
 ['Indiana Jones Epic Stunt Spectacular!','Indiana Jones Epic Stunt Spectacular!','el',2000,1800,.5,'box',10,20],['Beauty and the Beast – Live on Stage','Theater of the Stars','sb',1500,1500,.5,'box',10,20],
 ['The Little Mermaid – A Musical Adventure','Voyage of the Little Mermaid','ac',1500,1500,.5,'box',10,20],['Frozen Sing-Along Celebration','Hyperion Theater','el',1500,1800,.6,'box',10,20],
 ['Mickey Mouse Clubhouse Live!','Disney Junior Dance Party!','ac',1200,1320,.35,'box',10,19],['Walt Disney Presents','Walt Disney Presents','ac',1200,900,.2,'box',9,21],
-['Vacation Fun','Mickey Shorts Theater','el',1200,600,.2,'box',9,21],['Muppet*Vision 3D',"Jim Henson's Muppet*Vision 3-D",'ga',1800,1020,.35,'box',9,21],['Olaf Draws!','The Magic of Disney Animation','ac',1000,600,.25,'box',10,20]].filter(r=>POS[r[1]]),
+['Vacation Fun','Mickey Shorts Theater','el',1200,600,.2,'box',9,21],['Muppet*Vision 3D',"Jim Henson's Muppet*Vision 3-D",'ga',1800,1020,.35,'box',9,21],['Olaf Draws!','The Magic of Disney Animation','ac',1000,600,.25,'box',10,20],
+// Animal Kingdom (opens at 8, closes at 7 by default): Festival of the Lion King plays in Harambe Theatre, Finding Nemo in Theater In The Wild
+['Flight of Passage','Avatar Flight of Passage','pa',1300,300,2.0,'box',8,19,1.2],["Na'vi River Journey","Na'vi River Journey",'pa',1500,300,1.3,'box',8,19,1.0],['Kilimanjaro Safaris','Kilimanjaro Safaris','af',2800,1320,1.3,'box',8,19,.8],
+['Expedition Everest','Expedition Everest: Legend of the Forbidden Mountain','as',1800,240,1.6,'mtn',8,19,1.2],['Kali River Rapids','Kali River Rapids','as',1500,420,1.1,'box',9,19,1.1],['Zootopia: Better Zoogether!','Zootopia: Better Zoogether!','di',1800,1080,.5,'box',9,18],
+['Wildlife Express Train','Wildlife Express Train','af',1200,420,.3,'box',9,17],['Gorilla Falls Trail','Gorilla Falls Exploration Trail','af',2400,1200,.4,'box',8,19,.2],['Maharajah Jungle Trek','Maharajah Jungle Trek','as',2400,1200,.4,'box',8,19,.2],
+['Festival of the Lion King','Harambe Theatre','af',2400,1800,.7,'box',10,18],['Finding Nemo: The Big Blue… and Beyond!','Theater In The Wild','di',1800,1500,.4,'box',10,18],['The Oasis Exhibits','The Oasis Exhibits','oa',2400,600,.15,'box',8,19,.1],['Discovery Island Trails','Discovery Island Trails','di',2400,600,.15,'box',8,19,.1]].filter(r=>POS[r[1]]),
 // venues: display name, OpenStreetMap name, kind
 V:[['Emporium','Emporium','shop'],['Main Street Confectionery','Main Street Confectionery','shop'],['Casey’s Corner',"Casey's Corner",'eat'],['The Plaza Restaurant','The Plaza Restaurant','eat'],['The Crystal Palace','The Crystal Palace','eat'],['Agrabah Bazaar','Agrabah Bazaar','shop'],['Columbia Harbour House','Columbia Harbor House','eat'],['Pecos Bill Tall Tale Inn','Pecos Bill Tale Tale Inn and Café','eat'],['Frontier Trading Post','Frontier Trading Post','shop'],['Be Our Guest','Be Our Guest Restaurant','eat'],['Storybook Treats','Storybook Treats','eat'],['Cosmic Ray’s Starlight Café',"Cosmic Ray's Starlight Café",'eat'],['Star Traders',"Mickey's Star Traders",'shop'],
  ['Sunshine Seasons','Sunshine Seasons','eat','wn'],['Regal Eagle Smokehouse','Regal Eagle Smokehouse: Craft Drafts & Barbecue','eat','ws'],['Katsura Grill','Katsura Grill','eat','ws'],['Les Halles Boulangerie','Les Halles Boulangerie & Pâtisserie','eat','ws'],['Via Napoli','Via Napoli Ristorante e Pizzeria','eat','ws'],
@@ -50,7 +56,9 @@ V:[['Emporium','Emporium','shop'],['Main Street Confectionery','Main Street Conf
  ['Roundup Rodeo BBQ','Roundup Rodeo BBQ','eat','ts'],['PizzeRizzo','Pizza Rizzo','eat','ga'],['Mama Melrose’s Ristorante Italiano',"Mama Melrose's Ristorante Italiano",'eat','ga'],['Sci-Fi Dine-In Theater','Sci-Fi Dine-In Theater','eat','ga'],['Docking Bay 7','Docking Bay 7 Food and Cargo','eat','sw'],['Ronto Roasters','Ronto Roasters','eat','sw'],
  ['Woody’s Lunch Box',"Woody's Lunch Box",'eat','ts'],['Backlot Express','Backlot Express','eat','el'],['Oga’s Cantina',"Oga's Cantina",'eat','sw'],['Min and Bill’s Dockside Diner',"Min and Bill's Dockside Diner",'eat','el'],
  ['Rosie’s All-American Café',"Rosie's All-American Café",'eat','sb'],['Catalina Eddie’s',"Catalina Eddie's",'eat','sb'],['Mickey’s of Hollywood',"Mickey's of Hollywood",'shop','hb'],['Tower Hotel Gifts','Tower Hotel Gifts','shop','sb'],
- ['Dok-Ondar’s Den of Antiquities','Dok-Ondar’s Den of Antiquities','shop','sw'],['Celebrity 5 & 10','Celebrity 5 & 10','shop','hb']].filter(r=>POS[r[1]]),
+ ['Dok-Ondar’s Den of Antiquities','Dok-Ondar’s Den of Antiquities','shop','sw'],['Celebrity 5 & 10','Celebrity 5 & 10','shop','hb'],
+ ["Satu'li Canteen","Satu'li Canteen",'eat','pa'],['Flame Tree Barbecue','Flame Tree Barbecue','eat','di'],['Pizzafari','Pizzafari','eat','di'],['Harambe Market','Harambe Market','eat','af'],['Yak & Yeti','Yak & Yeti Restaurant','eat','as'],
+ ['Tiffins','Tiffins','eat','di'],['Yak & Yeti Local Foods Cafe','Yak & Yeti Local Foods Cafe','eat','as'],['Tamu Tamu Refreshments','Tamu Tamu Refreshments','eat','af']].filter(r=>POS[r[1]]),
 // entertainment: editable; times in HH:MM (names are generic placeholders)
 EV:[{id:'parade',n:'Festival of Fantasy Parade',ts:['12:00','15:00'],dur:20,lead:40,pref:.5},{id:'castle',n:'Castle Stage Show (placeholder)',ts:['11:30','13:30','16:30'],dur:20,lead:20,pref:.3},{id:'band',n:'Main Street Band & Singers',ts:['10:30','12:30','14:30','18:00'],dur:20,lead:8,pref:.12},{id:'fire',n:'Happily Ever After (fireworks)',ts:['21:00'],dur:19,lead:40,pref:.75,exit:.6},
  // the Christmas parade: evenings in the holiday season only (season = first and last day as month*100+day); it can be switched on for any date in Entertainment
@@ -71,7 +79,7 @@ const AT=PARK.A.map((r,i)=>{const p=POS[r[1]],pk=parkOf(r[2]);return{i,n:r[0],os
 /* Muppet*Vision 3D closed in 2024, so there's no real wait for it: it shows a fixed placeholder wait while it runs (a.ph, minutes) */
 {const M=AT.find(a=>a.osm==="Jim Henson's Muppet*Vision 3-D");if(M)M.ph=15}
 /* Cosmic Rewind's map outline runs from the pavilion out through the tunnel to the show building backstage, so its middle lands on a service road: the wait sits over the pavilion guests walk into instead */
-{const G=AT.find(a=>a.osm==='Guardians Of The Galaxy: Cosmic Rewind');if(G){G.x=4240;G.y=5450}}
+{const G=AT.find(a=>a.osm==='Guardians Of The Galaxy: Cosmic Rewind');if(G){G.x=4240+MDX;G.y=5450}}
 /* Soarin' and Awesome Planet are inside The Land: guests go in by its door, not the nearest path to the far side of the building */
 {const L=AT.find(a=>a.osm==='Living with the Land');if(L)for(const a of AT)if(a.osm==='Soarin\' Around The World'||a.osm==='Awesome Planet'){a.nd=L.nd;a.dx=L.dx;a.dy=L.dy}}
 const VN=V.map((r,i)=>{const p=POS[r[1]];return{i,n:r[0],osm:r[1],k:r[2],l:r[3],pk:r[3]?parkOf(r[3]):0,x:p.c[0],y:p.c[1],nd:p.nd,dr:0}});
@@ -81,7 +89,8 @@ function relTimes(){for(const e of EV)if(e.rel&&Array.isArray(e.t)){const t=(e.r
 function setHours(o,c){OPEN=o;CLOSE=c;relTimes();for(const a of AT)if(!a.pk){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(22-a.c0))}}
 function setHoursEP(o,c){EOPEN=o;ECLOSE=c;relTimes();for(const a of AT)if(a.pk===1){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(21-a.c0))}}
 function setHoursHS(o,c){HOPEN=o;HCLOSE=c;relTimes();for(const a of AT)if(a.pk===2){a.open=o+(a.o0-9);a.close=Math.max(a.open+1,c-(21-a.c0))}}
-const pOpen=pk=>pk===2?HOPEN:pk?EOPEN:OPEN,pClose=pk=>pk===2?HCLOSE:pk?ECLOSE:CLOSE;
+function setHoursAK(o,c){AOPEN=o;ACLOSE=c;relTimes();for(const a of AT)if(a.pk===3){a.open=o+(a.o0-8);a.close=Math.max(a.open+1,c-(19-a.c0))}} /* Animal Kingdom's: its rides' times are written against an 8 am to 7 pm day */
+const pOpen=pk=>pk===3?AOPEN:pk===2?HOPEN:pk?EOPEN:OPEN,pClose=pk=>pk===3?ACLOSE:pk===2?HCLOSE:pk?ECLOSE:CLOSE;
 const GATE=OSM.keys.gate,TOWNSQ=OSM.keys.townsq,MAINST=OSM.keys.mainst,HUB=OSM.keys.hub;
 /* ---- graph: real walkways. Routes are computed on demand toward each destination (Dijkstra), then cached ---- */
 const ADJ=N.map(()=>[]);E.forEach(([a,b])=>{const d=Math.hypot(N[a][0]-N[b][0],N[a][1]-N[b][1]);ADJ[a].push([b,d]);ADJ[b].push([a,d])});
@@ -145,9 +154,9 @@ const BOATR=[];{const B=OSM.boats||{},add=(pts,loop,stops,col,n,fs)=>{if(!pts||p
     Yacht & Beach Club and the Swan & Dolphin; and two loops across World Showcase Lagoon, Showcase Plaza to Germany and to Morocco */
  add(B.fsc,false,[P_.bwdock,P_.bydock,P_.sddock],'#1d8fa8','Friendship boat · EPCOT – BoardWalk – Yacht & Beach Club – Swan & Dolphin – Hollywood Studios',true);
  for(const k of['fsw','fse'])if(B[k]){const a=B[k][0],far=B[k].reduce((m,q)=>Math.hypot(q[0]-a[0],q[1]-a[1])>Math.hypot(m[0]-a[0],m[1]-a[1])?q:m,a);
-  add(B[k],true,[far],'#1d8fa8','Friendship boat · Showcase Plaza – '+(Math.max(a[0],far[0])>4200?'Germany':'Morocco'),true)}}
+  add(B[k],true,[far],'#1d8fa8','Friendship boat · Showcase Plaza – '+(Math.max(a[0],far[0])>4200+MDX?'Germany':'Morocco'),true)}}
 const GATEXY=N[GATE],EPGATE=OSM.keys.epgate??null,EPGATEXY=EPGATE!==null?N[EPGATE]:null, /* EPCOT's main entrance */
- HSGATE=OSM.keys.hsgate??null,HSGATEXY=HSGATE!==null?N[HSGATE]:null,PGATE=[GATE,EPGATE,HSGATE],PGATEXY=[GATEXY,EPGATEXY,HSGATEXY]; /* Hollywood Studios' entrance; each park's gate by park number */
+ HSGATE=OSM.keys.hsgate??null,HSGATEXY=HSGATE!==null?N[HSGATE]:null,AKGATE=OSM.keys.akgate??null,AKGATEXY=AKGATE!==null?N[AKGATE]:null,PGATE=[GATE,EPGATE,HSGATE,AKGATE],PGATEXY=[GATEXY,EPGATEXY,HSGATEXY,AKGATEXY]; /* Hollywood Studios' entrance; each park's gate by park number */
 /* Where guests may stand: every paved place in the map data (plazas, walkways and queue paths), minus building
    footprints and the Speedway track. Guests walk along the path network, but the exact spot they stop at (outside a
    ride, watching a show, waiting at the gate) is checked against this, so nobody ends up on a track, a lawn or the water. */
@@ -158,7 +167,7 @@ const PAVE1=R0=>{const q=2,gw=Math.ceil((R0[2]-R0[0])/q),gh=Math.ceil((R0[3]-R0[
  c.globalCompositeOperation='destination-out';for(const b of OSM.buildings)if(b.p.length>2&&b.k!=='roof'){c.beginPath();ring(b.p);c.fill()}
  c.lineWidth=7;for(const l of OSM.lines)if(l.k==='race')for(const p of l.p){c.beginPath();p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke()}
  const d=c.getImageData(0,0,gw,gh).data;return(x,y)=>{const i=Math.floor((x-R0[0])/q),j=Math.floor((y-R0[1])/q);return i>=0&&j>=0&&i<gw&&j<gh&&d[(j*gw+i)*4+3]>128}};
-const PAVE=(()=>{const P0=PAVE1(MKR),P1=EPR?PAVE1(EPR):null,P2=HSR?PAVE1(HSR):null;return(x,y)=>P2&&x>=HSR[0]&&y>=HSR[1]&&x<=HSR[2]&&y<=HSR[3]?P2(x,y):P1&&x>=EPR[0]&&y>=EPR[1]?P1(x,y):P0(x,y)})(); /* one mask per park area (Magic Kingdom with its resorts, EPCOT, Hollywood Studios) */
+const PAVE=(()=>{const P0=PAVE1(MKR),P1=EPR?PAVE1(EPR):null,P2=HSR?PAVE1(HSR):null,P3=AKR?PAVE1(AKR):null;return(x,y)=>P3&&x>=AKR[0]&&y>=AKR[1]&&x<=AKR[2]&&y<=AKR[3]?P3(x,y):P2&&x>=HSR[0]&&y>=HSR[1]&&x<=HSR[2]&&y<=HSR[3]?P2(x,y):P1&&x>=EPR[0]&&y>=EPR[1]?P1(x,y):P0(x,y)})(); /* one mask per park area (Magic Kingdom with its resorts, EPCOT, Hollywood Studios) */
 // Each ride and venue is entered from the nearest point on the path network that is out in the open (the closest point
 // can be an indoor queue path under the building's roof, where guests would be drawn standing on the roof).
 for(const o of[...AT,...VN]){const seen=new Set([o.nd]);let q=[o.nd],hit=PAVE(...N[o.nd])?o.nd:-1;for(let d=0;d<8&&hit<0&&q.length;d++){const nx=[];for(const u of q)for(const[v]of ADJ[u]){if(seen.has(v))continue;seen.add(v);if(PAVE(...N[v])){hit=v;break}nx.push(v)}q=nx}
@@ -168,15 +177,15 @@ function paved(x,y,r,nd){for(let i=0;i<12;i++){const px=x+rr(-r,r),py=y+rr(-r,r)
 /* ===== SIMULATION ===== */
 let T=9*3600,speed=1,playing=true,FF=false,dateStr='2026-11-12',att=50000,nf=0,gf=0,sunset=17.7,sunrise=7.2,rs=1;
 const R=()=>{rs|=0;rs=rs+0x6D2B79F5|0;let t=Math.imul(rs^rs>>>15,1|rs);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},rr=(a,b)=>a+R()*(b-a);
-const EPATT=.8,HSATT=.75; /* EPCOT's and Hollywood Studios' crowds relative to Magic Kingdom's */
-let guests=[],pend=[0,0,0],dep=[0,0,0],sp=0,spE=0,spH=0,ST={arr:0,dep:0},ARR=[0,0,0,0,0,0,0,0,.14,.2,.15,.1,.08,.07,.06,.05,.04,.04,.03,.02,.02,0,0,0],MODE=[.38,.17,.3,.15];
+const EPATT=.8,HSATT=.75,AKATT=.65; /* EPCOT's and Hollywood Studios' crowds relative to Magic Kingdom's */
+let guests=[],pend=[0,0,0],dep=[0,0,0],sp=0,spE=0,spH=0,spA=0,ST={arr:0,dep:0},ARR=[0,0,0,0,0,0,0,0,.14,.2,.15,.1,.08,.07,.06,.05,.04,.04,.03,.02,.02,0,0,0],MODE=[.38,.17,.3,.15];
 let MONO=[],FERRY=[],LAUNCH=[],BUS=[],busT=0,RRT=0,sel=null,follow=null;
 function dayParams(){const d=new Date(dateStr+'T12:00:00'),m=d.getMonth(),dw=d.getDay(),doy=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5),dd=d.getDate();
  sunset=18.9+1.4*Math.cos(2*Math.PI*(doy-172)/365);sunrise=6.85-.38*Math.cos(2*Math.PI*(doy-172)/365);
  let f=[.9,.95,1.2,1.05,.85,1,1.05,.85,.75,.95,1,1.1][m]*(dw==0||dw==6?1.12:1);if((m==10&&dd>=21)||(m==11&&dd>=19)||(m==6&&dd<=5)||(m==2&&dd>=10&&dd<=25))f*=1.28;
  const h=((d.getFullYear()*372+m*31+dd)*2654435761>>>0)/4294967296;att=Math.max(22000,Math.min(80000,Math.round(42000*f*(.9+h*.2)/500)*500));rs=(d.getFullYear()*372+m*31+dd)|0;
  for(const e of EV)if(e.season&&!e.userOn){const md=(m+1)*100+dd;e.on=md>=e.season[0]&&md<=e.season[1]}} // seasonal shows follow the date unless switched by hand
-function reset(t0){dayParams();T=t0;guests=[];pend=[0,0,0];dep=[0,0,0];sp=0;spE=0;spH=0;ST={arr:0,dep:0};busT=0;RRT=0;
+function reset(t0){dayParams();T=t0;guests=[];pend=[0,0,0];dep=[0,0,0];sp=0;spE=0;spH=0;spA=0;ST={arr:0,dep:0};busT=0;RRT=0;
  for(const a of AT){Object.assign(a,{q:[],ri:[],acc:0,down:0,dt:0,posted:5,est:0,wt:0,rides:0,hist:[],hw:0})}
  for(const e of EV){e.key=null;e.ph='idle';e.p=0}
  MONO=[];for(const k in MLINE){const l=MLINE[k];l.trains.forEach(([nm,col],i)=>{const x=(l.sd[0]+i*l.p.L/l.trains.length)%l.p.L;let nx=l.sd.findIndex(d=>d>x+1);if(nx<0)nx=0;
@@ -208,7 +217,7 @@ function decide(g){
  let u=R()*tot,i=0;for(;i<w.length-1&&(u-=w[i])>0;i++);const a=AT[i];g.tgt=i;setT(g,a.nd,...paved(a.dx,a.dy,3,a.nd),'ride')} // walk to the ride's entrance, not its middle
 /* EPCOT's guests: the same day as a Magic Kingdom guest's, in their own park. Before opening they wait outside the gate
    (there is no rope drop to a hub here); they ride, eat around the world and leave by the main entrance. */
-function decideEP(g){const pk=g.pk,O=pOpen(pk)*3600,C=pClose(pk)*3600,GT=PGATE[pk],GX=PGATEXY[pk],OU=pk===2&&P_.hsout?P_.hsout:[0,-1]; /* the outside of the gate: north of EPCOT's, and for Hollywood Studios away from the park's middle */
+function decideEP(g){const pk=g.pk,O=pOpen(pk)*3600,C=pClose(pk)*3600,GT=PGATE[pk],GX=PGATEXY[pk],OU=pk===3&&P_.akout?P_.akout:pk===2&&P_.hsout?P_.hsout:[0,-1]; /* the outside of the gate: north of EPCOT's, and for Hollywood Studios away from the park's middle */
  if(T<O)return setT(g,GT,...paved(GX[0]+OU[0]*12,GX[1]+OU[1]*12,22,GT),'hold');
  if(g.leave<=T||T>=C+600)return setT(g,GT,...paved(GX[0]+OU[0]*8,GX[1]+OU[1]*8,10,GT),'exit');
  const r=R();
@@ -303,6 +312,8 @@ function step(dt){T+=dt;if(T>=86400){reset(0)}
   while(spE>=1){spE--;mk(EPGATEXY[0]+rr(-14,14),EPGATEXY[1]-rr(14,30),4,1)}}
  if(HSGATEXY){const hh=Math.max(0,Math.min(23,Math.floor(T/3600-(HOPEN-9))));spH+=att*HSATT*CROWDX*ARR[hh]/K/3600*dt; /* Hollywood Studios' guests come from the parking lot and the bus and Skyliner stops, outside its gate */
   while(spH>=1){spH--;const o=P_.hsout||[0,1],d=rr(14,30),sd=rr(-14,14);mk(HSGATEXY[0]+o[0]*d-o[1]*sd,HSGATEXY[1]+o[1]*d+o[0]*sd,4,2)}}
+ if(AKGATEXY){const ha=Math.max(0,Math.min(23,Math.floor(T/3600-(AOPEN-9))));spA+=att*AKATT*CROWDX*ARR[ha]/K/3600*dt; /* Animal Kingdom's from its parking lot and bus station, outside its gate */
+  while(spA>=1){spA--;const o=P_.akout||[0,1],d=rr(14,30),sd=rr(-14,14);mk(AKGATEXY[0]+o[0]*d-o[1]*sd,AKGATEXY[1]+o[1]*d+o[0]*sd,4,3)}}
  if(T-densAt>3||T<densAt)crowdGrid();
  for(const a of AT)updA(a,dt);for(const e of EV){evUpd(e);if(e.ph==='live'&&isPar(e))trail(e,dt)}transport(dt);
  for(let i=guests.length-1;i>=0;i--){const g=guests[i];if(g.st===7){guests[i]=guests[guests.length-1];guests.pop();continue}upd(g,dt)}}

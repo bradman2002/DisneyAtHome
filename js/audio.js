@@ -92,9 +92,10 @@ function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(
    the fireworks or the water pageant has its own music playing, and stops after the park closes.
    The files are long (25 to 60 minutes) and simply loop; each keeps its place while it is silent. A missing file is
    skipped. */
-const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3',hs:'audio/area-hs.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT; hs: Hollywood Studios (the Hollywood Boulevard loop for now), heard anywhere over that park */
+const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3',hs:'audio/area-hs.mp3',ak:'audio/area-ak.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT; hs: Hollywood Studios (the Hollywood Boulevard loop for now), heard anywhere over that park; ak: Animal Kingdom (the Tree of Life loop), heard anywhere over it during its own hours */
 const AM={el:{},vol:{},bad:{}};
 function areaTargets(){const t={};for(const k in AREA)t[k]=0;
+ if(typeof AKR!=='undefined'&&AKR&&!SV.on&&cam.x>AKR[0]-250&&cam.x<AKR[2]+250&&cam.y>AKR[1]-250&&cam.y<AKR[3]+250){if(T>=AOPEN*3600-1800&&T<=ACLOSE*3600+900)t.ak=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Animal Kingdom: one loop for the whole park, on its own hours (it closes earlier) */
  if(T<OPEN*3600-1800||T>CLOSE*3600+900)return t;
  if(SV.on){t.ms=1;return t}
  if(typeof EPCOT!=='undefined'&&EPCOT&&cam.x>EPR[0]-250&&cam.x<EPR[2]+250&&cam.y>EPR[1]-250&&cam.y<EPR[3]+250){t.ep=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over EPCOT: its one loop, fading as you zoom out */

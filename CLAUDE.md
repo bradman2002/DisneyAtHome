@@ -251,6 +251,21 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `RIDEAUD`: soarin, tot, rotr, railway, startours, indy, muppets (the owner's files, git-ignored).
   Later the same day: spaceship, cosmic, testtrack, missionspace, remy, fiesta (EPCOT). 19 Nov: seas (The Seas with Nemo &
   Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track).
+- Animal Kingdom (owner, 19 Nov 2026: "Time for animal kingdom and all the land in between", "add the resorts as well"):
+  `ak.osm` (git-ignored; api.openstreetmap.org/api/0.6/map in 34 pieces: a west strip 28.3330,-81.6125,28.4240,-81.5900 and a
+  south strip 28.3330,-81.5900,28.3495,-81.5090) is read last. The map grew west, so the extractor shifts everything right by
+  `DX=2210` (`OSM.dx`; the Magic Kingdom region now starts at x=DX); W×H 10291×10185. Fixed map spots in the JS add it:
+  `MDX` in sim.js (Cosmic Rewind's wait, the Friendship boat's Germany/Morocco test), `landPavilion` translates by `OSM.dx`,
+  the Land greenhouse skip test. Anything else written as absolute map coordinates must add `OSM.dx` too. Park 3:
+  `OSM.regions`=[MKR, EPR, HSR, AKR, whole map], `OSM.nparks`=4; lands oa/di/pa/af/as (`AKL`; Discovery Island from its
+  place=island outline inside the park, not Bay Lake's); 13 rides/trails/shows (Festival of the Lion King = 'Harambe Theatre',
+  Finding Nemo = 'Theater In The Wild'; DinoLand is closed) and 8 restaurants; hours `AOPEN/ACLOSE` 8–19 (`setHoursAK`, ride
+  times written against that day), gate `AKGATE` (outline point nearest its bus station, `akout`), arrivals `spA`/`AKATT`.
+  Live: `LIVE.akApi` (themeparks.wiki 1c84a229-…). Art: `AKL_ART` palettes, resorts by `akResOf` (akl, csr, asr), `treeOfLife`,
+  `everestMtn` (replaces Everest's show building), `floatingMtns` over Pandora, `gushmore` at Blizzard Beach; labels in
+  render.js. TV park 'ak' with six shots. Area music `audio/area-ak.mp3` (owner's Tree of Life loop, git-ignored), one loop over the whole
+  park like EPCOT's and the Studios', on Animal Kingdom's own hours (checked before Magic Kingdom's hours in `areaTargets`). No ride
+  audio or nighttime show for it yet.
 - Fantasmic's Sorcerer Mickey is his own drawing, `fmSorcerer` (fantasmic.js): red robe, raised white gloves, blue hat with moon
   and stars, sparkles from his hands; not the parade figure from characters.js.
 - The project is named DisneyAtHome (renamed 19 Nov 2026): page title, app name and short name, readme. The launcher file

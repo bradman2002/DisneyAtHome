@@ -457,6 +457,8 @@ function glassHall(c,e,x0,y0,x1,y1,z0,wh,rh){const r=Math.min((y1-y0)/2,(x1-x0)/
  if(e){poly4(e,sf,'rgba(255,214,150,.35)');poly4(e,wf,'rgba(255,214,150,.35)')}
  c.strokeStyle='rgba(255,255,255,.9)';c.lineWidth=.4;c.beginPath();c.moveTo(...R0);c.lineTo(...R1);c.moveTo(...d);c.lineTo(...R0);c.lineTo(...a);c.moveTo(...cc);c.lineTo(...R1);c.moveTo(...d);c.lineTo(...cc);c.stroke()}
 function landPavilion(c,e,q,bb,S2){const hh=11*S2;extrude(c,e,q.p,hh,'#d9a868','#e4d2b0',{noWin:true,deco:strataDeco,ridge:false});
+ /* the details below are at fixed map spots from before the map grew west for Animal Kingdom: shifted by OSM.dx */
+ c.save();c.translate(OSM.dx||0,0);if(e){e.save();e.translate(OSM.dx||0,0)}
  /* the greenhouses (Living with the Land) at the back, north-west: rows of sawtooth glass */
  for(let x=3713;x<3756;x+=4.2){const y0=5525,y1=5551;poly4(c,[[x,y1-hh],[x+4.2,y1-hh],[x+4.2,y0-hh],[x,y0-hh]],'#b8dde4');poly4(c,[[x+2.6,y1-hh-1.6],[x+4.2,y1-hh],[x+4.2,y0-hh],[x+2.6,y0-hh-1.6]],'#7fb0bf');c.strokeStyle='rgba(255,255,255,.6)';c.lineWidth=.2;c.beginPath();c.moveTo(x+2.6,y1-hh-1.6);c.lineTo(x+2.6,y0-hh-1.6);c.stroke();if(e)poly4(e,[[x,y1-hh],[x+4.2,y1-hh],[x+4.2,y0-hh],[x,y0-hh]],'rgba(200,120,255,.35)')}
  /* the round greenhouse at the west end: a low glass dome */
@@ -467,7 +469,7 @@ function landPavilion(c,e,q,bb,S2){const hh=11*S2;extrude(c,e,q.p,hh,'#d9a868','
  const cx_=3797,cy_=5603;glassHall(c,e,cx_-46,cy_-34,cx_+46,cy_+34,hh,5*S2,18*S2);
  /* the glass entrance facing Future World (east): a tall sloped glass front with its canopy */
  glassHall(c,e,3848,5582,3866,5612,0,hh+2*S2,7*S2);
- c.fillStyle='#b5603a';c.fillRect(3848,5614,16,1.2)}
+ c.fillStyle='#b5603a';c.fillRect(3848,5614,16,1.2);c.restore();if(e)e.restore()}
 /* The Mexico pavilion: a Mesoamerican stepped pyramid in the style of Teotihuacan, lined up with the building's real
    footprint (which sits at an angle), its grand staircase facing the World Showcase Lagoon and a small temple on top.
    The plaza and boat ride are in the plain show building behind it. Each tier slopes (talud) and carries a darker
@@ -511,6 +513,69 @@ Object.assign(LANDSTYLE,{
  ac:[['#ebe5f2','#dde2f1','#f3ecdb'],['#6c76c9','#8a93d6','#9aa0b8']],
  ts:[['#f3d56c','#ea6a5e','#70aadb','#83c870','#f2efe4'],['#e8605a','#3f7fd0','#f2c24a','#58a85a']],
  sw:[['#cfb99c','#c0a78a','#d9c8ae','#b9a284'],['#a39279','#93836c','#b3a286']]});
+/* ---------- Animal Kingdom ----------
+   Land palettes: the Oasis's rockwork and thatch, Discovery Island's bright painted wood, Harambe's (Africa) weathered
+   plaster and thatch, Anandapur's (Asia) ochre and red with faded green roofs, Pandora's moss and stone. Its resorts:
+   Animal Kingdom Lodge and Kidani Village in dark timber under thatch-brown roofs, Coronado Springs in Mexican stucco and
+   terracotta, the All-Stars in their bright primary colours. Landmarks drawn by hand: the Tree of Life, Expedition
+   Everest's snowy peaks, Pandora's floating mountains and Blizzard Beach's Mount Gushmore. */
+const AKL_ART=new Set(['oa','di','pa','af','as']);
+Object.assign(LANDSTYLE,{
+ oa:[['#cbb08a','#b99a74','#d8c3a0'],['#8a6a44','#7a5c3a','#6f6a4a']],
+ di:[['#e9b85a','#d9734f','#6fb3b0','#9ac06a','#e6d3a8','#c96a8a'],['#b5603a','#7d5a3a','#4f8a7a','#8a6a3e']],
+ af:[['#e8d6b0','#d9c094','#c9a97a','#efe0c2','#d7b98c'],['#8b6a3e','#a5562f','#7a5c35','#96703f']],
+ as:[['#d9a066','#c6704a','#e3c08a','#b85a3e','#e8cfa0'],['#8a4a32','#5f7a6a','#a36a3a','#6f8a6a']],
+ pa:[['#9db3a0','#a7a28a','#8fa79a','#b5ae94'],['#6e8a6a','#5d6f78','#7a8a5a']],
+ akl:[['#7a5638','#8a6442','#6b4a30','#9a7450'],['#5a4630','#6e553a','#7a5e3c']],
+ csr:[['#f0d9b5','#e8c89c','#f2e2c4','#e3b98f','#c9e0d8'],['#b65a3a','#c4673f','#a8502f']],
+ asr:[['#f4f1e8','#e9524a','#3f7fd0','#f2c24a','#58a85a','#f08a3a'],['#3f7fd0','#e9524a','#f2c24a','#58a85a']]});
+/* which Animal Kingdom resort a building near it belongs to (by distance to the resort's middle) */
+function akResOf(x,y){const P=OSM.places;if(!P.ak)return null;
+ for(const[k,key,r]of[['akl','akl',190],['akl','kidani',170],['csr','csr',300],['asr','asports',230],['asr','amusic',230],['asr','amovies',230]]){const q=P[key];if(q&&Math.hypot(q[0]-x,q[1]-y)<r)return k}return null}
+/* the Tree of Life: a broad trunk carved with animals (suggested by lines of lighter wood) under a wide, layered canopy;
+   at night its carvings glow softly as in the evening Awakenings */
+function treeOfLife(c,e,x,y,R,S2){const H=44*S2,top=y-H,r=seeded(1998);
+ c.fillStyle='rgba(30,50,30,.28)';c.beginPath();c.ellipse(x+R*.5,y+R*.15,R*1.15,R*.5,0,0,7);c.fill();
+ /* roots and trunk */
+ const tw=R*.32;c.fillStyle='#8a6a4a';c.beginPath();c.moveTo(x-tw*2.2,y);c.quadraticCurveTo(x-tw*.9,y-H*.15,x-tw,y-H*.55);c.lineTo(x-tw*.6,top+H*.12);c.lineTo(x+tw*.6,top+H*.12);c.lineTo(x+tw,y-H*.55);c.quadraticCurveTo(x+tw*.9,y-H*.15,x+tw*2.2,y);c.closePath();c.fill();
+ c.fillStyle='#6f5238';c.beginPath();c.moveTo(x+tw*.1,y);c.lineTo(x+tw*2.2,y);c.quadraticCurveTo(x+tw*.9,y-H*.15,x+tw,y-H*.55);c.lineTo(x+tw*.6,top+H*.12);c.lineTo(x+tw*.1,top+H*.12);c.closePath();c.fill();
+ c.strokeStyle='rgba(235,215,180,.45)';c.lineWidth=Math.max(.15,R*.012);for(let i=0;i<26;i++){const yy=y-r()*H*.8,xx=x+(r()-.5)*tw*1.6,w=tw*(.2+r()*.35);c.beginPath();c.moveTo(xx-w,yy);c.quadraticCurveTo(xx,yy-w*.8,xx+w,yy);c.stroke()}
+ /* branches out to the canopy */
+ c.strokeStyle='#7a5c40';c.lineCap='round';for(const[a,l]of[[-2.5,.9],[-2,.75],[-1.1,.7],[-.6,.85],[-1.6,.6]]){c.lineWidth=tw*.35;c.beginPath();c.moveTo(x,top+H*.2);c.quadraticCurveTo(x+Math.cos(a)*R*l*.5,top+H*.1,x+Math.cos(a)*R*l,top+Math.sin(a)*R*.18);c.stroke()}
+ /* the canopy: layered clumps of leaves, darker underneath */
+ const cl=[];for(let i=0;i<46;i++){const a=r()*6.283,d=Math.sqrt(r()),cx_=x+Math.cos(a)*R*1.05*d,cy_=top+Math.sin(a)*R*.42*d-R*.05;cl.push([cx_,cy_,R*(.14+r()*.12)])}
+ cl.sort((p,q)=>p[1]-q[1]);for(const[cx_,cy_,rr]of cl){c.fillStyle='#3f6e34';c.beginPath();c.arc(cx_+rr*.15,cy_+rr*.2,rr,0,7);c.fill()}
+ for(const[cx_,cy_,rr]of cl){const g=c.createRadialGradient(cx_-rr*.4,cy_-rr*.4,rr*.1,cx_,cy_,rr);g.addColorStop(0,'#9ccc6a');g.addColorStop(1,'#4f8a3e');c.fillStyle=g;c.beginPath();c.arc(cx_,cy_-rr*.1,rr*.92,0,7);c.fill()}
+ if(e){const g=e.createRadialGradient(x,y-H*.4,1,x,y-H*.4,H*.55);g.addColorStop(0,'rgba(140,200,255,.45)');g.addColorStop(.6,'rgba(170,120,255,.2)');g.addColorStop(1,'rgba(170,120,255,0)');e.fillStyle=g;e.fillRect(x-H*.6,y-H,H*1.2,H*1.1)}}
+/* Expedition Everest's Forbidden Mountain: a cluster of grey-brown rock peaks capped with snow, the tallest about 61 m,
+   with the coaster's track glimpsed on its flank */
+function everestMtn(c,e,x,y,S2){const H=61*S2,r=seeded(1955);
+ c.fillStyle='rgba(30,40,30,.25)';c.beginPath();c.ellipse(x+H*.35,y+4,H*.75,H*.22,0,0,7);c.fill();
+ const peaks=[[-.55,.5,.38],[.5,.55,.4],[-.2,.78,.42],[.25,1,.42],[.05,.62,.5]];
+ for(const[dx,h,w]of peaks){const px=x+dx*H*.7,pt=y-h*H,bw=w*H;
+  c.fillStyle='#8c8478';c.beginPath();c.moveTo(px-bw,y);c.lineTo(px-bw*.25,pt+H*.08);c.lineTo(px,pt);c.lineTo(px+bw*.2,pt+H*.1);c.lineTo(px+bw,y);c.closePath();c.fill();
+  c.fillStyle='#6e675d';c.beginPath();c.moveTo(px,pt);c.lineTo(px+bw*.2,pt+H*.1);c.lineTo(px+bw,y);c.lineTo(px+bw*.1,y);c.closePath();c.fill();
+  /* snow on the upper part, ragged at its lower edge */
+  const sn=h*H*.32;c.fillStyle='#f4f6f8';c.beginPath();c.moveTo(px,pt);c.lineTo(px+bw*.2,pt+H*.1);c.lineTo(px+bw*.34,pt+sn);
+  for(let k=0;k<5;k++){const t=k/4;c.lineTo(px+bw*.34-t*bw*.68,pt+sn*(.7+.35*r()))}c.lineTo(px-bw*.25,pt+H*.08);c.closePath();c.fill();
+  c.fillStyle='rgba(170,185,205,.5)';c.beginPath();c.moveTo(px,pt);c.lineTo(px+bw*.2,pt+H*.1);c.lineTo(px+bw*.34,pt+sn);c.lineTo(px+bw*.05,pt+sn*.8);c.closePath();c.fill()}
+ c.strokeStyle='rgba(120,70,50,.8)';c.lineWidth=Math.max(.3,H*.012);c.beginPath();c.moveTo(x-H*.6,y-H*.12);c.quadraticCurveTo(x-H*.1,y-H*.42,x+H*.45,y-H*.2);c.stroke();
+ if(e){e.fillStyle='rgba(255,220,170,.25)';e.beginPath();e.ellipse(x,y-H*.15,H*.4,H*.12,0,0,7);e.fill()}}
+/* Pandora's floating mountains: rock islands hanging in the air over the land, vines trailing and a waterfall off each */
+function floatingMtns(c,e,x,y,S2){const r=seeded(2017);
+ for(const[dx,dy,s]of[[-40,8,1],[28,-6,.8],[2,30,.65],[52,34,.5]]){const px=x+dx*S2,py=y+dy*S2,w=12*s*S2,h=26*S2*s,lift=34*S2*s;
+  c.fillStyle='rgba(20,40,30,.22)';c.beginPath();c.ellipse(px+lift*.4,py+2,w,w*.35,0,0,7);c.fill();
+  const b=py-lift;c.fillStyle='#7d7766';c.beginPath();c.moveTo(px-w,b-h*.55);c.lineTo(px-w*.4,b+h*.25);c.lineTo(px,b+h*.55);c.lineTo(px+w*.5,b+h*.2);c.lineTo(px+w,b-h*.5);c.closePath();c.fill();
+  c.fillStyle='#625d50';c.beginPath();c.moveTo(px,b+h*.55);c.lineTo(px+w*.5,b+h*.2);c.lineTo(px+w,b-h*.5);c.lineTo(px+w*.2,b-h*.4);c.closePath();c.fill();
+  c.fillStyle='#4f8a4a';c.beginPath();c.ellipse(px,b-h*.55,w*1.05,w*.42,0,0,7);c.fill();for(let i=0;i<7;i++){c.fillStyle=i%2?'#6fb05a':'#3f7a3e';c.beginPath();c.arc(px+(r()-.5)*w*1.6,b-h*.62-r()*w*.25,w*(.18+r()*.12),0,7);c.fill()}
+  c.strokeStyle='rgba(60,110,60,.85)';c.lineWidth=.35;for(let i=0;i<6;i++){const vx=px+(r()-.5)*w*1.4;c.beginPath();c.moveTo(vx,b-h*.3);c.lineTo(vx+(r()-.5)*2,b+h*(.2+r()*.6));c.stroke()}
+  c.strokeStyle='rgba(225,245,255,.75)';c.lineWidth=.9*s;c.beginPath();c.moveTo(px-w*.55,b-h*.5);c.lineTo(px-w*.6,py-2);c.stroke();
+  if(e){e.fillStyle='rgba(90,220,255,.35)';for(let i=0;i<8;i++){e.beginPath();e.arc(px+(r()-.5)*w*1.6,b-h*.55+(r()-.5)*w*.5,.6+r()*.6,0,7);e.fill()}}}}
+/* Blizzard Beach's Mount Gushmore: a white "snow"-capped hill with the ski-jump slide down its face */
+function gushmore(c,e,x,y,S2){const H=36*S2;c.fillStyle='rgba(30,40,30,.22)';c.beginPath();c.ellipse(x+H*.4,y+3,H*1.1,H*.3,0,0,7);c.fill();
+ c.fillStyle='#a8a090';c.beginPath();c.moveTo(x-H*1.1,y);c.quadraticCurveTo(x-H*.4,y-H*.9,x,y-H);c.quadraticCurveTo(x+H*.5,y-H*.85,x+H*1.1,y);c.closePath();c.fill();
+ c.fillStyle='#f4f7fa';c.beginPath();c.moveTo(x-H*.55,y-H*.62);c.quadraticCurveTo(x-H*.25,y-H*.95,x,y-H);c.quadraticCurveTo(x+H*.3,y-H*.92,x+H*.6,y-H*.58);c.quadraticCurveTo(x+H*.2,y-H*.5,x,y-H*.62);c.quadraticCurveTo(x-H*.25,y-H*.5,x-H*.55,y-H*.62);c.fill();
+ c.strokeStyle='#e9a23a';c.lineWidth=Math.max(.4,H*.03);c.beginPath();c.moveTo(x+H*.05,y-H*.95);c.lineTo(x+H*.35,y-H*.15);c.stroke();c.strokeStyle='#3f8fd0';c.beginPath();c.moveTo(x-H*.1,y-H*.92);c.quadraticCurveTo(x-H*.5,y-H*.5,x-H*.3,y-H*.05);c.stroke()}
 /* the Hollywood Tower Hotel: a tall block of pink-tan stucco with terracotta trim, Moorish arches along its top, its
    lightning-split face and the hotel's name in neon */
 function towerHotel(c,e,q,bb,S2){const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,s=.6,P=q.p.map(([x,y])=>[cx_+(x-cx_)*s,cy_-6+(y-cy_)*s]),hh=61*S2,tb=bbox(P);
@@ -673,17 +738,19 @@ function paintMap(rx,ry,rw,rh,mss){
  const{b:tronB,cv:tronCv}=tronParts();
  const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle'),towerB=OSM.buildings.find(q=>q.n==='The Twilight Zone Tower of Terror');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbOf(q.p);if(!cull)b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);if(!vis(bb))continue;
-  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
+  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landOf(cx_,cy_)||akResOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
   if(q.n==='Disney’s Contemporary Resort'||q.n==="Disney's Contemporary Resort"){late.push(()=>aframe(c,e,bb,hh));continue} // painted after the monorail beams, which run behind and through it
   if(q.k==='tent'){B.push({y:bb[3],f:()=>tent(c,cx_,bb[3],(bb[2]-bb[0])/2,hh+4,['#d65a8a','#5a8ad6','#e2a321','#7b4fc0'][hs%4])});continue}
   if(land.startsWith('ep')&&q.n==='The Land'){const qq=q;B.push({y:bb[3],f:()=>landPavilion(c,e,qq,bb,S2)});continue}
-  if(land.startsWith('ep')&&q.k==='greenhouse'&&bb[0]>3650&&bb[2]<3900&&bb[1]>5450&&bb[3]<5700)continue; /* The Land's round greenhouse: part of its painting */
+  if(land.startsWith('ep')&&q.k==='greenhouse'&&bb[0]>3650+(OSM.dx||0)&&bb[2]<3900+(OSM.dx||0)&&bb[1]>5450&&bb[3]<5700)continue; /* The Land's round greenhouse: part of its painting */
   if(land.startsWith('ep')&&q.n==='Spaceship Earth'){B.push({y:bb[3],f:()=>spaceshipEarth(c,e,cx_,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2,S2)});continue}
   if(land==='ep_mexico'&&q.n==='Mexico Pavilion'){B.push({y:bb[3],f:()=>mexicoPyramid(c,e,q.p,S2)});continue}
   if(q.n==='Walt Disney World Dolphin Resort'){const qq=q;B.push({y:bb[3],f:()=>dolphinResort(c,e,qq,S2)});continue}
   if(q.n==='Walt Disney World Swan Resort'){const qq=q;B.push({y:bb[3],f:()=>swanResort(c,e,qq,S2)});continue}
+  if(OSM.ak&&OSM.places.everest&&land==='as'&&Math.hypot(cx_-OSM.places.everest[0],cy_-OSM.places.everest[1])<48&&(bb[2]-bb[0])>20)continue; /* Expedition Everest's show building: the painted mountain stands in its place */
+  if(q.n==='Tree of Life'&&OSM.ak&&land==='di'){B.push({y:bb[3],f:()=>treeOfLife(c,e,cx_,bb[3]-(bb[3]-bb[1])*.3,(bb[2]-bb[0])/2,S2)});continue}
   if(q.n==='The Twilight Zone Tower of Terror'){const qq=q;B.push({y:bb[3],f:()=>towerHotel(c,e,qq,bb,S2)});continue}
   if(towerB&&q!==towerB&&!q.n&&ptIn(cx_,cy_,towerB.p))continue; /* the Tower's own inner outline: part of its painting */
   if(q.n==="Jim Henson's Muppet*Vision 3-D"){const qq=q;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,'#f1e3bd','#cdb98f',{noWin:true,ridge:false,deco:muppetDeco});muppetSign(c,e,bb,hh)}});
@@ -699,7 +766,11 @@ function paintMap(rx,ry,rw,rh,mss){
   if(/train_station/.test(q.k||'')){wall='#c9563f';roof='#9e2f2f'}
   if(LANDSTYLE[land]&&/^(yc|bc|bcv|bwi|bwv|dol|swan|swr)$/.test(land)&&/Convention/.test(q.n||''))roof='#c6cacd'; /* the resorts' convention halls: plain pale roofs */
   if(land.startsWith('ep')&&/^Project Tomorrow/.test(q.n))hh=Math.min(hh,6*S2); /* Spaceship Earth's low post-show building, not a tower */
-  const qq=q,big=(land.startsWith('ep')||HSL_ART.has(land))&&(bb[2]-bb[0])*(bb[3]-bb[1])>1500;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'&&land!=='ep_fw',noWin:big||land==='ep_fw'||/Convention/.test(qq.n||''),deco:cresDeco(land)});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
+  const qq=q,big=(land.startsWith('ep')||HSL_ART.has(land)||AKL_ART.has(land))&&(bb[2]-bb[0])*(bb[3]-bb[1])>1500;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'&&land!=='ep_fw',noWin:big||land==='ep_fw'||/Convention/.test(qq.n||''),deco:cresDeco(land)});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
+ if(OSM.ak){const P2=OSM.places; /* Animal Kingdom's hand-drawn landmarks */
+  if(P2.everest&&vis([P2.everest[0]-50,P2.everest[1]-70,P2.everest[0]+50,P2.everest[1]+10]))B.push({y:P2.everest[1]+40,f:()=>everestMtn(c,e,P2.everest[0],P2.everest[1]+26,S2*1.15)});
+  if(OSM.lands.pa){const pb=bbox(OSM.lands.pa),mx=(pb[0]+pb[2])/2+25,my=(pb[1]+pb[3])/2-30;if(vis([mx-90,my-110,mx+90,my+60]))B.push({y:pb[3]+60,f:()=>floatingMtns(c,e,mx,my,S2*1.6)})} /* over Pandora's walkways, drawn after its show buildings */
+  if(P2.blizzard&&vis([P2.blizzard[0]-60,P2.blizzard[1]-60,P2.blizzard[0]+60,P2.blizzard[1]+10]))B.push({y:P2.blizzard[1]+40,f:()=>gushmore(c,e,P2.blizzard[0],P2.blizzard[1]+15,S2*1.3)})}
  if(OSM.falcon){const fb=bbox(OSM.falcon);if(vis(fb))B.push({y:fb[3]+200,f:()=>falcon(c,e,OSM.falcon)})} /* drawn after Smugglers Run's building, which its pad sits against */
  /* Crescent Lake details: the Yacht Club's lighthouse, Stormalong Bay's shipwreck, Luna Park's coaster slide */
  if(CRES){const P2=OSM.places;

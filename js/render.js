@@ -116,7 +116,63 @@ const QLINE=AT.map(a=>{let best=null,bd=40*40;for(const p of OSM.paths){if(!p.q|
 function drawFlag(now){const fp=P_.flagpole||[P_.townsq[0],P_.townsq[1]-6],x=fp[0],y=fp[1],up=flagUp(); /* the Town Square flagpole: the flag flies all day and comes down during the anthem at the Flag Retreat */
    cx.fillStyle='rgba(30,40,30,.25)';cx.fillRect(x+.4,y,5,.8);cx.fillStyle='#e9e9ee';cx.fillRect(x-.3,y-26,.6,26);cx.fillStyle='#f2c444';cx.beginPath();cx.arc(x,y-26.4,.8,0,7);cx.fill();
    if(up>0){const fy=y-26+(1-up)*20,wv=Math.sin(now/260)*.6;cx.fillStyle='#c8323a';cx.beginPath();cx.moveTo(x+.3,fy);cx.lineTo(x+8,fy+.6+wv);cx.lineTo(x+8,fy+4.6+wv);cx.lineTo(x+.3,fy+4);cx.fill();cx.fillStyle='#fff';cx.fillRect(x+.3,fy+1.2,7.4,.8);cx.fillRect(x+.3,fy+2.8,7.4,.8);cx.fillStyle='#2f4f9a';cx.fillRect(x+.3,fy,3.2,2)}}
-function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600;
+/* Kilimanjaro Safaris' trucks: open-sided safari trucks under striped canvas, driving the one-way road through the savannas
+   (OSM.routes.safari) a minute or so apart, about 22 minutes round; they stand still while the ride is down and are put away
+   when it's closed */
+const SAFP=OSM.routes&&OSM.routes.safari?mkPath(OSM.routes.safari):null,SAF={d:0,t:null},SAFA=AT.find(a=>a.osm==='Kilimanjaro Safaris');
+function drawSafari(){if(!SAFP||!SAFA||SAFP.L<50)return;const st=aStat(SAFA);if(st==='Closed'){SAF.t=null;return}
+ const v=SAFP.L/1320,dT=SAF.t===null?1e9:T-SAF.t;SAF.t=T;if(Math.abs(dT)>120)SAF.d=T*v;else if(st!=='Temporarily down'&&st!=='Delayed')SAF.d+=dT*v;
+ const z=zf(),hw=cw/2/z+20,hh=ch/2/z+20,n=20,c=cx;
+ for(let i=0;i<n;i++){const d=((SAF.d+i*SAFP.L/n)%SAFP.L+SAFP.L)%SAFP.L,[x,y,an]=SAFP.at(d);if(Math.abs(x-cam.x)>hw||Math.abs(y-cam.y)>hh)continue;
+  c.save();c.translate(x,y);c.rotate(an);c.scale(1.6,1.6);c.fillStyle='rgba(30,30,20,.25)';c.fillRect(-4.2,-1.2,9,3.4);
+  c.fillStyle='#b89a5e';c.fillRect(-4.5,-1.6,9,3.2);c.fillStyle='#6f6a48';c.fillRect(3,-1.5,1.5,3);
+  c.fillStyle='#efe4c8';c.fillRect(-4.3,-1.75,7.2,3.5);c.fillStyle='#8a5a32';for(let k=-4;k<2.9;k+=1.4)c.fillRect(k,-1.75,.6,3.5);
+  c.restore()}}
+/* Kilimanjaro Safaris' animals: herds placed beside the truck road (OSM.routes.safari) in the order the ride meets them -
+   forest antelope, hippos, crocodiles, giraffes, zebras, ostriches, rhinos, elephants, flamingos, lions, cheetahs - each
+   wandering slowly round its own spot and grazing */
+const SAFZ=[['ant',.05,4],['hippo',.12,3],['croc',.19,3],['giraffe',.28,4],['zebra',.34,6],['ant',.4,7],['ostrich',.46,3],
+ ['rhino',.52,2],['elephant',.59,4],['flamingo',.66,12],['lion',.73,3],['cheetah',.8,2],['giraffe',.87,3],['zebra',.93,5]];
+const SAFAN=(()=>{if(!SAFP||SAFP.L<50)return[];let sd=7;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647,pts=[];
+ for(let d=0;d<SAFP.L;d+=8)pts.push(SAFP.at(d));const clear=(x,y)=>pts.every(p=>(p[0]-x)**2+(p[1]-y)**2>110),out=[];
+ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const p of pts)x0=Math.min(x0,p[0]),y0=Math.min(y0,p[1]),x1=Math.max(x1,p[0]),y1=Math.max(y1,p[1]);
+ const near=OSM.areas.filter(a=>(a.k==='water'||a.k==='forest')&&a.o.some(q=>q[0]>x0-80&&q[0]<x1+80&&q[1]>y0-80&&q[1]<y1+80)),
+  inP=(o,x,y)=>{let r=false;for(let i=0,j=o.length-1;i<o.length;j=i++){const[a,b]=o[i],[c,d]=o[j];if((b>y)!==(d>y)&&x<(c-a)*(y-b)/(d-b)+a)r=!r}return r},
+  kind=(x,y)=>{let f=0;for(const a of near)if(inP(a.o,x,y)){if(a.k==='water')return 'w';f=1}return f?'f':''};
+ for(const[k,f,n]of SAFZ){const wet=k==='hippo'||k==='flamingo'||k==='croc';let hx=null,hy=0;
+  for(let tr=0;tr<80&&hx===null;tr++){const[x,y,an]=SAFP.at((((f+(rnd()-.5)*(wet?.14:.04))%1+1)%1)*SAFP.L),
+   s=rnd()<.5?1:-1,o=(wet?6:16)+rnd()*(wet?45:20),px=x-Math.sin(an)*o*s,py=y+Math.cos(an)*o*s;
+   if(clear(px,py)&&(wet?kind(px,py)==='w':tr>50||kind(px,py)===''))hx=px,hy=py}
+  if(hx===null)continue;
+  for(let i=0;i<n;i++)for(let tr=0;tr<12;tr++){const a=rnd()*6.283,r=rnd()*(k==='flamingo'?7:9),x=hx+Math.cos(a)*r,y=hy+Math.sin(a)*r*.6,w=kind(x,y)==='w';
+   if(wet===w&&clear(x,y)){out.push({k,x,y,ph:rnd()*99,sp:.5+rnd()});break}}}
+ return out.sort((a,b)=>a.y-b.y)})();
+function safAnimal(c,k,g){const E=(x,y,rx,ry,col)=>{c.fillStyle=col;c.beginPath();c.ellipse(x,y,rx,ry,0,0,6.283);c.fill()},
+  L=(x0,y0,x1,y1,w,col)=>{c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke()};c.lineCap='round';
+ if(k==='giraffe'){const s='#d9a441';for(const lx of[-2,-1.2,1.4,2.2])L(lx,-4.4,lx,0,.55,s);E(0,-5,3,1.5,s);L(2.2,-5.6,4.2,-11.5+g,1.1,s);
+  E(4.9,-11.7+g,1.1,.6,s);c.fillStyle='#8a5a2b';for(const[a,b]of[[-1.6,-5.2],[0,-5.5],[1.4,-4.8],[-.6,-4.5],[3,-7.6],[3.6,-9.4]])c.fillRect(a,b,.7,.6)}
+ else if(k==='zebra'){for(const lx of[-1.6,-1,1.2,1.8])L(lx,-2,lx,0,.45,'#eee');E(0,-2.5,2.4,1.1,'#f2f2ee');E(2.6,-3+g*.6,.9,.6,'#f2f2ee');
+  c.fillStyle='#222';for(let x=-2;x<2.4;x+=.8)c.fillRect(x,-3.4,.32,1.8)}
+ else if(k==='ant'){for(const lx of[-1.4,-.9,1,1.5])L(lx,-1.8,lx,0,.35,'#9a6436');E(0,-2.2,2,.9,'#b27a45');E(0,-1.8,1.5,.4,'#efe2cc');
+  E(2.2,-2.8+g*.6,.7,.5,'#b27a45');L(2.2,-3.2+g*.6,1.8,-4.4+g*.6,.25,'#3a2a1a')}
+ else if(k==='elephant'){for(const lx of[-2.2,-1,1.2,2.2])L(lx,-2,lx,0,1.1,'#7e7a76');E(0,-3.2,3.3,2.1,'#8d8a86');E(3.3,-3.8,1.5,1.4,'#8d8a86');
+  E(2.6,-3.6,1.1,1.5,'#7a7672');L(4.4,-3.4,4.7+g*.3,-.6,.7,'#8d8a86');L(4.2,-3,5,-2.6,.3,'#f3efe2')}
+ else if(k==='rhino'){for(const lx of[-1.8,-.8,1,1.8])L(lx,-1.2,lx,0,.8,'#878078');E(0,-1.9,2.8,1.3,'#9a948a');E(3,-1.8+g*.4,1.2,.8,'#9a948a');
+  L(3.8,-2.2,4.3,-3.1,.45,'#e8e2d4')}
+ else if(k==='lion'||k==='cheetah'){const s=k==='lion'?'#c99a4f':'#d8b064';for(const lx of[-1.4,-.8,1,1.5])L(lx,-1,lx,0,.4,s);E(0,-1.5,2.1,.8,s);
+  L(-2,-1.6,-3,-.6,.25,s);if(k==='lion')E(2.1,-2,1.15,1.15,'#7a4a20');else{c.fillStyle='#3a2a1a';for(const[a,b]of[[-1,-1.8],[0,-1.4],[.9,-1.9],[-.4,-2]])c.fillRect(a,b,.3,.3)}
+  E(2.4,-2,.7,.6,s)}
+ else if(k==='ostrich'){L(-.4,-2,-.6,0,.3,'#d9b49a');L(.4,-2,.6,0,.3,'#d9b49a');E(0,-2.6,1.4,1,'#2b2724');E(-1,-2.8,.5,.5,'#f0ece4');
+  L(.9,-3,1.4,-5.4+g,.3,'#d9b49a');E(1.6,-5.5+g,.4,.3,'#d9b49a')}
+ else if(k==='flamingo'){L(0,-1.6,0,0,.18,'#e07a8a');E(0,-2,.8,.5,'#f08a9a');L(.6,-2.2,.9,-3.4+g*.5,.2,'#f08a9a');E(1.1,-3.4+g*.5,.3,.2,'#f08a9a')}
+ else if(k==='hippo'){E(0,-.6,2.6,1.1,'#6e6266');E(2.4,-.7,1.1,.8,'#7a6c70');E(2.8,-1.3,.25,.2,'#3a3236');c.fillStyle='rgba(120,170,190,.85)';c.fillRect(-3,-.2,6.6,.8)}
+ else if(k==='croc'){E(0,-.3,3,.5,'#55603a');L(2.6,-.3,4.8,-.2,.6,'#55603a');L(-2.6,-.3,-4.6,0,.5,'#55603a')}}
+function drawSafariAnimals(){if(!SAFAN.length)return;const z=zf(),hw=cw/2/z+30,hh=ch/2/z+30,c=cx,sc=1.5;
+ for(const a of SAFAN){if(Math.abs(a.x-cam.x)>hw||Math.abs(a.y-cam.y)>hh)continue;
+  const tt=T/(30/a.sp)+a.ph,mv=a.k==='lion'||a.k==='cheetah'||a.k==='croc'||a.k==='hippo'?.4:2.2,x=a.x+Math.sin(tt)*mv,y=a.y+Math.sin(tt*.7)*mv*.4,
+   f=Math.cos(tt)>=0?1:-1,g=Math.max(0,Math.sin(tt*2.3+a.ph))*(a.k==='giraffe'?4:2.2);
+  c.save();c.translate(x,y);c.scale(sc*f,sc);if(a.k!=='hippo'&&a.k!=='croc'){c.fillStyle='rgba(30,30,20,.22)';c.beginPath();c.ellipse(0,0,2.6,.7,0,0,6.283);c.fill()}safAnimal(c,a.k,g);c.restore()}}
+function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600;drawSafariAnimals();drawSafari();
  // spinning rides
  for(const a of SPIN){const run=aStat(a)==='Operating'&&a.ri.length>0,ang=run?t*1.4:0;for(let i=0;i<8;i++){const q=ang+i/8*6.283,x=a.x+Math.cos(q)*12,y=a.y+Math.sin(q)*5.5-(run?4:0);
    cx.fillStyle=['#ff6b8a','#ffd34d','#4ecdc4','#7b6cff'][i%4];cx.beginPath();cx.ellipse(x,y,2.3,1.6,0,0,7);cx.fill()}

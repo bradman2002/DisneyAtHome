@@ -608,6 +608,21 @@ if AKC:  # Animal Kingdom: its outline and middle, the Tree of Life and Expediti
     for key,name in {'tol':'Tree of Life','everest':'Expedition Everest: Legend of the Forbidden Mountain','akl':"Disney's Animal Kingdom Lodge-Jambo House",'kidani':"Disney's Animal Kingdom Villas - Kidani Village",'csr':"Disney's Coronado Springs Resort",'blizzard':"Disney's Blizzard Beach",'asports':"Disney's All-Star Sports Resort",'amusic':"Disney's All-Star Music Resort",'amovies':"Disney's All-Star Movies Resort"}.items():
         b_=place(name)
         if b_: PLACES[key]=R1(b_[1])
+    # Kilimanjaro Safaris: the one-way truck road through the savannas (its named and unnamed one-way grade1 track pieces), followed
+    # in its direction from the loading dock round to where it comes back, for the safari trucks drawn in render.js
+    sw_=[w for w in WAYS.values() if w['t'].get('highway')=='track' and w['t'].get('oneway')=='yes' and w['t'].get('tracktype')=='grade1' and inside(centroid(pts(w['ids'])),[(q[0],q[1]) for q in AKC]) ]
+    nxt=collections.defaultdict(list)
+    for w in sw_:
+        for a,b in zip(w['ids'],w['ids'][1:]): nxt[a].append((b,1 if w['t'].get('name')=='Kilimanjaro Safaris' else 0))
+    dk=place('Kilimanjaro Safaris')
+    if dk and nxt:
+        cur=min(nxt,key=lambda i:math.dist(ND[i],dk[1]));route=[cur];seen_=set([cur])
+        while True:
+            opts=[(b,nm) for b,nm in nxt.get(cur,[]) if b not in seen_]
+            if not opts: break
+            cur=max(opts,key=lambda o:o[1])[0];route.append(cur);seen_.add(cur)
+        sp_=[ND[i] for i in route];print('safari road',len(sp_),'points, length',round(sum(math.dist(a,b) for a,b in zip(sp_,sp_[1:]))),'gap back to start',round(math.dist(sp_[0],sp_[-1])))
+        if len(sp_)>10: out['routes']['safari']=[R1(q) for q in simplify(sp_,.4)]
     print('animal kingdom places',{k:PLACES.get(k) for k in('ak','tol','everest','akl','kidani','csr','blizzard')})
 CRES={}
 if FULL:

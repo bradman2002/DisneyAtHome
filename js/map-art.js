@@ -732,10 +732,12 @@ function paintMap(rx,ry,rw,rh,mss){
  for(const l of OSM.lines.filter(l=>l.k==='rail'))for(const p of lp(l)){c.strokeStyle='#8a7357';c.lineWidth=3;pathOf(c,p);c.stroke()}
  {const T_=mkPath(OSM.routes.tram);c.strokeStyle='#8b8e94';c.lineWidth=.35;for(const off of[-.7,.7]){c.beginPath();for(let d=0;d<T_.L;d+=2){const[x,y,a]=T_.at(d);d?c.lineTo(x-Math.sin(a)*off,y+Math.cos(a)*off):c.moveTo(x-Math.sin(a)*off,y+Math.cos(a)*off)}c.stroke()}}
  const race=OSM.lines.filter(l=>l.k==='race');
+ if(OSM.routes.safari){const sp=OSM.routes.safari;if(vis(bbOf(sp))){for(const[col,w]of[['rgba(90,70,40,.25)',5.5],['#c9ae7c',4],['rgba(150,120,80,.5)',.5]]){c.strokeStyle=col;c.lineWidth=w;c.lineJoin='round';c.lineCap='round';pathOf(c,sp);c.stroke()}}} /* Kilimanjaro Safaris' dirt road through the savannas (its trucks are drawn live in render.js) */
  for(const[col,w]of[['rgba(30,40,30,.25)',7],['#5d636d',5],['#ffffff',.4]]){c.strokeStyle=col;c.lineWidth=w;if(w<1)c.setLineDash([2,2]);for(const l of race)for(const p of lp(l)){pathOf(c,p);c.stroke()}c.setLineDash([])}
  for(const l of race)for(const p of lp(l)){b.lineWidth=9;pathOf(b,p);b.stroke()}
  /* buildings, rockwork and trees, painted north-to-south so nearer things overlap farther ones */
  const{b:tronB,cv:tronCv}=tronParts();
+ let evB=null; /* Everest's show building, whose footprint the mountain fills */
  const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle'),towerB=OSM.buildings.find(q=>q.n==='The Twilight Zone Tower of Terror');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbOf(q.p);if(!cull)b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);if(!vis(bb))continue;
   const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landOf(cx_,cy_)||akResOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
@@ -749,7 +751,7 @@ function paintMap(rx,ry,rw,rh,mss){
   if(land==='ep_mexico'&&q.n==='Mexico Pavilion'){B.push({y:bb[3],f:()=>mexicoPyramid(c,e,q.p,S2)});continue}
   if(q.n==='Walt Disney World Dolphin Resort'){const qq=q;B.push({y:bb[3],f:()=>dolphinResort(c,e,qq,S2)});continue}
   if(q.n==='Walt Disney World Swan Resort'){const qq=q;B.push({y:bb[3],f:()=>swanResort(c,e,qq,S2)});continue}
-  if(OSM.ak&&OSM.places.everest&&land==='as'&&Math.hypot(cx_-OSM.places.everest[0],cy_-OSM.places.everest[1])<48&&(bb[2]-bb[0])>20)continue; /* Expedition Everest's show building: the painted mountain stands in its place */
+  if(OSM.ak&&OSM.places.everest&&land==='as'&&Math.hypot(cx_-OSM.places.everest[0],cy_-OSM.places.everest[1])<48&&(bb[2]-bb[0])>20){if(!evB||(bb[2]-bb[0])*(bb[3]-bb[1])>(evB[2]-evB[0])*(evB[3]-evB[1]))evB=bb;continue} /* Expedition Everest's show building: the painted mountain stands on its footprint instead (below) */
   if(q.n==='Tree of Life'&&OSM.ak&&land==='di'){B.push({y:bb[3],f:()=>treeOfLife(c,e,cx_,bb[3]-(bb[3]-bb[1])*.3,(bb[2]-bb[0])/2,S2)});continue}
   if(q.n==='The Twilight Zone Tower of Terror'){const qq=q;B.push({y:bb[3],f:()=>towerHotel(c,e,qq,bb,S2)});continue}
   if(towerB&&q!==towerB&&!q.n&&ptIn(cx_,cy_,towerB.p))continue; /* the Tower's own inner outline: part of its painting */
@@ -768,7 +770,7 @@ function paintMap(rx,ry,rw,rh,mss){
   if(land.startsWith('ep')&&/^Project Tomorrow/.test(q.n))hh=Math.min(hh,6*S2); /* Spaceship Earth's low post-show building, not a tower */
   const qq=q,big=(land.startsWith('ep')||HSL_ART.has(land)||AKL_ART.has(land))&&(bb[2]-bb[0])*(bb[3]-bb[1])>1500;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'&&land!=='ep_fw',noWin:big||land==='ep_fw'||/Convention/.test(qq.n||''),deco:cresDeco(land)});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
  if(OSM.ak){const P2=OSM.places; /* Animal Kingdom's hand-drawn landmarks */
-  if(P2.everest&&vis([P2.everest[0]-50,P2.everest[1]-70,P2.everest[0]+50,P2.everest[1]+10]))B.push({y:P2.everest[1]+40,f:()=>everestMtn(c,e,P2.everest[0],P2.everest[1]+26,S2*1.15)});
+  if(evB){const b_=evB,hw=(b_[2]-b_[0])/2,k=Math.min(1.1,hw*.75/.8/(61*S2)),bx=(b_[0]+b_[2])/2+(b_[2]-b_[0])*.12,by=(b_[1]+b_[3])/2+(b_[3]-b_[1])*.12;B.push({y:b_[3],f:()=>everestMtn(c,e,bx,by,S2*k)})} /* inside the building's footprint, set back from its walkway side (south-west), so the walkway and queue in front stay clear */
   if(OSM.lands.pa){const pb=bbox(OSM.lands.pa),mx=(pb[0]+pb[2])/2+25,my=(pb[1]+pb[3])/2-30;if(vis([mx-90,my-110,mx+90,my+60]))B.push({y:pb[3]+60,f:()=>floatingMtns(c,e,mx,my,S2*1.6)})} /* over Pandora's walkways, drawn after its show buildings */
   if(P2.blizzard&&vis([P2.blizzard[0]-60,P2.blizzard[1]-60,P2.blizzard[0]+60,P2.blizzard[1]+10]))B.push({y:P2.blizzard[1]+40,f:()=>gushmore(c,e,P2.blizzard[0],P2.blizzard[1]+15,S2*1.3)})}
  if(OSM.falcon){const fb=bbox(OSM.falcon);if(vis(fb))B.push({y:fb[3]+200,f:()=>falcon(c,e,OSM.falcon)})} /* drawn after Smugglers Run's building, which its pad sits against */

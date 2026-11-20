@@ -151,7 +151,7 @@ Hollywood Studios is on the map too, south-west of EPCOT past the Swan and Dolph
 Animal Kingdom is on the map too, west of Hollywood Studios with all the land between, plus its resorts: Animal
 Kingdom Lodge and Kidani Village, Coronado Springs, the All-Star resorts and Blizzard Beach. Its lands (Oasis, Discovery
 Island, Pandora, Africa and Asia) have their own colours; the Tree of Life, Expedition Everest's snowy peaks, Pandora's
-floating mountains and Blizzard Beach's Mount Gushmore are drawn by hand. Its rides, trails and shows have waits and
+floating mountains and Blizzard Beach's Mount Gushmore are drawn by hand, and the safari trucks drive Kilimanjaro Safaris' road through the savannas past giraffes, zebras, elephants, rhinos, lions, hippos and more. Its rides, trails and shows have waits and
 guests (the park opens 8 am to 7 pm unless Live gives today's hours), Live mode reads its real waits, and TV mode can
 show it on its own (Sound & settings → TV mode → Animal Kingdom). Its map data is `ak.osm` (not committed).
 

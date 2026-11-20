@@ -262,7 +262,11 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   Finding Nemo = 'Theater In The Wild'; DinoLand is closed) and 8 restaurants; hours `AOPEN/ACLOSE` 8–19 (`setHoursAK`, ride
   times written against that day), gate `AKGATE` (outline point nearest its bus station, `akout`), arrivals `spA`/`AKATT`.
   Live: `LIVE.akApi` (themeparks.wiki 1c84a229-…). Art: `AKL_ART` palettes, resorts by `akResOf` (akl, csr, asr), `treeOfLife`,
-  `everestMtn` (replaces Everest's show building), `floatingMtns` over Pandora, `gushmore` at Blizzard Beach; labels in
+  `everestMtn` (replaces Everest's show building, drawn inside that building's footprint set back from the walkway; owner, 19 Nov:
+  it sat on the path), Kilimanjaro Safaris' road (`OSM.routes.safari`: its one-way grade1 track pieces followed from the dock, a
+  closed loop ~3.1 km) painted as dirt, with 20 trucks driven live by `drawSafari` in render.js (22 min round, still while down,
+  gone when closed) and its animals (`SAFAN`/`drawSafariAnimals`: herds placed beside the road in ride order, hippos, crocs
+  and flamingos only inside OSM water, land animals kept out of water/forest), `floatingMtns` over Pandora, `gushmore` at Blizzard Beach; labels in
   render.js. TV park 'ak' with six shots. Area music `audio/area-ak.mp3` (owner's Tree of Life loop, git-ignored), one loop over the whole
   park like EPCOT's and the Studios', on Animal Kingdom's own hours (checked before Magic Kingdom's hours in `areaTargets`). No ride
   audio or nighttime show for it yet.

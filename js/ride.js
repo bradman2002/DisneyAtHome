@@ -162,7 +162,7 @@ function rideHud(m){const l=MLINE[m.l],L=l.p.L,t=document.getElementById('rideTt
  if(m.st==='dwell')s.textContent=`Doors open at ${STOPNAME[l.stops[m.at]]} · leaving in ${rideTime(m.tm)}`;
  else{const gap=((l.sd[m.nx]-m.x)%L+L)%L;s.textContent=`Next stop: ${STOPNAME[l.stops[m.nx]]} · about ${rideTime(gap/MSPEED+3)}`}}
 /* ---- boarding and leaving ---- */
-function rideBoard(i){const m=MONO[i];if(!m||m.l==='epcot')return;const box=document.getElementById('ride');
+function rideBoard(i){const m=MONO[i];if(!m||m.l==='epcot'){console.warn('rideBoard: no such train',i);return}const box=document.getElementById('ride');
  if(!RIDE.built){toast('Boarding…');setTimeout(()=>{let ok=false;try{ok=rideBuild()}catch(e){console.warn('Ride view could not start',e)}if(!ok){toast('This browser can’t show the cab view (no WebGL)');return}rideBoard(i)},30);return}
  if(typeof TV!=='undefined'&&TV.on&&typeof tvStop==='function')tvStop();if(SV.on)setView(false);
  RIDE.on=true;RIDE.i=i;RIDE.yaw=null;RIDE.look=RIDE.pitch=0;follow={k:'m',i};sel=null;if(typeof closeSheet==='function')closeSheet();

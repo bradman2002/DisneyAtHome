@@ -109,7 +109,7 @@ Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic
 Nemo & Friends); Hollywood Studios also has `ride-rnrc.mp3` (Rock 'n' Roller Coaster), and Magic Kingdom `ride-tron.mp3` (TRON Lightcycle / Run).
 **Ride the monorail.** Tap a Resort or Express line train and press **Ride in the front cab**: the map gives way to the view
 out of the lead car's front window, a 3D scene built from the map data around the Seven Seas Lagoon (the ground, every
-building in its land or resort colours, Space Mountain, the Contemporary's A-frame the Resort line runs through, the castle,
+building in its land or resort colours, Space Mountain, the Contemporary's A-frame with the Grand Canyon Concourse inside it, the castle,
 the trees, the beams and pylons and the other trains). The train eases into each station, opens its doors and moves on;
 the panel shows the next stop, the onboard audio plays, and the sky and light follow the time of day. Drag to look around;
 **Leave the monorail** (or Escape) brings the map back, following the train.

@@ -3,7 +3,7 @@
    lead car's front window: a WebGL scene built once from the map data around the Seven Seas Lagoon -
    - the ground, painted from the map's lawns, forests, water, parking, roads and walkways;
    - every building as a solid block in the same land or resort colours the map uses, Space Mountain as a white cone and
-     the Contemporary as its A-frame, open at the ends, which the Resort line runs straight through;
+     the Contemporary as its A-frame with the Grand Canyon Concourse inside, which the Resort line runs straight through;
    - Cinderella Castle (its picture, standing up), the trees as round crowns, the street lamps lit after dark;
    - the monorail beams on their pylons with platforms and canopies at the stations, and the other trains on them.
    The camera sits at the nose of the lead car, so it follows the train round the loop, easing into and out of each
@@ -18,15 +18,16 @@ const rideHex=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).
 /* ---- small 3D helpers ---- */
 function rideTri(A,a,b,c,col,t){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;
  const f=t?t[6]:0;[a,b,c].forEach((p,i)=>A.push(p[0],p[1],p[2],col[0],col[1],col[2],nx,ny,nz,t?t[i*2]:0,t?t[i*2+1]:0,f))}
-/* a quad; uv (optional) = [ua,va,ub,vb,uc,vc,ud,vd] in map units along the wall and up it, kind 1 = a wall with windows, 2 = a plain wall */
+/* a quad; uv (optional) = [ua,va,ub,vb,uc,vc,ud,vd] in map units along the wall and up it, kind 1 = a wall with windows, 2 = a plain wall,
+   3 = self-lit after dark (shop windows, the mosaic), 4 and 5 = as 1 and 2 but indoors, warmly lit after dark */
 const rideQuad=(A,a,b,c,d,col,uv,k)=>{if(!uv){rideTri(A,a,b,c,col);rideTri(A,a,c,d,col);return}rideTri(A,a,b,c,col,[uv[0],uv[1],uv[2],uv[3],uv[4],uv[5],k]);rideTri(A,a,c,d,col,[uv[0],uv[1],uv[4],uv[5],uv[6],uv[7],k])};
-/* a box along a segment (map x,y -> world x,z), w wide, from height y0 to y1 */
-function rideSeg(A,ax,az,bx,bz,w,y0,y1,col,ends){const L=Math.hypot(bx-ax,bz-az)||1,px=-(bz-az)/L*w/2,pz=(bx-ax)/L*w/2;
+/* a box along a segment (map x,y -> world x,z), w wide, from height y0 to y1; k (optional) its surface kind as for rideQuad */
+function rideSeg(A,ax,az,bx,bz,w,y0,y1,col,ends,k){const L=Math.hypot(bx-ax,bz-az)||1,px=-(bz-az)/L*w/2,pz=(bx-ax)/L*w/2,Q=k?(a,b,c,d,cl)=>rideQuad(A,a,b,c,d,cl,[0,0,0,0,0,0,0,0],k):(a,b,c,d,cl)=>rideQuad(A,a,b,c,d,cl);
  const p=[[ax+px,az+pz],[bx+px,bz+pz],[bx-px,bz-pz],[ax-px,az-pz]];
- rideQuad(A,[p[0][0],y1,p[0][1]],[p[1][0],y1,p[1][1]],[p[2][0],y1,p[2][1]],[p[3][0],y1,p[3][1]],col);
- rideQuad(A,[p[0][0],y0,p[0][1]],[p[1][0],y0,p[1][1]],[p[1][0],y1,p[1][1]],[p[0][0],y1,p[0][1]],col);
- rideQuad(A,[p[3][0],y0,p[3][1]],[p[2][0],y0,p[2][1]],[p[2][0],y1,p[2][1]],[p[3][0],y1,p[3][1]],col);
- if(ends){rideQuad(A,[p[0][0],y0,p[0][1]],[p[3][0],y0,p[3][1]],[p[3][0],y1,p[3][1]],[p[0][0],y1,p[0][1]],col);rideQuad(A,[p[1][0],y0,p[1][1]],[p[2][0],y0,p[2][1]],[p[2][0],y1,p[2][1]],[p[1][0],y1,p[1][1]],col)}}
+ Q([p[0][0],y1,p[0][1]],[p[1][0],y1,p[1][1]],[p[2][0],y1,p[2][1]],[p[3][0],y1,p[3][1]],col);
+ Q([p[0][0],y0,p[0][1]],[p[1][0],y0,p[1][1]],[p[1][0],y1,p[1][1]],[p[0][0],y1,p[0][1]],col);
+ Q([p[3][0],y0,p[3][1]],[p[2][0],y0,p[2][1]],[p[2][0],y1,p[2][1]],[p[3][0],y1,p[3][1]],col);
+ if(ends){Q([p[0][0],y0,p[0][1]],[p[3][0],y0,p[3][1]],[p[3][0],y1,p[3][1]],[p[0][0],y1,p[0][1]],col);Q([p[1][0],y0,p[1][1]],[p[2][0],y0,p[2][1]],[p[2][0],y1,p[2][1]],[p[1][0],y1,p[1][1]],col)}}
 /* a footprint without its repeated closing point or doubled points; and a polygon's signed area */
 function rideClean(p){const P=[];for(const q of p){const l=P[P.length-1];if(!l||Math.hypot(q[0]-l[0],q[1]-l[1])>.05)P.push(q)}while(P.length>3&&Math.hypot(P[0][0]-P[P.length-1][0],P[0][1]-P[P.length-1][1])<=.05)P.pop();return P}
 function rideArea(P){let A=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];A+=a[0]*b[1]-b[0]*a[1]}return A/2}
@@ -55,20 +56,62 @@ function rideGround(R,maxT){const w=R[2]-R[0],h=R[3]-R[1],K=Math.min(1.6,maxT/Ma
  for(const l of OSM.lines)if(l.k==='rail')for(const p of l.p){if(!inR(p))continue;c.strokeStyle='#8a7357';c.lineWidth=3;pathOf(c,p);c.stroke()}
  c.fillStyle='rgba(60,60,55,.35)';for(const q of OSM.buildings)if(q.p.length>2&&inR(q.p)){pathOf(c,q.p,1);c.fill()} /* a little shade at each building's foot */
  return cv}
+/* the Contemporary: its A-frame along the footprint's longest side, open at both ends, and inside it the Grand Canyon
+   Concourse the Resort line runs through - the two legs of rooms leaning together, the atrium between them with a
+   balcony corridor on every floor (their doors lit after dark), a tiled concourse floor, a row of shops, the tall
+   elevator core faced with a mosaic (an original pattern of mesas in bright tiles, not the real mural), glazed ends
+   above the openings, and warm lights along the balconies at night */
+function rideContemporary(A,q,b,cx_,cy_,S){let best=0,ux=1,uz=0;for(let i=0;i<q.p.length;i++){const a=q.p[i],c=q.p[(i+1)%q.p.length],l=Math.hypot(c[0]-a[0],c[1]-a[1]);if(l>best){best=l;ux=(c[0]-a[0])/l;uz=(c[1]-a[1])/l}}
+ const vx=-uz,vz=ux;let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;for(const[x,y]of q.p){const u=(x-cx_)*ux+(y-cy_)*uz,v=(x-cx_)*vx+(y-cy_)*vz;u0=Math.min(u0,u);u1=Math.max(u1,u);v0=Math.min(v0,v);v1=Math.max(v1,v)}
+ /* which side the beams run on (the shops and the elevator core go on the other), and how far out the farther one is (sampled along the beams, which may be one long straight piece here):
+    the legs of rooms are made thin enough to leave the trains a clear way through the atrium */
+ const vm=(v0+v1)/2,hw=(v1-v0)/2,um=(u0+u1)/2,H=q.h*S,F=RIDE_BH-2.6;let vb=0,nb=0,bo=0;
+ for(const k of['resort','express']){if(!OSM.mono[k])continue;const MP=mkPath(OSM.mono[k]);for(let d=0;d<MP.L;d+=4){const[x,y]=MP.at(d);if(!(x>b[0]&&x<b[2]&&y>b[1]&&y<b[3]))continue;const v=(x-cx_)*vx+(y-cy_)*vz;vb+=v;nb++;bo=Math.max(bo,Math.abs(v-vm))}}
+ const sg=nb&&vb/nb>vm?-1:1,T=Math.max(2.5,Math.min(10,hw*(1-(RIDE_BH+5)/H)-bo-7));
+ const P=(u,v,y)=>[cx_+ux*u+vx*v,y,cy_+uz*u+vz*v],yi=H*(1-T/hw),wi=y=>hw-T-hw*y/H; /* wi: the atrium's half-width at height y */
+ const wall=rideHex('#d9dbd8'),glass=rideHex('#8a94a0'),inner=rideHex('#e6dfd2'),slab=rideHex('#c9c2b6'),rail=rideHex('#f3eee2'),steel=rideHex('#7d858c'),XL=RIDE.xl=[];
+ const seg=(ua,va,ub,vb,w,y0,y1,col,e,k)=>{const a=P(ua,va,0),c=P(ub,vb,0);rideSeg(A,a[0],a[2],c[0],c[2],w,y0,y1,col,e,k)};
+ /* the outside: the two sloping walls, and the balconies' dark bands */
+ rideQuad(A,P(u0,v0,0),P(u1,v0,0),P(u1,vm,H),P(u0,vm,H),wall);rideQuad(A,P(u0,v1,0),P(u1,v1,0),P(u1,vm,H),P(u0,vm,H),wall);
+ for(let k=1;k<14;k++){const f=k/14,y=H*f,va=v0+(vm-v0)*f,vb=v1+(vm-v1)*f;seg(u0,va,u1,va,.6,y-.5,y+.3,glass);seg(u0,vb,u1,vb,.6,y-.5,y+.3,glass)}
+ /* the legs' ends, the lobby floors' end walls under the concourse, and the atrium's two sloping inner walls */
+ for(const u of[u0,u1]){for(const s of[-1,1])rideQuad(A,P(u,vm+s*hw,0),P(u,vm,H),P(u,vm,yi),P(u,vm+s*(hw-T),0),wall,[s*hw,0,0,H,0,yi,s*(hw-T),0],1);
+  rideQuad(A,P(u,vm-hw+T,0),P(u,vm+hw-T,0),P(u,vm+wi(F),F),P(u,vm-wi(F),F),wall,[-hw+T,0,hw-T,0,wi(F),F,-wi(F),F],1)}
+ for(const s of[-1,1])rideQuad(A,P(u0,vm+s*wi(F),F),P(u1,vm+s*wi(F),F),P(u1,vm,yi),P(u0,vm,yi),inner,[u0,0,u1,0,u1,yi-F,u0,yi-F],4);
+ /* a balcony corridor along each floor: its slab, its solid rail, and a light every so often */
+ for(let k=1;;k++){const y=F+.6+3.4*k,w=wi(y);if(w<3)break;for(const s of[-1,1]){const vs=vm+s*(w-.65),vr=vm+s*(w-1.25);seg(u0+.5,vs,u1-.5,vs,1.3,y-.35,y,slab,false,5);seg(u0+.5,vr,u1-.5,vr,.16,y,y+1,rail,false,5);
+   for(let u=u0+6;u<u1-4;u+=13){const p=P(u,vm+s*(w-.3),y+2.6);XL.push(p[0],p[1],p[2])}}}
+ /* the concourse floor, in big tiles that glow a little at night */
+ const fw=wi(F),fa=rideHex('#cdbfa6'),fb=rideHex('#bba98d'),ts=6;
+ for(let u=u0,i=0;u<u1;u+=ts,i++)for(let v=-fw,j=0;v<fw;v+=ts,j++){const ue=Math.min(u1,u+ts),ve=Math.min(fw,v+ts);rideQuad(A,P(u,vm+v,F),P(ue,vm+v,F),P(ue,vm+ve,F),P(u,vm+ve,F),(i+j)%2?fa:fb,[0,0,0,0,0,0,0,0],3)}
+ /* the shops: a row of low fronts facing the concourse, each with a coloured awning and lit windows */
+ const SH=['#c8433a','#2f5d8a','#3fa7a3','#e8763a','#8a5a9e','#6fb36b'].map(rideHex),sb=rideHex("#ece4d6"),sa=15,sz=25,sh=3.6;
+ for(let u=u0+10,n=0;u+13<u1-8;u+=16,n++){if(Math.abs(u+6.5-um)<12)continue;const ue=u+13,c=SH[n%SH.length];
+  seg(u,vm+sg*(sa+sz)/2,ue,vm+sg*(sa+sz)/2,sz-sa,F,F+sh,sb,true,5);
+  rideQuad(A,P(u,vm+sg*(sa-.03),F),P(ue,vm+sg*(sa-.03),F),P(ue,vm+sg*(sa-.03),F+sh*.72),P(u,vm+sg*(sa-.03),F+sh*.72),rideHex('#f6e3b4'),[0,0,0,0,0,0,0,0],3);
+  for(let m=u+2.6;m<ue-1;m+=2.6)seg(m,vm+sg*(sa-.08),m+.01,vm+sg*(sa-.08),.18,F,F+sh*.72,sb,false,5);
+  rideQuad(A,P(u-.2,vm+sg*sa,F+sh*.95),P(ue+.2,vm+sg*sa,F+sh*.95),P(ue+.2,vm+sg*(sa-1.4),F+sh*.72),P(u-.2,vm+sg*(sa-1.4),F+sh*.72),c,[0,0,0,0,0,0,0,0],5);
+  const lp=P(u+6.5,vm+sg*(sa-.8),F+sh+.4);XL.push(lp[0],lp[1],lp[2])}
+ /* the elevator core in the middle, faced with mosaic tiles up to the ninth floor or so, plain above */
+ const MZ=['#e8763a','#f2c14e','#3fa7a3','#c8433a','#2f5d8a','#f4ead2','#8a5a9e','#6fb36b'].map(rideHex),ca=2,cb=12,cw=5,top=F+26,tile=1.4;
+ const tc=(a,y)=>{const band=Math.floor(y/5),fy=(y%5)/5,fx=Math.abs(((a/7+band*.5)%1)*2-1),h=hsh(Math.round(a*13+y*71));return h%100<12?MZ[h%8]:fx<1-fy?MZ[(band*3)%8]:MZ[(band*3+5)%8]};
+ const faces=[[um-cw,ca,um+cw,ca],[um+cw,ca,um+cw,cb],[um+cw,cb,um-cw,cb],[um-cw,cb,um-cw,ca]];let a0=0;
+ for(const[ua,va,ub,vb2]of faces){const L=Math.hypot(ub-ua,vb2-va),n=Math.round(L/tile),du=(ub-ua)/n,dv=(vb2-va)/n;
+  for(let i=0;i<n;i++)for(let y=0;y<top-F;y+=tile){const y1=Math.min(top-F,y+tile),A1=[ua+du*i,va+dv*i],B1=[ua+du*(i+1),va+dv*(i+1)];
+   rideQuad(A,P(A1[0],vm+sg*A1[1],F+y),P(B1[0],vm+sg*B1[1],F+y),P(B1[0],vm+sg*B1[1],F+y1),P(A1[0],vm+sg*A1[1],F+y1),tc(a0+i*tile,y),[0,0,0,0,0,0,0,0],3)}a0+=L}
+ seg(um-cw,vm+sg*(ca+cb)/2,um+cw,vm+sg*(ca+cb)/2,cb-ca,top,H*(1-(cb+.5)/hw)-1,inner,true,5);
+ for(let i=0;i<4;i++){const p=P(um+(i<2?-1:1)*(cw+1.5),vm+sg*(i%2?cb:ca),top-1);XL.push(p[0],p[1],p[2])}
+ /* the ends: steel mullions glazing the triangle above the openings the trains run through */
+ const gy=RIDE_BH+7;for(const u of[u0+.2,u1-.2]){for(let y=gy;y<yi-1;y+=3.4){const w=wi(y);seg(u,vm-w,u,vm+w,.25,y-.12,y+.12,steel)}
+  for(let v=-wi(gy)+2;v<wi(gy);v+=4){const yt=H*(1-T/hw-Math.abs(v)/hw);if(yt>gy){const a=P(u-.12,vm+v,0),c=P(u+.12,vm+v,0);rideSeg(A,a[0],a[2],c[0],c[2],.25,gy,yt,steel)}}
+  seg(u,vm-wi(gy),u,vm+wi(gy),.6,gy-.3,gy+.3,steel)}}
 /* ---- everything solid: buildings, landmarks, beams, pylons, stations ---- */
 function rideSolids(R){const A=[],S=OSM.S||1.02,inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1]&&y<R[3];
  const castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const b=bbox(q.p),cx_=(b[0]+b[2])/2,cy_=(b[1]+b[3])/2;if(!inR(cx_,cy_))continue;
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p)))continue;
   if(q.n==='Space Mountain'){const r=(b[2]-b[0])/2,H=r*1.3,N=28,col=rideHex('#eef1f5');for(let i=0;i<N;i++){const a0=i/N*6.2832,a1=(i+1)/N*6.2832;rideTri(A,[cx_+Math.cos(a0)*r,0,cy_+Math.sin(a0)*r],[cx_,H,cy_],[cx_+Math.cos(a1)*r,0,cy_+Math.sin(a1)*r],i%2?col:rideHex('#dfe4ea'))}continue}
-  if(/Contemporary Resort$/.test(q.n||'')&&q.h>30){ /* the A-frame along the footprint's longest side, open at both ends */
-   let best=0,ux=1,uz=0;for(let i=0;i<q.p.length;i++){const a=q.p[i],c=q.p[(i+1)%q.p.length],l=Math.hypot(c[0]-a[0],c[1]-a[1]);if(l>best){best=l;ux=(c[0]-a[0])/l;uz=(c[1]-a[1])/l}}
-   const vx=-uz,vz=ux;let u0=1e9,u1=-1e9,v0=1e9,v1=-1e9;for(const[x,y]of q.p){const u=(x-cx_)*ux+(y-cy_)*uz,v=(x-cx_)*vx+(y-cy_)*vz;u0=Math.min(u0,u);u1=Math.max(u1,u);v0=Math.min(v0,v);v1=Math.max(v1,v)}
-   const P=(u,v,y)=>[cx_+ux*u+vx*v,y,cy_+uz*u+vz*v],H=q.h*S,vm=(v0+v1)/2,wall=rideHex('#d9dbd8'),glass=rideHex('#8a94a0');
-   rideQuad(A,P(u0,v0,0),P(u1,v0,0),P(u1,vm,H),P(u0,vm,H),wall);rideQuad(A,P(u0,v1,0),P(u1,v1,0),P(u1,vm,H),P(u0,vm,H),wall);
-   for(let k=1;k<14;k++){const f=k/14,y=H*f,va=v0+(vm-v0)*f,vb=v1+(vm-v1)*f;rideSeg(A,...[P(u0,va,0),P(u1,va,0)].flatMap(p=>[p[0],p[2]]),.6,y-.5,y+.3,glass);rideSeg(A,...[P(u0,vb,0),P(u1,vb,0)].flatMap(p=>[p[0],p[2]]),.6,y-.5,y+.3,glass)} /* the balconies' dark bands */
-   rideQuad(A,P(u0,v0+.5,RIDE_BH-4),P(u1,v0+.5,RIDE_BH-4),P(u1,v1-.5,RIDE_BH-4),P(u0,v1-.5,RIDE_BH-4),rideHex('#b9a98e')); /* the Grand Canyon Concourse floor under the beam */
-   continue}
+  if(/Contemporary Resort$/.test(q.n||'')&&q.h>30){rideContemporary(A,q,b,cx_,cy_,S);continue}
   const land=Object.keys(OSM.lands||{}).find(k=>ptIn(cx_,cy_,OSM.lands[k]))||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   const wall=rideHex(st[0][hs%st[0].length]),roof=rideHex(q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length]),H=Math.max(3,(q.k==='roof'?Math.min(q.h,4):q.h)*S);
   const P=rideClean(q.p);if(P.length<3)continue;const win=H>=5&&q.k!=='roof'?1:2;let u=0;
@@ -88,12 +131,12 @@ function rideSolids(R){const A=[],S=OSM.S||1.02,inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1
  /* the beams (the lines the trains run on), their pylons, and the stations' platforms and canopies */
  const beam=rideHex('#eef1f4'),pyl=rideHex('#d4d9df'),MI=OSM.monoIn;
  for(const k of['resort','express','epcot']){if(!OSM.mono[k])continue;const P=mkPath(OSM.mono[k]);let last=null,acc=0;
-  for(let d=0;d<=P.L;d+=6){const[x,y]=P.at(Math.min(d,P.L-.01));if(last&&(inR(x,y)||inR(last[0],last[1]))){rideSeg(A,last[0],last[1],x,y,1.5,RIDE_BH-1.9,RIDE_BH,beam);acc+=6;
-    const inside=MI&&x>MI[0]-6&&x<MI[2]+6&&y>MI[1]-6&&y<MI[3]+6;if(acc>=36&&!inside){acc=0;rideSeg(A,x-.6,y,x+.6,y,1.2,0,RIDE_BH-1.9,pyl,true)}}last=[x,y]}}
+  for(let d=0;d<=P.L;d+=6){const[x,y]=P.at(Math.min(d,P.L-.01));if(last&&(inR(x,y)||inR(last[0],last[1]))){const inside=MI&&x>MI[0]-6&&x<MI[2]+6&&y>MI[1]-6&&y<MI[3]+6;rideSeg(A,last[0],last[1],x,y,1.5,RIDE_BH-1.9,RIDE_BH,beam,false,inside?5:0);acc+=6; /* lit like the concourse inside the Contemporary */
+   if(acc>=36&&!inside){acc=0;rideSeg(A,x-.6,y,x+.6,y,1.2,0,RIDE_BH-1.9,pyl,true)}}last=[x,y]}}
  const plat=rideHex('#cfc8bd'),can=rideHex('#f4f4f2');
  for(const s of['ttc','poly','gf','mk','cont']){const q=P_[s];if(!q)continue;for(const k of['resort','express']){const l=MLINE[k];if(!l||l.stops.indexOf(s)<0)continue;const d=l.p.proj(...q);
    const a=l.p.at(Math.max(0,d-32)),b=l.p.at(Math.min(l.p.L-.01,d+32)),L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nx=-(b[1]-a[1])/L,nz=(b[0]-a[0])/L;
-   for(const o of[-3.6]){rideSeg(A,a[0]+nx*o,a[1]+nz*o,b[0]+nx*o,b[1]+nz*o,4,RIDE_BH-1.4,RIDE_BH-.9,plat,true)}
+   for(const o of[-3.6]){rideSeg(A,a[0]+nx*o,a[1]+nz*o,b[0]+nx*o,b[1]+nz*o,4,RIDE_BH-1.4,RIDE_BH-.9,plat,true,s==='cont'?5:0)}
    if(s!=='cont')rideSeg(A,a[0]-nx*1,a[1]-nz*1,b[0]-nx*1,b[1]-nz*1,11,RIDE_BH+5.2,RIDE_BH+5.8,can,true)}}
 
  return A}
@@ -114,11 +157,12 @@ function ridePoints(R,A){const T_=[],L_=[],inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1]&&y<
   const top=r*1.55;if(!inF)rideSeg(A,x,y,x+.01,y,.45,0,top,trunk);
   T_.push(x,top,y,r*2.1,c[0],c[1],c[2],seed);
   for(let n=0;n<(inF?1:3);n++){const an=seed*6.283+n*2.1,o=r*.5,c2=G[(h>>>(n*3+4))%G.length];T_.push(x+Math.cos(an)*o,top+(n-1)*r*.28,y+Math.sin(an)*o,r*1.45,c2[0],c2[1],c2[2],(seed*7+n*.37)%1)}}
+ const xl=RIDE.xl||[];for(let i=0;i<xl.length;i+=3)L_.push(xl[i],xl[i+1],xl[i+2],.9,1,.86,.58,0); /* the Contemporary's inside lights */
  for(const[x,y]of OSM.lamps||[])if(inR(x,y)){L_.push(x,4.2,y,1.4,1,.9,.62,0);A&&rideSeg(A,x,y,x+.01,y,.32,0,4,rideHex('#3f4640'));rideSeg(A,x-.35,y,x+.35,y,.5,3.9,4.5,rideHex('#e8e2cc'),true)}
  return{t:new Float32Array(T_),l:new Float32Array(L_)}}
 /* ---- WebGL ---- */
 const RIDE_VS_LIT='attribute vec3 p;attribute vec3 c;attribute vec3 n;attribute vec3 t;uniform mat4 M;uniform vec3 E;varying vec3 vc;varying vec3 vn;varying vec3 vp;varying vec3 vt;void main(){gl_Position=M*vec4(p,1.);vc=c;vn=n;vp=p;vt=t;}';
-const RIDE_FS_LIT='precision highp float;varying vec3 vc;varying vec3 vn;varying vec3 vp;varying vec3 vt;uniform vec3 E;uniform vec3 L;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform float NI;float hs(vec2 q){return fract(sin(dot(q,vec2(12.9898,78.233)))*43758.5453);}void main(){float vf=distance(vp,E);float d=abs(dot(normalize(vn),L));vec3 base=vc;vec3 em=vec3(0.);if(vt.z>.5){base*=.72+.28*smoothstep(0.,3.5,vt.y);if(vt.z<1.5&&vt.y>1.4){vec2 g=vec2(vt.x/3.1,(vt.y-.6)/3.4);vec2 f=fract(g);float w=step(.24,f.x)*step(f.x,.76)*step(.28,f.y)*step(f.y,.78);float r=hs(floor(g));vec3 gl=mix(vec3(.2,.27,.34),vec3(.42,.52,.6),r*.6+.2*d);base=mix(base,gl,w*.9);em=w*NI*step(.42,r)*vec3(1.,.8,.48)*(.55+.45*r);}}vec3 col=base*(AC+SC*d)+em;float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
+const RIDE_FS_LIT='precision highp float;varying vec3 vc;varying vec3 vn;varying vec3 vp;varying vec3 vt;uniform vec3 E;uniform vec3 L;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform float NI;float hs(vec2 q){return fract(sin(dot(q,vec2(12.9898,78.233)))*43758.5453);}void main(){float vf=distance(vp,E);float d=abs(dot(normalize(vn),L));vec3 base=vc;vec3 em=vec3(0.);float ind=step(3.5,vt.z),kz=vt.z-3.*ind;if(kz>2.5)em=base*NI*.85;else if(kz>.5){if(ind<.5)base*=.72+.28*smoothstep(0.,3.5,vt.y);if(kz<1.5&&vt.y>1.4){vec2 g=vec2(vt.x/3.1,(vt.y-.6)/3.4);vec2 f=fract(g);float w=step(.24,f.x)*step(f.x,.76)*step(.28,f.y)*step(f.y,.78);float r=hs(floor(g));vec3 gl=mix(vec3(.2,.27,.34),vec3(.42,.52,.6),r*.6+.2*d);base=mix(base,gl,w*.9);em=w*NI*step(.42,r)*vec3(1.,.8,.48)*(.55+.45*r);}}em+=ind*NI*base*vec3(.78,.6,.4);vec3 col=base*(AC+SC*d)+em;float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
 const RIDE_VS_TEX='attribute vec3 p;attribute vec2 u;uniform mat4 M;uniform vec3 E;varying vec2 vu;varying vec3 vp;void main(){gl_Position=M*vec4(p,1.);vu=u;vp=p;}';
 const RIDE_FS_TEX='precision highp float;varying vec2 vu;varying vec3 vp;uniform vec3 E;uniform sampler2D T;uniform vec3 SC;uniform vec3 AC;uniform vec3 FC;uniform vec2 FR;uniform vec3 G;uniform float MODE;float hs(vec2 q){return fract(sin(dot(q,vec2(12.9898,78.233)))*43758.5453);}float vn(vec2 q){vec2 i=floor(q),f=fract(q);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}void main(){vec3 col;if(MODE<.5){col=texture2D(T,vu).rgb;col*=.9+.14*vn(vp.xz*.12)+.08*vn(vp.xz*1.1);}else if(MODE<1.5)col=G;else{vec4 t=texture2D(T,vu);if(t.a<.45)discard;col=t.rgb;}col*=AC+SC*.9;float vf=distance(vp,E);float f=clamp((vf-FR.x)/(FR.y-FR.x),0.,1.);gl_FragColor=vec4(mix(col,FC,f),1.);}';
 const RIDE_VS_PT='attribute vec3 p;attribute float s;attribute vec3 c;attribute float q;uniform mat4 M;uniform vec3 E;uniform float K;uniform float MX;varying vec3 vc;varying float vf;varying float vq;void main(){vec4 o=M*vec4(p,1.);gl_Position=o;vf=distance(p,E);gl_PointSize=clamp(s*K/max(o.w,.1),1.,MX);vc=c;vq=q;}';

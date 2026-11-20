@@ -297,13 +297,20 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `js/ride.js`, raw WebGL (webgl2, else webgl1), no library. Built once on first boarding (`rideBuild`): region = resort +
   express loops + 900; ground texture painted from OSM areas/roads/paths (`rideGround`, ≤4096 px); solids (`rideSolids`:
   buildings extruded with the map's LANDSTYLE colours and ear-clipped roofs `rideEar`, Space Mountain cone, Contemporary
-  A-frame open at both ends, beams from `OSM.mono` at `RIDE_BH`=9, pylons every 36, station platforms/canopies); trees and
+  A-frame via `rideContemporary`, beams from `OSM.mono` at `RIDE_BH`=9, pylons every 36, station platforms/canopies); trees and
   lamps as point sprites (`MAP.crowns` or `OSM.trees`); castle billboard from `CASTLE_IMG`. Fog is per-pixel (vp varying).
   `rideFrame` is called from the render loop instead of the map when `RIDE.on`; eye at `monoXY(m,RIDE_NOSE)`; drag looks
   around. Boarding sets `follow={k:'m',i}` (so the onboard audio plays) and speed 1; `#ride` overlay in index.html, HUD
   `#rideTtl/#rideSt`, `body.riding` hides the bar and nav. Trains now ease in/out of stations in `transport` (`m.v`, so
   monoEta is a few seconds optimistic). The card button `#dRide` is on Resort/Express trains only (EPCOT's line runs outside
   the ground texture).
+- Contemporary interior in the cab ride (owner, 20 Nov: "is the interior of contemporary modeled" -> "Yes, model it"):
+  `rideContemporary` builds two room legs with an atrium between (leg thickness T is sized from the beams, sampled along
+  `OSM.mono`, so trains clear the walls), balcony slabs/rails per floor, tiled concourse floor at `RIDE_BH-2.6`, shops and
+  an elevator core with an ORIGINAL mosaic (mesas in bright tiles; never copy the real Mary Blair mural) on the side away
+  from the beams, steel mullions on the ends, and lights pushed to `RIDE.xl` (drawn with the lamps after dark). Surface
+  kinds in the lit shader: 1 windows, 2 plain, 3 self-lit at night, 4/5 = 1/2 indoors (warm glow at night); `rideSeg`
+  takes an optional kind. Beams and the `cont` platform inside `OSM.monoIn` use kind 5.
   Realism pass (owner, 20 Nov: "make the buildings and trees look more realistic ... some trees clip through the track"):
   vertex = p,c,n,t(u,v,kind) (12 floats); walls carry u/v so the lit shader draws window grids (lit at random after dark,
   `NI`) and a darker foot; convex footprints get hipped roofs with eaves (not cont/tom/roof kinds), others a flat roof with a

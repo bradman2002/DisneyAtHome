@@ -245,8 +245,9 @@ Object.assign(LANDSTYLE,{
 // which Epcot style a point takes: the nearest pavilion, Future World inside the park, or plain backstage grey outside it
 function epLand(x,y){if(!EPCOT||x<EPR[0]||y<EPR[1]||x>EPR[2]||y>EPR[3])return null;if(!ptIn(x,y,OSM.epcot))return'none';
  let b=null,d0=95;for(const p of EPCOT.pav){const d=Math.hypot(p.x-x,p.y-y);if(d<d0){d0=d;b=p.k}}return b?'ep_'+b:'ep_fw'}
-// Spaceship Earth: a silver geodesic sphere on its legs; at night its facets light up
-function spaceshipEarth(c,e,x,y,R,S2){const yc=y-R*.25-R*S2*1.05;
+// Spaceship Earth: a silver geodesic sphere on its legs. At night it is lit softly from below; its twinkling lights are drawn live each frame (sseNight in render.js)
+let SSE_AT=null;
+function spaceshipEarth(c,e,x,y,R,S2){const yc=y-R*.25-R*S2*1.05;SSE_AT={x,yc,R};
  c.fillStyle='rgba(30,50,40,.25)';c.beginPath();c.ellipse(x+R*.7,y+R*.25,R*1.1,R*.55,0,0,7);c.fill();
  c.strokeStyle='#6d7682';c.lineWidth=R*.12;for(const dx of[-.45,.45,0]){c.beginPath();c.moveTo(x+dx*R,y+(dx?0:R*.25));c.lineTo(x+dx*R*.5,yc+R*.6);c.stroke()}
  const g=c.createRadialGradient(x-R*.4,yc-R*.45,R*.05,x,yc,R);g.addColorStop(0,'#ffffff');g.addColorStop(.45,'#d4dae2');g.addColorStop(.85,'#8f9aa8');g.addColorStop(1,'#727d8c');
@@ -254,8 +255,9 @@ function spaceshipEarth(c,e,x,y,R,S2){const yc=y-R*.25-R*S2*1.05;
  c.save();c.beginPath();c.arc(x,yc,R,0,7);c.clip();const s=R/6.5;c.strokeStyle='rgba(80,92,110,.32)';c.lineWidth=Math.max(.2,R*.012);
  for(const a of[0,Math.PI/3,-Math.PI/3]){const ca=Math.cos(a),sa=Math.sin(a);for(let k=-8;k<=8;k++){const ox=-sa*k*s,oy=ca*k*s;c.beginPath();c.moveTo(x+ox-ca*R*1.2,yc+oy-sa*R*1.2);c.lineTo(x+ox+ca*R*1.2,yc+oy+sa*R*1.2);c.stroke()}}
  c.restore();c.strokeStyle='#66717f';c.lineWidth=Math.max(.3,R*.02);c.beginPath();c.arc(x,yc,R,0,7);c.stroke();
- if(e){const h=e.createRadialGradient(x,yc,R*.2,x,yc,R*1.25);h.addColorStop(0,'rgba(150,110,255,.55)');h.addColorStop(.75,'rgba(80,140,255,.35)');h.addColorStop(1,'rgba(80,140,255,0)');e.fillStyle=h;e.beginPath();e.arc(x,yc,R*1.25,0,7);e.fill();
-  e.fillStyle='rgba(235,240,255,.95)';const R2=seeded(77);for(let i=0;i<90;i++){const a=R2()*6.283,r=Math.sqrt(R2())*R*.95;e.fillRect(x+Math.cos(a)*r-.3,yc+Math.sin(a)*r-.3,.6,.6)}}}
+ if(e){const h=e.createRadialGradient(x,yc,R*.2,x,yc,R*1.25);h.addColorStop(0,'rgba(110,90,200,.07)');h.addColorStop(.8,'rgba(70,110,220,.12)');h.addColorStop(1,'rgba(80,140,255,0)');e.fillStyle=h;e.beginPath();e.arc(x,yc,R*1.12,0,7);e.fill();
+  /* uplighting on the lower half, from the lights round its base */
+  const u=e.createLinearGradient(0,yc+R,0,yc-R*.2);u.addColorStop(0,'rgba(120,110,255,.16)');u.addColorStop(1,'rgba(120,110,255,0)');e.save();e.beginPath();e.arc(x,yc,R,0,7);e.clip();e.fillStyle=u;e.fillRect(x-R,yc-R,R*2,R*2);e.restore()}}
 /* ---------- the Epcot resorts on Crescent Lake: Yacht Club, Beach Club, BoardWalk, Swan and Dolphin ----------
    Each takes its real colours: the Yacht Club grey-blue clapboard with white trim, the Beach Club sea-foam clapboard, the
    BoardWalk's mix of seaside facades under green roofs, and the Swan and Dolphin (Michael Graves) coral and turquoise with

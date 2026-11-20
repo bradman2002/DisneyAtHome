@@ -40,6 +40,19 @@ const toW=(sx,sy)=>{const z=zf();return[(sx-cw/2)/z+cam.x,(sy-ch/2)/z+cam.y]};
 function clampCam(){const z=zf(),hw=cw/2/z,hh=ch/2/z;for(const k of['x','tx']){cam[k]=hw*2>=W?W/2:Math.max(hw,Math.min(W-hw,cam[k]))}for(const k of['y','ty']){cam[k]=hh*2>=H?H/2:Math.max(hh,Math.min(H-hh,cam[k]))}}
 /* glow sprite */
 const GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=64;const x=g.getContext('2d'),r=x.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,'rgba(255,225,160,.95)');r.addColorStop(.35,'rgba(255,200,120,.35)');r.addColorStop(1,'rgba(255,190,110,0)');x.fillStyle=r;x.fillRect(0,0,64,64);return g})();
+/* Spaceship Earth after dark: a slow wash of colour drifting across the ball, and small white lights all over it that
+   twinkle on and off (as the real one does), drawn each frame over the night tint. a: how dark it is (0..1) */
+const SSE_SP=(()=>{const r=seeded(4242),o=[];for(let i=0;i<150;i++){const th=r()*6.283,ph=Math.acos(1-r()),sx=Math.sin(ph)*Math.cos(th),sy=Math.sin(ph)*Math.sin(th);
+ o.push({sx,sy,f:Math.cos(ph),w:.5+r()*1.6,p:r()*6.283,s:.7+r()*.6})}return o})();
+function sseNight(now,a,z){const S=SSE_AT;if(!S||a<.05)return;const{x,yc,R}=S;if(Math.abs(x-cam.x)>cw/2/z+R||Math.abs(yc-cam.y)>ch/2/z+R)return;const t=now/1000,c=cx;
+ c.save();c.beginPath();c.arc(x,yc,R,0,7);c.clip();
+ const hu=250+Math.sin(t*.11)*40,gx=x+Math.cos(t*.07)*R*.5,gy=yc+Math.sin(t*.09)*R*.4,g=c.createRadialGradient(gx,gy,0,gx,gy,R*1.3);
+ g.addColorStop(0,`hsla(${hu},80%,62%,${.1*a})`);g.addColorStop(1,`hsla(${hu+50},80%,55%,0)`);c.fillStyle=g;c.fillRect(x-R,yc-R,R*2,R*2);c.restore();
+ const d=Math.min(.9,Math.max(.35,1.1/z)); /* each light at least about a pixel across, however far out */
+ for(const q of SSE_SP){const v=Math.pow(Math.max(0,Math.sin(t*q.w+q.p)),14);if(v<.03)continue;const px=x+q.sx*R*.97,py=yc+q.sy*R*.97,k=v*a*(.35+.65*q.f),r=d*q.s*(1+v*1.4);
+  c.globalAlpha=k*.5*Math.min(1,z/2.5);c.drawImage(SSE_GLOW,px-r*2.5,py-r*2.5,r*5,r*5);c.globalAlpha=k;c.fillStyle='#fff';c.fillRect(px-r*.5,py-r*.5,r,r)}
+ c.globalAlpha=1}
+const SSE_GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=32;const x=g.getContext('2d'),r=x.createRadialGradient(16,16,0,16,16,16);r.addColorStop(0,'rgba(235,240,255,.9)');r.addColorStop(.3,'rgba(190,210,255,.3)');r.addColorStop(1,'rgba(160,190,255,0)');x.fillStyle=r;x.fillRect(0,0,32,32);return g})();
 /* ---------- frame ---------- */
 function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
@@ -65,7 +78,7 @@ function frame(rdt){
  if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}for(const L of MAP.tiles)if(tv(L))cx.drawImage(L.glow,L.x,L.y,L.w,L.h);for(const L of MAP.layers)cx.drawImage(L.glow,L.x,L.y,L.w,L.h);cx.restore();for(const d of dv)cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.globalAlpha=la*.32;for(const[x,y]of MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
- cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
+ sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
  drawPageant(now,1);lumDraw(now);fmDraw(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint

@@ -153,7 +153,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   lagoon on fire, the Steamboat Willie boat with characters, and a finale through the shared fireworks engine (`fmCues`).
   Owner's soundtrack `audio/fantasmic.mp3` (git-ignored; 29:23, added 17 Nov 2026 with "The first minute or so is an intro
   schpeel") plays in time and sets the length. `js/choreo-fantasmic.js` (`CHOREO_FM`, from `tools/fireworks_from_audio.py` plus
-  scene times read off the track) maps it: pre-show announcement 0–60 s (lagoon dark), intro 60, imagine 175, adventure 470,
+  scene times read off the track) maps it: pre-show announcement 0–85 s (lagoon dark; was 60 until the owner found the lights came on 25 s before the music, 19 Nov), intro 85, imagine 175, adventure 470,
   villains 799 (the silent breaks), dragon 1101, Mickey 1241, riverboat finale 1300, ending 1547; fountains follow its
   loudness (`env`) and beats; the ending's fireworks are its beats after 1555 s. A different recording (another length)
   falls back to `FM_SCENES` fractions. Guests sit in the
@@ -249,5 +249,9 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   placeholder wait (`a.ph`=15, sim.js; liveText says so); PizzeRizzo and Mama Melrose's are venues. Art: `muppetDeco`, `muppetSign`
   (plain lettering, not the logo), `courtyardFountain`, brick for the building holding PizzeRizzo. Ride audio keys added in
   `RIDEAUD`: soarin, tot, rotr, railway, startours, indy, muppets (the owner's files, git-ignored).
-  Later the same day: spaceship, cosmic, testtrack, missionspace, remy, fiesta (EPCOT). Remy's osm name has a curly
+  Later the same day: spaceship, cosmic, testtrack, missionspace, remy, fiesta (EPCOT). 19 Nov: seas (The Seas with Nemo &
+  Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track).
+- Cosmic Rewind's wait sits at (4240,5450), over its pavilion (sim.js): its map outline runs out to the show building backstage.
+- Spaceship Earth at night: the baked glow is only a faint halo and uplighting; `sseNight` (render.js) draws a slow colour
+  wash and 150 twinkling lights live each frame, from `SSE_AT` (set when map-art paints the sphere). Remy's osm name has a curly
   apostrophe (’); RIDEAUD keys must match the osm name exactly.

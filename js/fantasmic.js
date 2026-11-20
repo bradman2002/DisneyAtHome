@@ -40,7 +40,7 @@ function fmNear(){const G=fmGeo();if(SV.on||!G)return 0;return Math.max(0,Math.m
 /* the running order, as fractions of the show: [start, name, two hues] */
 const FM_HUES={pre:[230,250],intro:[265,215],imagine:[300,45],adventure:[195,150],villains:[120,285],dragon:[25,10],mickey:[210,55],finale:[45,0],end:[55,210]};
 /* with the owner's soundtrack (CHOREO_FM, in choreo-fantasmic.js, made from it): the scenes start where the music changes,
-   the fountains and lights follow its loudness and beats, and the finale's fireworks go up on its beats. The first minute
+   the fountains and lights follow its loudness and beats, and the finale's fireworks go up on its beats. The first 85 s
    is the pre-show announcement, with the lagoon dark. Without it (or with a different recording), the running order below
    is spread over the show's length. */
 const fmCh=()=>typeof CHOREO_FM!=='undefined'&&Math.abs(fmLen()-CHOREO_FM.len)<20?CHOREO_FM:null;

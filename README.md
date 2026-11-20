@@ -99,7 +99,8 @@ which also covers the hub), `area-adv.mp3`, `area-fr.mp3`, `area-lib.mp3`, `area
 Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic Stunt Spectacular!) and `ride-muppets.mp3`
 (Muppet*Vision 3D); EPCOT has `ride-lwtl.mp3` (Living with the Land), `ride-soarin.mp3` (Soarin'),
 `ride-spaceship.mp3` (Spaceship Earth), `ride-cosmic.mp3` (Cosmic Rewind), `ride-testtrack.mp3` (Test Track), `ride-missionspace.mp3`
-(Mission: SPACE), `ride-remy.mp3` (Remy's Ratatouille Adventure) and `ride-fiesta.mp3` (Gran Fiesta Tour).
+(Mission: SPACE), `ride-remy.mp3` (Remy's Ratatouille Adventure), `ride-fiesta.mp3` (Gran Fiesta Tour) and `ride-seas.mp3` (The Seas with
+Nemo & Friends); Hollywood Studios also has `ride-rnrc.mp3` (Rock 'n' Roller Coaster).
 Neighbouring lands blend at their edges, the music fades as you zoom out over the lakes, and while any show plays
 its own music (a parade, the fireworks, the water pageant, Luminous, the welcome show, the Flag Retreat or the Kiss
 Goodnight) the park's own sound fades right out: land music, ride audio, nature and the background crowd. It also

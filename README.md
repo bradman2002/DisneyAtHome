@@ -46,6 +46,8 @@ For a screen that runs all day, also tick **Keep the whole map in memory** in �
 normally drawn piece by piece as you reach each part and let go after 90 seconds away. With this on, every part is
 painted in the background in the first 20 seconds or so and kept, so panning and zooming anywhere is instant. It uses
 about half a gigabyte of memory, and it's remembered.
+On short phones (the iPhone Duo folded, about 466 × 678; the iPhone SE) the header, tab bar and clock panel are slimmer
+and sheets open taller, so more of the screen is map.
 Both memory settings are off unless you tick them. **Keep the audio in memory** (☰ Sound & settings, under Your music)
 fetches each recording whole and holds on to it, so music and ride tracks start and jump instantly and aren't fetched
 again; off, recordings stream, a ride's track is let go when it fades out and area music is let go after a minute of
@@ -105,6 +107,9 @@ Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic
 `ride-spaceship.mp3` (Spaceship Earth), `ride-cosmic.mp3` (Cosmic Rewind), `ride-testtrack.mp3` (Test Track), `ride-missionspace.mp3`
 (Mission: SPACE), `ride-remy.mp3` (Remy's Ratatouille Adventure), `ride-fiesta.mp3` (Gran Fiesta Tour) and `ride-seas.mp3` (The Seas with
 Nemo & Friends); Hollywood Studios also has `ride-rnrc.mp3` (Rock 'n' Roller Coaster), and Magic Kingdom `ride-tron.mp3` (TRON Lightcycle / Run).
+The **Disney Skyliner** runs between EPCOT, the Riviera, Caribbean Beach, Pop Century/Art of Animation and Hollywood Studios
+on its real cables and pylons, its cabins gliding along each line from an hour before those parks open until an hour after
+they close (lit after dark). Zoom in on a line to hear `ride-skyliner.mp3`.
 Neighbouring lands blend at their edges, the music fades as you zoom out over the lakes, and while any show plays
 its own music (a parade, the fireworks, the water pageant, Luminous, the welcome show, the Flag Retreat or the Kiss
 Goodnight) the park's own sound fades right out: land music, ride audio, nature and the background crowd. It also
@@ -193,7 +198,9 @@ bursts flash on the water, flame bursts from the barges on the biggest beats and
 `audio/luminous.mp3` (or include it in Load audio folder); like the other Disney music it is never committed.
 Animal Kingdom has **Tree of Life Awakenings** after dark: every quarter hour from half an hour after sunset until the park
 closes, light washes over the Tree of Life, glowing spirit animals rise out of its bark and fireflies swirl through its
-canopy. Its soundtrack is `audio/tree-of-life.mp3` (your own copy, never committed), heard when the map is close to the tree. When both
+canopy. Its soundtrack is `audio/tree-of-life.mp3` (your own copy, never committed), heard when the map is close to the tree.
+Entertainment lists today's showtimes, with **Jump to the next show**: the clock goes to just before it, at 1×, and the map
+flies to the tree. When both
 nighttime shows run at once, you hear the one the map is looking at, and TV mode cuts between them. To see it any time, press
 **Start Luminous now** (in Entertainment, or on the show's star on the map): it starts a few seconds later, right
 where the clock is, and the map flies to the lagoon.

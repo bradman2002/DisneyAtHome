@@ -48,3 +48,11 @@ function tolDraw(now){const st=tolClock();if(st===null||!TOL_AT||SV.on||nf<.3)re
  for(let i=0;i<60;i++){const a=i*2.399+t*(.15+.1*(i%3))+st*.05,d=.25+.8*((i*.618)%1),fx=x+Math.cos(a)*R*1.05*d,fy=top+Math.sin(a)*R*.42*d-R*.05,tw2=.5+.5*Math.sin(t*3+i*1.7);
   c.fillStyle=hsl(i%2?h:h+180,100,80,.85*fade*tw2);c.beginPath();c.arc(fx,fy,Math.max(.25,R*.025),0,7);c.fill()}
  c.restore()}
+/* today's showtimes, and "Jump to the next show" (Entertainment): the clock goes to just before the next show, at 1x so
+   the soundtrack keeps time, and the map flies to the tree. Past the last show of the day, it goes back to the first one. */
+function tolTimes(){if(!OSM.ak||typeof ACLOSE==='undefined')return[];const s0=tolFirst(),end=ACLOSE*3600,P=tolPeriod(),o=[];for(let t=s0;t<end;t+=P)o.push(t);return o}
+function tolLook(){if(SV.on)setView(false);follow=null;sel=null;const x=TOL_AT?TOL_AT.x:P_.tol[0],y=TOL_AT?TOL_AT.y-TOL_AT.H*.5:P_.tol[1];cam.x=cam.tx=x;cam.y=cam.ty=y;cam.tm=Math.max(2.6,Math.min(cam.tm,4));cam.m=cam.tm}
+function tolJump(){const ts=tolTimes();if(!ts.length){toast('No Tree of Life shows today: Animal Kingdom closes before dark');return}
+ const n=ts.find(t=>t>T+20)??ts[0];if(typeof LIVE!=='undefined'&&LIVE.follow&&typeof liveUnfollow==='function')liveUnfollow();
+ if(!AU.ready)auInit();seek(n-20,n<T);speed=1;playing=true;sync();tolLook();if(typeof closeSheet==='function')closeSheet();
+ if(!TOL.a.ready)toast('Add audio/tree-of-life.mp3 (or include it in Load audio folder) to hear the show');TOL.a.audio.play().then(()=>TOL.a.audio.pause()).catch(()=>{})} /* the tap unlocks its player */

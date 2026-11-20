@@ -255,6 +255,18 @@ function ttTrack(c,e,B,vis){const t=OSM.routes&&OSM.routes.testtrack;if(!t||!vis
    c.strokeStyle='#e9ecef';c.lineWidth=.55;for(const[x,y]of seg.slice(0,-1)){c.beginPath();c.moveTo(x,y);c.lineTo(x,y-E);c.stroke()}
    for(const[col,w]of[['#7d858f',2.6],['#cfd4da',1.9],['#3d434b',.35]]){c.strokeStyle=col;c.lineWidth=w;c.beginPath();seg.forEach(([x,y],j)=>j?c.lineTo(x,y-E):c.moveTo(x,y-E));c.stroke()}
    e.fillStyle='rgba(90,180,255,.75)';for(const[x,y]of seg)e.fillRect(x-.35,y-E-.35,.7,.7)}})}}
+/* ---------- the Disney Skyliner ----------
+   Its cables (OSM.skyliner.lines, each a pair a few metres apart, carried about 12 m up) and its pylons, painted with the
+   other elevated tracks; the cabins ride them live (drawSkyliner in render.js). skyOff gives a line moved sideways by o,
+   used for each of the pair */
+const SKY_E=()=>12*OSM.S*.78;
+function skyOff(p,o){return p.map((q,i)=>{const a=p[Math.max(0,i-1)],b=p[Math.min(p.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1;return[q[0]-dy/L*o,q[1]+dx/L*o]})}
+function skylinerArt(c,e,vis){const S=OSM.skyliner;if(!S)return;const E=SKY_E();
+ for(const[x,y]of S.pylons){if(!vis([x-6,y-E-6,x+6,y+6]))continue;let best=1e9,an=0;for(const L of S.lines)for(let i=0;i<L.p.length-1;i++){const[a,b]=[L.p[i],L.p[i+1]],mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,d=(mx-x)**2+(my-y)**2;if(d<best){best=d;an=Math.atan2(b[1]-a[1],b[0]-a[0])}}
+  const px=-Math.sin(an)*4,py=Math.cos(an)*4;c.fillStyle='rgba(30,40,40,.18)';c.beginPath();c.ellipse(x+1.5,y+.5,2.2,.9,0,0,7);c.fill();
+  c.strokeStyle='#8c949d';c.lineWidth=1.3;c.beginPath();c.moveTo(x,y);c.lineTo(x,y-E);c.stroke();c.strokeStyle='#6f7780';c.lineWidth=.9;c.beginPath();c.moveTo(x-px,y-E-py);c.lineTo(x+px,y-E+py);c.stroke()}
+ for(const L of S.lines){if(!vis(bbox(L.p)))continue;for(const o of[-3,3]){const q=skyOff(L.p,o);c.strokeStyle='rgba(30,40,40,.12)';c.lineWidth=.5;c.beginPath();q.forEach(([x,y],i)=>i?c.lineTo(x+2,y):c.moveTo(x+2,y));c.stroke();
+  c.strokeStyle='rgba(55,60,68,.9)';c.lineWidth=.45;c.beginPath();q.forEach(([x,y],i)=>i?c.lineTo(x,y-E):c.moveTo(x,y-E));c.stroke()}}}
 /* ---------- EPCOT ----------
    Its own look: Future World's white and silver show buildings, each World Showcase pavilion in its country's colours
    (found from the pavilion buildings' names in the map data), and Spaceship Earth as a faceted silver sphere. */
@@ -860,7 +872,7 @@ function paintMap(rx,ry,rw,rh,mss){
  const beam=(p,w,col)=>{c.strokeStyle='rgba(30,40,40,.18)';c.lineWidth=w+2;c.save();c.translate(2,2);pathOf(c,p);c.stroke();c.restore();c.strokeStyle=tone(col,-.25);c.lineWidth=w+.8;pathOf(c,p);c.stroke();c.strokeStyle=col;c.lineWidth=w;pathOf(c,p);c.stroke()};
  {const d=SMDOME();c.save();if(d){c.beginPath();c.rect(-1e5,-1e5,3e5,3e5);domePath(c,d[0],d[1],d[2]*.97);c.clip('evenodd')}beam(OSM.routes.pm,2.4,'#dfe5ec');c.restore()} /* the PeopleMover runs right up to Space Mountain and goes indoors at the dome's edge */
  {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p);if(vis(bb)){MAP.nulE=MAP.nulE||document.createElement('canvas').getContext('2d');spaceDome(c,MAP.nulE,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2)}}} /* the PeopleMover runs into Space Mountain, so the dome is painted again over its beam */
-for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');late.forEach(f=>f());
+for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');skylinerArt(c,e,vis);late.forEach(f=>f());
  /* real street lamps */
  MAP.lamps=OSM.lamps;for(const[x,y]of MAP.lamps){c.fillStyle='rgba(70,80,75,.55)';c.fillRect(x-.18,y-2.6,.36,2.6);c.fillStyle='#fffaf0';c.beginPath();c.arc(x,y-2.9,.5,0,7);c.fill()}
  return{base,glow}}

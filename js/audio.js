@@ -168,10 +168,13 @@ const RA={bad:{},heard:{}};let rideLevel=0;
 const rideAt=a=>a&&RIDEAUD[a.osm];
 async function rideSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('ride-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 let MONOHOVER=false; /* the mouse is over a monorail (set in ui.js) */
-function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monorail=0;
+function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monorail=0;t.skyliner=0;
  if(SV.on)return t;
  /* the monorail's onboard audio (audio/ride-monorail.mp3): while TV mode rides along with a train, while a train's card is open, or while the mouse is over one; only in operating hours */
  if(T>OPEN*3600-5400&&T<CLOSE*3600+3600)t.monorail=follow&&follow.k==='m'?1:sel&&sel.k==='m'&&sheet==='detail'?.95:MONOHOVER?.85:0;const z=Math.max(0,Math.min(1,(cam.m-1.9)/1.1));
+ /* the Skyliner's sounds (audio/ride-skyliner.mp3): close in on one of its lines while it runs */
+ if(OSM.skyliner&&typeof skyOpen==='function'&&skyOpen()){if(!RA.skyPts){RA.skyPts=[];for(const L of OSM.skyliner.lines){const P=mkPath(L.p);for(let d=0;d<P.L;d+=12)RA.skyPts.push(P.at(d))}}
+  const E=SKY_E();let dm=1e9;for(const p of RA.skyPts)dm=Math.min(dm,Math.hypot(cam.x-p[0],cam.y-(p[1]-E)));t.skyliner=Math.min(1,z*Math.exp(-dm/40)*1.4)}
  const quiet=new Set(); /* rides you're looking at that are closed: they stay silent, and keep a neighbour's track from taking their place */
  for(const a of AT){const k=rideAt(a);if(!k)continue;const st=aStat(a);
   let v=z*Math.exp(-Math.hypot(cam.x-a.x,cam.y-a.y)/55); /* close in on it */

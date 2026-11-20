@@ -629,6 +629,35 @@ tt_=[w for w in WAYS.values() if w['t'].get('name')=='Test Track' and w['t'].get
 if tt_:
     tp_=pts(max(tt_,key=lambda w:len(w['ids']))['ids']);out['routes']['testtrack']=[R1(q) for q in simplify(tp_,.3)]
     print('test track outdoor track',len(out['routes']['testtrack']),'pts, length',round(sum(math.dist(a,b) for a,b in zip(tp_,tp_[1:]))))
+# the Disney Skyliner: its gondola cables chained into lines between stations (pieces joined end to end; a station is where a
+# line ends, or a named aerialway=station node), the pylons and the station names, for the cables, towers and cabins drawn
+# in map-art.js and render.js
+sk_=[w for w in WAYS.values() if w['t'].get('aerialway')=='gondola' and 'Skyliner' in w['t'].get('name','')]
+if sk_:
+    ends=collections.defaultdict(list)
+    for w in sk_: ends[w['ids'][0]].append(w);ends[w['ids'][-1]].append(w)
+    stn={i:t.get('name','') for i,t in NT.items() if t.get('aerialway')=='station' and i in ND}
+    def is_stop(n): return len(ends[n])!=2 or any(math.dist(ND[n],ND[s])<25 for s in stn)
+    used=set();lines=[]
+    for w in sk_:
+        if id(w) in used: continue
+        # walk back to a stop, then forward collecting pieces
+        cur,node=w,w['ids'][0]
+        while not is_stop(node):
+            nx=[q for q in ends[node] if q is not cur][0];node=nx['ids'][-1] if nx['ids'][0]==node else nx['ids'][0];cur=nx
+        seq=[];node0=node;w_=cur
+        while True:
+            used.add(id(w_));ids=w_['ids'] if w_['ids'][0]==node else w_['ids'][::-1];seq+=ids if not seq else ids[1:];node=ids[-1]
+            if is_stop(node): break
+            nx=[q for q in ends[node] if q is not w_ and id(q) not in used]
+            if not nx: break
+            w_=nx[0]
+        lines.append(seq)
+    nm=lambda n:min(stn.items(),key=lambda kv:math.dist(ND[kv[0]],ND[n]))[1] if stn else ''
+    out['skyliner']={'lines':[{'p':[R1(ND[i]) for i in seq],'a':nm(seq[0]),'b':nm(seq[-1])} for seq in lines if len(seq)>1],
+        'pylons':[R1(ND[i]) for i,t in NT.items() if t.get('aerialway')=='pylon' and i in ND and any(math.dist(ND[i],ND[j])<15 for w in sk_ for j in w['ids'])]}
+    for L in out['skyliner']['lines']: print('skyliner line',L['a'],'->',L['b'],len(L['p']),'pts, length',round(sum(math.dist(a,b) for a,b in zip(L['p'],L['p'][1:]))))
+    print('skyliner pylons',len(out['skyliner']['pylons']))
 CRES={}
 if FULL:
     for key,name in {'bw':"Disney's BoardWalk",'lake':'Crescent Lake','storm':'Stormalong Bay','luna':'Luna Park Pool'}.items():
@@ -650,7 +679,7 @@ if 'springs.osm' in SRCS:
     tl=next((w for w in WAYS.values() if w['t'].get('name')=="Disney's Typhoon Lagoon" and w['t'].get('leisure')=='water_park'),None)
     if tl: PLACES['typhoon']=R1(centroid(pts(tl['ids'])[:-1]))
     print('disney springs',len(out.get('springs',[])),{k:PLACES.get(k) for k in('ds','dsballoon','dscoke','dsmarket','dswest','typhoon')})
-data_extra={'crescent':out.get('crescent'),'springs':out.get('springs'),'regions':[[round(v) for v in r] for r in REGIONS],'nparks':len(PARKS),'epcot':out.get('epcot'),'hs':out.get('hs'),'ak':out.get('ak'),'dx':DX,'falcon':out.get('falcon'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
+data_extra={'skyliner':out.get('skyliner'),'crescent':out.get('crescent'),'springs':out.get('springs'),'regions':[[round(v) for v in r] for r in REGIONS],'nparks':len(PARKS),'epcot':out.get('epcot'),'hs':out.get('hs'),'ak':out.get('ak'),'dx':DX,'falcon':out.get('falcon'),'lands':LANDS,'mono':MONO,'monoIn':monoIn,'ferryPath':ferry,'launchPath':launch,'boats':BOATS,'busPath':bus,'places':PLACES,'pos':POS,
  'keys':{'epgate':epgate,'hsgate':hsgate,'akgate':akgate,'gate':gate,'townsq':townsq,'mainst':mainst,'hub':hub,**{'land_'+k:v for k,v in landnodes.items()}}}
 # compact JS
 data={'W':W,'H':H,'S':S,'areas':out['areas'],'buildings':out['buildings'],'lines':out['lines'],'paths':out['paths'],'trees':out['trees'],'lamps':out['lamps'],'routes':out['routes'],'monoLines':out['monoLines'],'nodes':NODES,'edges':EDGES,**data_extra}

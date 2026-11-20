@@ -79,7 +79,7 @@ function frame(rdt){
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
- drawPageant(now,1);lumDraw(now);fmDraw(now);tolDraw(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
+ drawPageant(now,1);lumDraw(now);fmDraw(now);tolDraw(now);drawSkyliner(true);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint
  // castle projections during Happily Ever After
@@ -189,6 +189,18 @@ function fsBridges(){if(!FSX){FSX={p:[],a:[]};const RW={road1:8.5,road2:6.5,road
  for(const pass of[0,1])for(const q of FSX.p)if(on(q.a)){c.strokeStyle=pass?q.col:q.edge;c.lineWidth=q.w+(pass?0:1.2);c.beginPath();c.moveTo(...q.a);c.lineTo(...q.b);c.stroke()}
  for(const a of FSX.a)if(on(a.o[0])){c.beginPath();a.o.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fillStyle='#dccbb4';c.fill();c.strokeStyle='#b9a68d';c.lineWidth=.6;c.stroke()}
  c.lineCap='round'}
+/* the Disney Skyliner's cabins: on each line they go out along one cable and back along the other, about 55 m apart at
+   about 5 m/s, hanging under the cable; white with a coloured band, lit inside after dark. They run from an hour before
+   EPCOT and Hollywood Studios open until an hour after they close, and are put away the rest of the time */
+const SKYP=OSM.skyliner?OSM.skyliner.lines.map(L=>({o:mkPath(skyOff(L.p,3)),r:mkPath(skyOff(L.p,-3).reverse())})):[],SKYCOL=['#e9573f','#3b8fd9','#f2c230','#6cbf5c','#a66ad9','#ff8fb1','#2bb3b1'];
+const skyOpen=()=>T>=(Math.min(EOPEN,HOPEN)-1)*3600&&T<(Math.max(ECLOSE,HCLOSE)+1)*3600;
+function drawSkyliner(glow){if(!SKYP.length||!skyOpen()||(glow&&nf<.35))return;const z=zf(),hw=cw/2/z+20,hh=ch/2/z+40,E=SKY_E(),c=cx,v=5*OSM.S,gap=55,lit=nf>.35;let k=0;
+ for(const L of SKYP)for(const P of[L.o,L.r]){const n=Math.max(1,Math.floor(P.L/gap)),g=P.L/n;
+  for(let i=0;i<n;i++,k++){const d=((T*v+i*g)%P.L+P.L)%P.L;if(d<6||d>P.L-6)continue;const[x,y]=P.at(d);if(Math.abs(x-cam.x)>hw||Math.abs(y-E-cam.y)>hh)continue;
+   const yy=y-E;if(glow){c.fillStyle=`rgba(255,220,140,${.85*Math.min(1,nf)})`;c.fillRect(x-1.4,yy+2.1,2.8,1.1);continue} /* after the night tint: the lit cabins glow */
+   c.fillStyle='rgba(30,40,40,.16)';c.fillRect(x-1.2,y-.4,3.4,1.2);c.strokeStyle='#5d636b';c.lineWidth=.35;c.beginPath();c.moveTo(x,yy);c.lineTo(x,yy+1.6);c.stroke();
+   c.fillStyle='#f6f6f2';c.beginPath();c.roundRect(x-1.9,yy+1.5,3.8,3.4,.9);c.fill();c.fillStyle=SKYCOL[k%SKYCOL.length];c.fillRect(x-1.9,yy+3.7,3.8,.9);
+   c.fillStyle=lit?'#ffe6a0':'#3d4a5c';c.fillRect(x-1.4,yy+2.1,2.8,1.1)}}}
 function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600;drawSafariAnimals();drawSafari();
  // spinning rides
  for(const a of SPIN){const run=aStat(a)==='Operating'&&a.ri.length>0,ang=run?t*1.4:0;for(let i=0;i<8;i++){const q=ang+i/8*6.283,x=a.x+Math.cos(q)*12,y=a.y+Math.sin(q)*5.5-(run?4:0);
@@ -220,7 +232,7 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
  for(const m of MONO){for(let k=0;k<6;k++){const[mx,my,ma]=monoXY(m,22.5-k*9);if(MI&&mx>MI[0]&&mx<MI[2]&&my>MI[1]&&my<MI[3])continue;cx.save();cx.translate(mx,my);cx.rotate(ma);
    cx.fillStyle='#fff';cx.beginPath();cx.roundRect(-4.7,-3,9.4,6,k===0?[1.2,3,3,1.2]:k===5?[3,1.2,1.2,3]:1.2);cx.fill();cx.fillStyle=m.col;cx.fillRect(-4.7,.5,9.4,1.5);
    cx.fillStyle='#223';if(k===0)cx.fillRect(1.6,-2.2,2.4,3.2);else if(k===5)cx.fillRect(-4,-2.2,2.4,3.2);else cx.fillRect(-3.2,-2,6.4,1.5);cx.restore()}}
- drawPageant(now,0);
+ drawSkyliner(); drawPageant(now,0);
  // resort launches
  if(h>8.5&&h<23)for(const b of LAUNCH){const R=BOATR[b.r];let[x,y,an]=R.p.at(Math.min(b.x,R.p.L-.01));if(!R.loop){const o=b.dir*5*Math.sin(Math.PI*b.x/R.p.L);x-=Math.sin(an)*o;y+=Math.cos(an)*o} /* boats going opposite ways keep to their own side */cx.save();cx.translate(x,y);cx.rotate(an+(b.dir<0&&!R.loop?Math.PI:0));if(b.tm<=0){cx.fillStyle='rgba(255,255,255,.5)';cx.beginPath();cx.moveTo(-6,0);cx.lineTo(-18,-3);cx.lineTo(-18,3);cx.fill()}
    if(R.fs){ /* a Friendship boat: a long white catamaran-style hull, a teal canopy with a white roof stripe, windows down each side */

@@ -285,6 +285,16 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   over the whole track.
 - Space Mountain: `spaceDome` is one cone rising from its round base; the PeopleMover beam is clipped out of its footprint
   (it runs indoors) and its cars hidden there (`SMB` in render.js).
+- Tree of Life jump (20 Nov): `tolTimes`/`tolJump`/`tolLook` in treeoflife.js; an Entertainment card (`#tolJump`) built in
+  ui.js before the EV cards.
+- Disney Skyliner (20 Nov, owner's `audio/ride-skyliner.mp3`, git-ignored): `out['skyliner']` from osm_extract.py (gondola ways
+  named 'Disney Skyliner' chained between stops = way ends of degree != 2 or near a named aerialway=station; 5 lines; pylons
+  near the cables). `skylinerArt` (map-art, with the elevated beams: cable pairs at ±3 via `skyOff`, `SKY_E()` = 12 m up,
+  pylons with crossbars), `drawSkyliner` (render.js, cabins out on one cable and back on the other, 55 apart at 5 m/s,
+  `skyOpen()` = min(EOPEN,HOPEN)-1 to max(ECLOSE,HCLOSE)+1; `drawSkyliner(true)` after the night tint lights the windows);
+  audio key `skyliner` in `rideTargets` (zoom × distance to the nearest cable, `RA.skyPts`).
+- Short phones (owner, 20 Nov: "optimize ... for the closed iPhone Duo screen", about 466 x 678 points): a
+  `@media(max-width:760px) and (max-height:760px)` block at the end of style.css (slimmer #bar/#nav/#time, sheet 80%).
 - Friendship boats pass under bridges: `fsBridges` in render.js finds every walkway/road/bridge deck crossing their routes
   (away from docks) once and repaints those pieces over the boats.
 - Fantasmic's Sorcerer Mickey is his own drawing, `fmSorcerer` (fantasmic.js): red robe, raised white gloves, blue hat with moon

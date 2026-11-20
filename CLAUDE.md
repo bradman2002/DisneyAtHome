@@ -311,6 +311,11 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   from the beams, steel mullions on the ends, and lights pushed to `RIDE.xl` (drawn with the lamps after dark). Surface
   kinds in the lit shader: 1 windows, 2 plain, 3 self-lit at night, 4/5 = 1/2 indoors (warm glow at night); `rideSeg`
   takes an optional kind. Beams and the `cont` platform inside `OSM.monoIn` use kind 5.
+- Bay Lake Tower in the cab ride (owner, 20 Nov: "the contemporary vacation club building doesnt look correct at all"):
+  the A-frame test must match `Disney's Contemporary Resort` EXACTLY - "Bay Lake Tower at Disney's Contemporary Resort" also
+  ends in "Contemporary Resort" and was being drawn as a second A-frame. `rideBayLakeTower` = curved white slab with
+  windows, a dark glass top-floor band and parapet; `rideSkyway` raises the Skyway Bridge (OSM kind roof) to the concourse
+  level on posts.
   Realism pass (owner, 20 Nov: "make the buildings and trees look more realistic ... some trees clip through the track"):
   vertex = p,c,n,t(u,v,kind) (12 floats); walls carry u/v so the lit shader draws window grids (lit at random after dark,
   `NI`) and a darker foot; convex footprints get hipped roofs with eaves (not cont/tom/roof kinds), others a flat roof with a

@@ -105,13 +105,29 @@ function rideContemporary(A,q,b,cx_,cy_,S){let best=0,ux=1,uz=0;for(let i=0;i<q.
  const gy=RIDE_BH+7;for(const u of[u0+.2,u1-.2]){for(let y=gy;y<yi-1;y+=3.4){const w=wi(y);seg(u,vm-w,u,vm+w,.25,y-.12,y+.12,steel)}
   for(let v=-wi(gy)+2;v<wi(gy);v+=4){const yt=H*(1-T/hw-Math.abs(v)/hw);if(yt>gy){const a=P(u-.12,vm+v,0),c=P(u+.12,vm+v,0);rideSeg(A,a[0],a[2],c[0],c[2],.25,gy,yt,steel)}}
   seg(u,vm-wi(gy),u,vm+wi(gy),.6,gy-.3,gy+.3,steel)}}
+/* Bay Lake Tower: a tall curved slab, white with rows of windows, a band of dark glass round its top floor (the lounge
+   up there), and a flat roof with a low parapet */
+function rideBayLakeTower(A,q,S){const P=rideClean(q.p);if(P.length<3)return;const H=q.h*S,G=3.6,wall=rideHex('#eceeec'),glass=rideHex('#4f6475'),roof=rideHex('#c4c9cc'),fin=rideHex('#dfe3e6');let u=0;
+ for(let i=0;i<P.length;i++){const a=P[i],c=P[(i+1)%P.length],L=Math.hypot(c[0]-a[0],c[1]-a[1]);
+  rideQuad(A,[a[0],0,a[1]],[c[0],0,c[1]],[c[0],H-G,c[1]],[a[0],H-G,a[1]],wall,[u,0,u+L,0,u+L,H-G,u,H-G],1);
+  rideQuad(A,[a[0],H-G,a[1]],[c[0],H-G,c[1]],[c[0],H,c[1]],[a[0],H,a[1]],glass);
+  rideQuad(A,[a[0],H,a[1]],[c[0],H,c[1]],[c[0],H+1.1,c[1]],[a[0],H+1.1,a[1]],fin,[u,H,u+L,H,u+L,H+1.1,u,H+1.1],2);u+=L}
+ for(const[a,b,c]of rideEar(P))rideTri(A,[a[0],H,a[1]],[b[0],H,b[1]],[c[0],H,c[1]],roof)}
+/* the Skyway Bridge from Bay Lake Tower to the Contemporary: an enclosed walkway up at the concourse's level on posts */
+function rideSkyway(A,q){const P=rideClean(q.p);if(P.length<3)return;const y0=RIDE_BH-2.6,y1=y0+3.8,wall=rideHex('#dfe3e6'),deck=rideHex('#b8bcc0'),post=rideHex('#d4d9df');let u=0;
+ for(let i=0;i<P.length;i++){const a=P[i],c=P[(i+1)%P.length],L=Math.hypot(c[0]-a[0],c[1]-a[1]);
+  rideQuad(A,[a[0],y0-.6,a[1]],[c[0],y0-.6,c[1]],[c[0],y1,c[1]],[a[0],y1,a[1]],wall,[u,0,u+L,0,u+L,y1-y0+.6,u,y1-y0+.6],1);u+=L}
+ for(const[a,b,c]of rideEar(P))for(const y of[y0-.6,y1])rideTri(A,[a[0],y,a[1]],[b[0],y,b[1]],[c[0],y,c[1]],deck);
+ const h=Math.floor(P.length/2);for(let i=2;i<h-1;i+=4){const a=P[i],c=P[P.length-1-i]||a,x=(a[0]+c[0])/2,z=(a[1]+c[1])/2;rideSeg(A,x-.45,z,x+.45,z,.9,0,y0-.6,post,true)}}
 /* ---- everything solid: buildings, landmarks, beams, pylons, stations ---- */
 function rideSolids(R){const A=[],S=OSM.S||1.02,inR=(x,y)=>x>R[0]&&x<R[2]&&y>R[1]&&y<R[3];
  const castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const b=bbox(q.p),cx_=(b[0]+b[2])/2,cy_=(b[1]+b[3])/2;if(!inR(cx_,cy_))continue;
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p)))continue;
   if(q.n==='Space Mountain'){const r=(b[2]-b[0])/2,H=r*1.3,N=28,col=rideHex('#eef1f5');for(let i=0;i<N;i++){const a0=i/N*6.2832,a1=(i+1)/N*6.2832;rideTri(A,[cx_+Math.cos(a0)*r,0,cy_+Math.sin(a0)*r],[cx_,H,cy_],[cx_+Math.cos(a1)*r,0,cy_+Math.sin(a1)*r],i%2?col:rideHex('#dfe4ea'))}continue}
-  if(/Contemporary Resort$/.test(q.n||'')&&q.h>30){rideContemporary(A,q,b,cx_,cy_,S);continue}
+  if(/^Disney['’]s Contemporary Resort$/.test(q.n||'')&&q.h>30){rideContemporary(A,q,b,cx_,cy_,S);continue} /* the name exactly: Bay Lake Tower's ends the same way */
+  if(/^Bay Lake Tower/.test(q.n||'')){rideBayLakeTower(A,q,S);continue}
+  if(q.n==='Skyway Bridge'){rideSkyway(A,q);continue}
   const land=Object.keys(OSM.lands||{}).find(k=>ptIn(cx_,cy_,OSM.lands[k]))||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   const wall=rideHex(st[0][hs%st[0].length]),roof=rideHex(q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length]),H=Math.max(3,(q.k==='roof'?Math.min(q.h,4):q.h)*S);
   const P=rideClean(q.p);if(P.length<3)continue;const win=H>=5&&q.k!=='roof'?1:2;let u=0;

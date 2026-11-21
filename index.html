@@ -22,7 +22,7 @@
 <div id="app">
  <header id="bar">
   <button id="fBtn" class="link">Filter</button>
-  <div class="ttl"><label class="resortPick"><select id="resortSel" aria-label="Resort"><option value="wdw">Walt Disney World</option><option value="dl">Disneyland Resort</option></select><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label><button id="layerBtn" aria-haspopup="menu" aria-expanded="false"><span id="layerName">Wait Times</span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+  <div class="ttl"><div class="resortPick" role="group" aria-label="Resort"><button type="button" data-resort="wdw">Walt Disney World</button><button type="button" data-resort="dl">Disneyland</button></div><button id="layerBtn" aria-haspopup="menu" aria-expanded="false"><span id="layerName">Wait Times</span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
    <div id="layerMenu" role="menu" hidden></div></div>
   <button id="lBtn" class="link">Show List</button>
  </header>
@@ -70,6 +70,7 @@ document.write('<script src="js/'+(RESORT==='dl'?'park-osm-dl.js':'park-osm.js')
 <script>if(RESORT==='dl')document.write('<script src="js/choreo-believe.js"><\/script>')</script>
 <script src="js/choreo-luminous.js"></script>
 <script src="js/map-art.js"></script>
+<script>if(RESORT==='dl')document.write('<script src="js/map-art-dl.js"><\/script>')</script>
 <script src="js/street.js"></script>
 <script src="js/characters.js"></script>
 <script src="js/parade.js"></script>

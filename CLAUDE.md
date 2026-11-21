@@ -282,6 +282,17 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   cut out by `tools/checker_cutout.py` (grid-aware flood fill from the border, plus enclosed pockets holding both checker colours).
   `loadCastleImage` picks it at DL; drawn `w=SBC.box[0]*k*1.1`, lifted so its bottom 5% (drawbridge and path) reaches in front of the
   footprint. The drawn `SBC` castle remains the fallback if the file is missing.
+  DL building realism (owner, 21 Nov: "Make the buildings in disneyland look more like the real thing"): `js/map-art-dl.js`
+  (loaded only at DL via document.write after map-art.js). `dlBuilding(q,bb,land,hh,hs)` is called per building in paintMap
+  (returns a draw fn, false = skip, null = normal): big in-park buildings (>1500 sq units, not ms/bv, not hotels/parking) are
+  windowless greige show boxes (`dlShowBox`, rooftop units); `hauntedMansion` (white columned house at the footprint's NE),
+  `smallWorld` (white/gold tower façade + clock tower on the south edge), `frenchQuarter` (Pirates: pastel balconied houses
+  along the edge facing NOS), `guardiansFortress`, `carthay`; the Falcon/Grizzly Peak/BTM show buildings/Racers are skipped.
+  `dlLandmarks(c,e,B,vis,S2)` after the loop: Big Thunder red spires round `places.btmpeak` over the BTM coaster's bbox plus its
+  track, Batuu spires in open ground of `lands.gx`, `grizzly` at `places.grizzlypk`, the Cadillac Range fins along the Racers
+  building to `places.cadillac`, `palAround`, open-air coaster tracks (`OSM.coasters`; Pixar Pier's high on white posts, ones
+  inside buildings or Fantasyland skipped). LANDSTYLE.ms/nos are overridden at DL (Victorian colours; `nosDeco` balconies).
+  The extractor now writes `falcon`, `coasters` ([name, tunnel, pts]) and peak places btmpeak/cadillac/grizzlypk.
 
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say

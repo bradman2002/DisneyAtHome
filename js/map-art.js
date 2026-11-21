@@ -831,7 +831,7 @@ function paintMap(rx,ry,rw,rh,mss){
   const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landOf(cx_,cy_)||akResOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain'||DL&&q.n==='Matterhorn Bobsleds')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
-   if(DL&&!q.c&&(bb[2]-bb[0])*(bb[3]-bb[1])>1800&&land&&!EPL.has(land)){const N_=['#bdb6aa','#aaa49b','#c6c0b5','#b3ada3'];roof=N_[(hs>>>4)%N_.length];wall=['#d8d0c2','#cfc6b6'][hs%2]} /* Disneyland's big show buildings hide behind the facades: plain roofs, not the land's colours */
+   if(DL&&typeof dlBuilding==='function'){const f=dlBuilding(q,bb,land,hh,hs);if(f===false)continue;if(f){B.push({y:bb[3],f:()=>f(c,e)});continue}} /* Disneyland's landmarks and show buildings (map-art-dl.js) */
   if(q.n==='Disney’s Contemporary Resort'||q.n==="Disney's Contemporary Resort"){late.push(()=>aframe(c,e,bb,hh));continue} // painted after the monorail beams, which run behind and through it
   if(q.k==='tent'){B.push({y:bb[3],f:()=>tent(c,cx_,bb[3],(bb[2]-bb[0])/2,hh+4,['#d65a8a','#5a8ad6','#e2a321','#7b4fc0'][hs%4])});continue}
   if(land.startsWith('ep')&&q.n==='The Land'){const qq=q;B.push({y:bb[3],f:()=>landPavilion(c,e,qq,bb,S2)});continue}
@@ -859,7 +859,8 @@ function paintMap(rx,ry,rw,rh,mss){
   if(/train_station/.test(q.k||'')){wall='#c9563f';roof='#9e2f2f'}
   if(LANDSTYLE[land]&&/^(yc|bc|bcv|bwi|bwv|dol|swan|swr)$/.test(land)&&/Convention/.test(q.n||''))roof='#c6cacd'; /* the resorts' convention halls: plain pale roofs */
   if(land.startsWith('ep')&&/^Project Tomorrow/.test(q.n))hh=Math.min(hh,6*S2); /* Spaceship Earth's low post-show building, not a tower */
-  const qq=q,big=(land.startsWith('ep')||HSL_ART.has(land)||AKL_ART.has(land))&&(bb[2]-bb[0])*(bb[3]-bb[1])>1500;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'&&land!=='ep_fw',noWin:big||land==='ep_fw'||/Convention/.test(qq.n||''),deco:cresDeco(land)});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
+  const qq=q,big=(land.startsWith('ep')||HSL_ART.has(land)||AKL_ART.has(land))&&(bb[2]-bb[0])*(bb[3]-bb[1])>1500;B.push({y:bb[3],f:()=>{extrude(c,e,qq.p,hh,wall,roof,{noGlow:land==='none',ridge:land!=='ms'&&land!=='ep_fw',noWin:big||land==='ep_fw'||/Convention/.test(qq.n||''),deco:cresDeco(land)||(DL&&land==='nos'&&typeof nosDeco==='function'?nosDeco:undefined)});if(land==='ms'&&(bb[2]-bb[0])*(bb[3]-bb[1])>120)storefronts(c,qq.p,hh,bb,hs)}})}
+ if(DL&&typeof dlLandmarks==='function')dlLandmarks(c,e,B,vis,S2); /* Disneyland's rock spires, mountains, wheel and coaster tracks */
  if(OSM.ak){const P2=OSM.places; /* Animal Kingdom's hand-drawn landmarks */
   if(evB){const b_=evB,hw=(b_[2]-b_[0])/2,k=Math.min(1.1,hw*.75/.8/(61*S2)),bx=(b_[0]+b_[2])/2+(b_[2]-b_[0])*.12,by=(b_[1]+b_[3])/2+(b_[3]-b_[1])*.12;B.push({y:b_[3],f:()=>everestMtn(c,e,bx,by,S2*k)})} /* inside the building's footprint, set back from its walkway side (south-west), so the walkway and queue in front stay clear */
   if(OSM.lands.pa){const pb=bbox(OSM.lands.pa),mx=(pb[0]+pb[2])/2+25,my=(pb[1]+pb[3])/2-30;if(vis([mx-90,my-110,mx+90,my+60]))B.push({y:pb[3]+60,f:()=>floatingMtns(c,e,mx,my,S2*1.6)})} /* over Pandora's walkways, drawn after its show buildings */

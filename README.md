@@ -47,7 +47,10 @@ at the real times when Live is on (otherwise 9 PM) and can be started from Enter
 Area music: Disneyland's lands play the Magic Kingdom loops of the same name (Main Street, Adventureland, Frontierland,
 Fantasyland, Tomorrowland), New Orleans Square plays Liberty Square's, Bayou Country Frontierland's and Toontown Fantasyland's;
 Galaxy's Edge is quiet. All of California Adventure plays `audio/area-dca.mp3` (your Buena Vista Street loop) for now.
-Sleeping Beauty Castle is the owner's illustration (`images/castle-dl.png`, cut out of its checkerboard with
+Disneyland's landmarks are drawn to look like the real ones (`js/map-art-dl.js`): the Haunted Mansion, "it's a small world",
+the French Quarter, Big Thunder's rocks, Batuu's spires and the Millennium Falcon, Grizzly Peak, the Cadillac Range, Carthay Circle,
+the Guardians' fortress, the Pal-A-Round and the Incredicoaster; the big show buildings are plain boxes, and Main Street has
+Victorian colours. Sleeping Beauty Castle is the owner's illustration (`images/castle-dl.png`, cut out of its checkerboard with
 `tools/checker_cutout.py`). Believe's bursts are timed to its soundtrack (`js/choreo-believe.js`). The Main Street street view stays Magic Kingdom's, and the rides that have a recording at Walt Disney
 World (Haunted Mansion, Pirates, Space Mountain, Star Tours, Rise of the Resistance, Runaway Railway, “it’s a small world”,
 Soarin’) play it.

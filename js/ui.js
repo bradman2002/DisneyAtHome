@@ -173,7 +173,7 @@ if(matchMedia('(pointer:coarse)').matches){const h=$('#sndHint');if(h)h.textCont
 try{const s=+localStorage.getItem('mk-speed');if(SPEEDS.includes(s))speed=s}catch(e){} // starts at 1× (real time) unless you chose another speed before
 for(const e of EV)if(!Array.isArray(e.t))e.t=e.ts.map(hm).filter(x=>x!==null).sort((a,b)=>a-b);relTimes();
 /* the resort picker at the top: switching reloads the page with the other resort's map (index.html reads ?resort and remembers it) */
-{const rs=$('#resortSel');if(rs){rs.value=DL?'dl':'wdw';rs.onchange=()=>{const u=new URL(location.href);u.searchParams.set('resort',rs.value);location.href=u.toString()}}
+{for(const b of document.querySelectorAll('.resortPick button')){const r=b.dataset.resort,on=r===(DL?'dl':'wdw');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.onclick=()=>{if(on)return;const u=new URL(location.href);u.searchParams.set('resort',r);location.href=u.toString()}}
  document.title=DL?'DisneyAtHome · Disneyland':'DisneyAtHome';const cvv=$('#cv');if(cvv&&DL)cvv.setAttribute('aria-label','Map of the Disneyland Resort');const vw=$('#views');if(vw&&DL)vw.style.display='none'}
 loadCastleImage().then(()=>{buildMap();resize();reset(7*3600);seek(9*3600-900,false);sync();ui(true);liveInit();soundAuto();
  let last=performance.now(),uit=0;

@@ -122,6 +122,7 @@ function dlBuilding(q,bb,land,hh,hs){const n=q.n||'',area=(bb[2]-bb[0])*(bb[3]-b
   edgeD=(x,y)=>{let m=1e9;const P=q.p;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],dx=b[0]-a[0],dy=b[1]-a[1],L2=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/L2));m=Math.min(m,Math.hypot(x-a[0]-dx*t,y-a[1]-dy*t))}return m},
   inner=()=>OSM.buildings.filter(b=>{if(b===q||b.p.length<3||(b.n&&AT.some(t=>t.osm===b.n)))return false;const v=bbox(b.p);if(v[2]<bb[0]||v[0]>bb[2]||v[3]<bb[1]||v[1]>bb[3]||(v[2]-v[0])*(v[3]-v[1])<60)return false;return b.p.some(([x,y])=>ptIn(x,y,q.p)||edgeD(x,y)<1.5)}).map(b=>[b.p,b.h*k]),
   show=f=>{const I=inner(),h0=Math.min(hh,9*OSM.S);q._dh=I.length?Math.min(16*OSM.S,Math.max(h0,...I.map(b=>b[1]))):h0;return[{y:bb[3],f:(c,e)=>f(c,e,I)}]}; /* _dh: the height drawn, for what it hides (render.js occ) */
+ if(land==='cl'){const f=dlCarsLand(q,bb,hh);if(f)return f}
  if(n==='Millennium Falcon')return false; /* drawn as the ship (falcon(), map-art.js) */
  if(n==='Grizzly Peak'&&OSM.places.grizzlypk)return false;
  if(n==='Big Thunder Mountain Show Building')return false; /* inside the rocks */
@@ -171,3 +172,60 @@ function dlMonoThrough(c,e,vis){const G=dlGCHGeo();if(!G||!vis([G.b[0],G.b[1]-G.
   const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1,ux=dx/L*W,uy=dy/L*W,nx=-uy,ny=ux,A=[a[0]-ux,a[1]-uy],B2=[b[0]+ux,b[1]+uy]; /* each piece a rectangle, all wound the same way so they add up, overlapping at the joints */
   c.moveTo(A[0]+nx,A[1]+ny);c.lineTo(B2[0]+nx,B2[1]+ny);c.lineTo(B2[0]-nx,B2[1]-ny);c.lineTo(A[0]-nx,A[1]-ny);c.closePath();any=true}
  if(any){c.clip('nonzero');grandCal(c,null,G.q,G.h)}c.restore()}
+/* ===== CARS LAND: Radiator Springs, drawn after its real buildings =====
+   Route 66 desert storefronts in sun-faded pastels with flat parapet roofs; the Cozy Cone Motel's five big orange cones;
+   Flo's V8 Café (white and turquoise, chrome bands, its tall round sign at the corner toward the street); Ramone's art-deco
+   tower in purple; Luigi's in the Italian colours with the Leaning Tower of Tires beside it; Fillmore's geodesic dome;
+   Sarge's army Quonset hut (laid along its outline's long axis); the brick Firehouse & Courthouse with white columns and
+   its clock cupola; and the red rock buttes (Willy's Butte, the Radiator Cap). Shapes follow each outline's real angle. */
+if(typeof DL!=='undefined'&&DL)LANDSTYLE.cl=[['#e9c9a1','#cfe3d8','#f0d3c8','#e8dcb8','#bcd7e0','#e7b8a0'],['#c9b08a','#b98a5a','#a8603a','#c2a77e']];
+const CL_CONES=/^(Churros|Chillie-Cone-Carne|Ice Cream Cone|Cone-Cactions|Pop-Cone)$/;
+const dlIsCone=q=>CL_CONES.test(q.n||'');
+function dlConeGeo(q){const b=bbox(q.p),r=Math.max(3,Math.min(b[2]-b[0],b[3]-b[1])*.72);return{x:(b[0]+b[2])/2,y:(b[1]+b[3])/2+r*.3,r,H:Math.max(13*OSM.S,r*2.7)}}
+function coneArt(c,e,q){const{x,y,r,H}=dlConeGeo(q);c.fillStyle='rgba(30,30,20,.25)';c.beginPath();c.ellipse(x+H*.25,y+.6,r*1.1,r*.4,0,0,7);c.fill();
+ const g=c.createLinearGradient(x-r,0,x+r,0);g.addColorStop(0,'#ffa25a');g.addColorStop(.45,'#f0802e');g.addColorStop(1,'#b8561c');c.fillStyle=g;c.beginPath();c.moveTo(x-r,y);c.lineTo(x,y-H);c.lineTo(x+r,y);c.ellipse(x,y,r,r*.4,0,0,Math.PI);c.closePath();c.fill();
+ for(const[f0,f1]of[[.3,.4],[.58,.66]]){const w0=r*(1-f0),w1=r*(1-f1);poly4(c,[[x-w0,y-H*f0],[x+w0,y-H*f0],[x+w1,y-H*f1],[x-w1,y-H*f1]],'rgba(255,248,235,.95)')} /* the white bands */
+ poly4(c,[[x-r*.12,y-H*.88],[x+r*.12,y-H*.88],[x,y-H-1]],'#d84a2a');c.fillStyle='#3a2a22';c.fillRect(x-r*.22,y-r*.15-2.6,r*.44,2.6); /* the tip, the door */
+ if(e){e.fillStyle='rgba(255,210,140,.7)';e.fillRect(x-r*.22,y-r*.15-2.6,r*.44,2.6)}}
+function pAxis(P){const n=P.length,mx=P.reduce((s,p)=>s+p[0],0)/n,my=P.reduce((s,p)=>s+p[1],0)/n;let a=0,b=0,d=0;for(const p of P){a+=(p[0]-mx)**2;b+=(p[1]-my)**2;d+=(p[0]-mx)*(p[1]-my)}const an=.5*Math.atan2(2*d,a-b);
+ const ux=Math.cos(an),uy=Math.sin(an);let l0=1e9,l1=-1e9,w=0;for(const p of P){const t=(p[0]-mx)*ux+(p[1]-my)*uy,s=Math.abs(-(p[0]-mx)*uy+(p[1]-my)*ux);l0=Math.min(l0,t);l1=Math.max(l1,t);w=Math.max(w,s)}return{mx,my,ux,uy,l0,l1,w}}
+/* Sarge's Quonset hut: a half-cylinder of corrugated army-green steel along the outline's long axis */
+function quonset(c,e,q){const A=pAxis(q.p),R=A.w,N=14,sl=[];for(let i=0;i<=N;i++){const t=A.l0+(A.l1-A.l0)*i/N;sl.push([A.mx+A.ux*t,A.my+A.uy*t,i])}sl.sort((p,q2)=>p[1]-q2[1]);
+ const arch=(x,y)=>{const pts=[];for(let k=0;k<=12;k++){const f=Math.PI*k/12;pts.push([x+(-A.uy)*R*Math.cos(f),y+A.ux*R*Math.cos(f)-R*Math.sin(f)])}return pts};
+ for(const[x,y,i]of sl){const pts=arch(x,y);c.fillStyle=i===0||i===N?'#5d6640':'#6f7a4a';c.beginPath();pts.forEach(([a,b],k)=>k?c.lineTo(a,b):c.moveTo(a,b));c.closePath();c.fill();c.strokeStyle='rgba(40,45,25,.5)';c.lineWidth=.25;c.beginPath();pts.forEach(([a,b],k)=>k?c.lineTo(a,b):c.moveTo(a,b));c.stroke()}
+ const top=[A.mx+A.ux*A.l0,A.my+A.uy*A.l0-R],top2=[A.mx+A.ux*A.l1,A.my+A.uy*A.l1-R];c.strokeStyle='rgba(220,230,190,.5)';c.lineWidth=.6;c.beginPath();c.moveTo(...top);c.lineTo(...top2);c.stroke()}
+/* Fillmore's: a geodesic dome in green, painted with sixties colours */
+function geoDome(c,e,q){const b=bbox(q.p),x=(b[0]+b[2])/2,y=(b[1]+b[3])/2+2,r=Math.min(b[2]-b[0],b[3]-b[1])*.55;const g=c.createRadialGradient(x-r*.4,y-r*.7,1,x,y-r*.4,r*1.2);g.addColorStop(0,'#c8e88a');g.addColorStop(1,'#4f8a3a');
+ c.fillStyle=g;c.beginPath();c.ellipse(x,y,r,r*.4,0,0,Math.PI);c.ellipse(x,y,r,r,0,Math.PI,0);c.fill();c.save();c.beginPath();c.ellipse(x,y,r,r,0,Math.PI,0);c.clip();c.strokeStyle='rgba(255,255,230,.6)';c.lineWidth=.25;
+ for(let i=1;i<4;i++){c.beginPath();c.ellipse(x,y,r,r*i/4,0,Math.PI,0);c.stroke()}for(let i=1;i<6;i++){c.beginPath();c.ellipse(x,y,r*Math.abs(Math.cos(i*Math.PI/6)),r,0,Math.PI,0);c.stroke()}
+ c.fillStyle='rgba(240,120,180,.6)';c.beginPath();c.ellipse(x-r*.3,y-r*.5,r*.18,r*.12,0,0,7);c.fill();c.fillStyle='rgba(250,210,70,.6)';c.beginPath();c.ellipse(x+r*.35,y-r*.35,r*.15,r*.1,0,0,7);c.fill();c.restore()}
+/* Luigi's Leaning Tower of Tires: black tyres stacked up and leaning */
+function tireTower(c,e,q){const b=bbox(q.p),x=(b[0]+b[2])/2,y=(b[1]+b[3])/2+1,n=11,s=1.15;for(let i=0;i<n;i++){const xx=x+i*i*.022,yy=y-i*s*1.05;c.fillStyle='#2a2a2c';c.beginPath();c.ellipse(xx,yy,2.2,1,0,0,7);c.fill();c.fillStyle='#4a4a4e';c.fillRect(xx-2.2,yy-s,4.4,s);c.fillStyle='#2a2a2c';c.beginPath();c.ellipse(xx,yy-s,2.2,1,0,0,7);c.fill();c.fillStyle='#777';c.beginPath();c.ellipse(xx,yy-s,1,.45,0,0,7);c.fill()}}
+/* Flo's V8 Café: white and turquoise, chrome bands, and its tall round sign at the corner toward the middle of the street */
+function flos(c,e,q,bb,hh){extrude(c,e,q.p,hh,'#eef5f3','#55b4ab',{win:'#7fd4e0',ridge:false,deco:(c,p,q2,L,h)=>{for(const[f,col,w]of[[.18,'#3fa59c',.9],[.82,'#c9d3d6',.5],[.94,'#3fa59c',.7]]){c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(p[0],p[1]-h*f);c.lineTo(q2[0],q2[1]-h*f);c.stroke()}}});
+ const ctr=CLN&&clBuildings().length?CLN.ctr:[(bb[0]+bb[2])/2,bb[3]];let sp=q.p[0],bd=1e9;for(const p of q.p){const d=Math.hypot(p[0]-ctr[0],p[1]-ctr[1]);if(d<bd){bd=d;sp=p}}
+ const[sx,sy]=sp,H=hh+16;c.fillStyle='#e8eef0';c.fillRect(sx-.6,sy-H,1.2,H);c.fillStyle='#d8433a';c.beginPath();c.arc(sx,sy-H,3.4,0,7);c.fill();c.fillStyle='#fff6e0';c.beginPath();c.arc(sx,sy-H,2.6,0,7);c.fill();
+ c.fillStyle='#d8433a';c.font='bold 2.6px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('V8',sx,sy-H+.1);
+ if(e){e.strokeStyle='rgba(255,90,80,.9)';e.lineWidth=.6;e.beginPath();e.arc(sx,sy-H,3.4,0,7);e.stroke()}}
+/* Ramone's House of Body Art: purple art deco with gold fins, and its stepped tower */
+function ramones(c,e,q,bb,hh){extrude(c,e,q.p,hh,'#b98ad0','#7a4f9a',{ridge:false,noWin:true,deco:(c,p,q2,L,h)=>{c.strokeStyle='#e8c25a';c.lineWidth=.45;const n=Math.max(2,Math.floor(L/2.5));c.beginPath();for(let i=1;i<n;i++){const t=i/n,x=p[0]+(q2[0]-p[0])*t,y=p[1]+(q2[1]-p[1])*t;c.moveTo(x,y-h*.15);c.lineTo(x,y-h)}c.stroke()}});
+ const x=(bb[0]+bb[2])/2,y=(bb[1]+bb[3])/2+2;let h=hh;for(const[w,d,dh,col]of[[5,4,5,'#c99ae0'],[3.6,3,4,'#d6aee8'],[2.2,2,3,'#e2c2f0']]){extrude(c,e,[[x-w,y-d],[x+w,y-d],[x+w,y+d],[x-w,y+d]].map(([a,b2])=>[a,b2-h]),dh,col,'#8a5fae',{ridge:false,noWin:true});h+=dh}
+ c.strokeStyle='#e8c25a';c.lineWidth=.4;c.beginPath();c.moveTo(x,y-h);c.lineTo(x,y-h-4);c.stroke()}
+/* Luigi's Casa Della Tires: cream walls in Italian green, white and red bands, a green roof */
+function luigis(c,e,q,hh){extrude(c,e,q.p,hh,'#f4efe2','#3f8a4a',{ridge:false,deco:(c,p,q2,L,h)=>{for(const[f,col]of[[.92,'#3f8a4a'],[.84,'#f4efe2'],[.76,'#c8402f']]){c.strokeStyle=col;c.lineWidth=.8;c.beginPath();c.moveTo(p[0],p[1]-h*f);c.lineTo(q2[0],q2[1]-h*f);c.stroke()}}})}
+/* the Firehouse & Courthouse: red brick, white columns, a white clock cupola */
+function courthouse(c,e,q,bb,hh){const H=Math.max(hh,9*OSM.S);extrude(c,e,q.p,H,'#b86a4a','#6a3a2a',{ridge:false,win:'#2f3a44',deco:(c,p,q2,L,h)=>{const n=Math.max(1,Math.round(L/2.6));for(let i=0;i<=n;i++){const t=i/n,x=p[0]+(q2[0]-p[0])*t,y=p[1]+(q2[1]-p[1])*t;c.fillStyle='#f4efe4';c.fillRect(x-.35,y-h*.75,.7,h*.75)}c.fillStyle='#f4efe4';c.beginPath();c.moveTo(p[0],p[1]-h*.75);c.lineTo(q2[0],q2[1]-h*.75);c.lineTo(q2[0],q2[1]-h*.8);c.lineTo(p[0],p[1]-h*.8);c.fill()}});
+ const x=(bb[0]+bb[2])/2,y=(bb[1]+bb[3])/2;poly4(c,[[x-2,y-H],[x+2,y-H],[x+2,y-H-5],[x-2,y-H-5]],'#f4efe4');poly4(c,[[x-2.4,y-H-5],[x+2.4,y-H-5],[x,y-H-8.5]],'#6a3a2a');c.fillStyle='#fff';c.beginPath();c.arc(x,y-H-3,1.2,0,7);c.fill();c.strokeStyle='#333';c.lineWidth=.2;c.stroke()}
+/* a red rock butte on its outline: flat top, banded sides */
+function butte(c,e,q,hh){const H=Math.max(hh,14*OSM.S);extrude(c,null,q.p,H,'#c8643a','#d98050',{noWin:true,ridge:false,deco:(c,p,q2,L,h)=>{c.strokeStyle='rgba(240,200,150,.35)';c.lineWidth=.5;for(let f=.2;f<1;f+=.2){c.beginPath();c.moveTo(p[0],p[1]-h*f);c.lineTo(q2[0],q2[1]-h*f);c.stroke()}}})}
+function dlCarsLand(q,bb,hh){const n=q.n||'';
+ if(dlIsCone(q)){q._dh=dlConeGeo(q).H;return(c,e)=>coneArt(c,e,q)}
+ if(n==="Sarge's Surplus Hut")return(c,e)=>quonset(c,e,q);
+ if(n==="Fillmore's Taste-in")return(c,e)=>geoDome(c,e,q);
+ if(n==="Luigi's Leaning Tower of Tires"){q._dh=13}if(n==="Luigi's Leaning Tower of Tires")return(c,e)=>tireTower(c,e,q);
+ if(n==="Flo's V8 Café")return(c,e)=>flos(c,e,q,bb,hh);
+ if(n==="Ramone's House of Body Art")return(c,e)=>ramones(c,e,q,bb,hh);
+ if(n==="Luigi's Casa Della Tires")return(c,e)=>luigis(c,e,q,hh);
+ if(n==='Radiator Springs Firehouse & Courthouse')return(c,e)=>courthouse(c,e,q,bb,hh);
+ if(n==="Willy's Butte"||n==='Radiator Cap')return(c,e)=>butte(c,e,q,hh);
+ return null}

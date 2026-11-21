@@ -329,6 +329,17 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   (`clLitAll`). `clSync`/`clDraw` hooked in render.js; in `showOn`; TV key 'cl'; Entertainment card `#clStart`. Area music:
   `AREA.cl` with `AREA_PL.cl` = playlist (Route 66 then Sh-Boom, next on 'ended'), weighted inside `OSM.lands.cl` (fading over
   45 units outside it) against `area-dca`.
+- Cars Land look (owner, 21 Nov: "Make the cars lands building look correct. When the lighting happens, mute all other music when we
+  are watching it"): `dlCarsLand` in map-art-dl.js (called from dlBuilding for land 'cl'): Cozy Cones = the five named cone
+  outlines (Churros, Chillie-Cone-Carne, Ice Cream Cone, Cone-Cactions, Pop-Cone; `dlIsCone`/`dlConeGeo`, also used by the neon),
+  Sarge's `quonset` along the outline's principal axis (`pAxis`), Fillmore's `geoDome`, `tireTower`, `flos` (sign at the corner
+  nearest the street middle), `ramones`, `luigis`, `courthouse`, `butte` (Willy's Butte, Radiator Cap); LANDSTYLE.cl desert pastels.
+  Ceremony order (owner, 21 Nov: "start from the main street and work out. Also make it faster. Also make the watch the show
+  just jump to the next one"): buildings ranked by distance to Route 66 (the widest Cars Land walkways, `CLN.street`), all lit
+  3–29 s in (`CL_RUN`); "Watch the next one" (`clStartNow`) unfollows live and seeks to 8 s before the next ceremony, moving
+  `dateStr` to tomorrow (reset) when tonight's is over. `CLN.force` is no longer set.
+  Muting: `setVol` (audio.js) multiplies every player except Sh-Boom by 1-`clFocus()` (1 while the ceremony is on and the map is
+  on Cars Land).
 - audio/area-dca.mp3 (owner's, git-ignored) was cut to 95 MB / 66 min (owner: "Trim area dca to not be over 100mb", GitHub's
   file limit) at an MP3 frame boundary, with its Info header's frame and byte counts fixed.
 

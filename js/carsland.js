@@ -52,10 +52,16 @@ function clSync(){if(!DL)return;const A=CLN.a,a=A.audio,st=clClock(),near=clNear
  if(a.paused){a.currentTime=Math.max(0,st);a.play().catch(()=>{})}else syncTrack(A,a,a.currentTime-st,()=>{a.currentTime=Math.max(0,st)})}
 /* drawn after the night tint, as added light: neon tubes along each building's roofline and a sign on its front */
 function clDraw(now){if(!DL||SV.on||nf<.08)return;const B=clBuildings();if(!B.length)return;const st=clClock(),all=clLitAll();if(st===null&&!all)return;
- const z=zf();if(Math.abs(CLN.ctr[0]-cam.x)>cw/2/z+220||Math.abs(CLN.ctr[1]-cam.y)>ch/2/z+220)return;const t=now/1000,A=Math.min(1,.55+nf*1.2); /* neon reads bright even at dusk */
+ const z=zf();if(Math.abs(CLN.ctr[0]-cam.x)>cw/2/z+220||Math.abs(CLN.ctr[1]-cam.y)>ch/2/z+220)return;const t=now/1000,A=Math.min(1,.55+nf*1.2),N=Math.max(0,Math.min(1,(nf-.3)/.5)); /* neon reads bright even at dusk; N: how dark it is, for the night's extra glow */
  cx.save();cx.globalCompositeOperation='lighter';cx.lineCap='round';
  for(const o of B){let k=1;if(st!==null){const on=clOnAt(o),d=st-on;if(d<0)continue;if(d<1.6)k=(hsh(Math.floor(t*14)+o.i*31)%3?1:.15)*(d<.25?.4:1)} /* flickering to life */
-  const tube=(pts,col,w)=>{cx.strokeStyle=col;cx.globalAlpha=.22*A*k;cx.lineWidth=w*3.2;cx.beginPath();pts.forEach(([x,y],i)=>i?cx.lineTo(x,y):cx.moveTo(x,y));cx.stroke();cx.globalAlpha=.95*A*k;cx.lineWidth=w;cx.stroke()};
+  /* a neon tube: a wide soft bloom (much stronger after dark), a coloured glow, the bright tube, and a white-hot core */
+  const tube=(pts,col,w)=>{cx.beginPath();pts.forEach(([x,y],i)=>i?cx.lineTo(x,y):cx.moveTo(x,y));cx.strokeStyle=col;
+   cx.globalAlpha=(.06+.1*N)*A*k;cx.lineWidth=w*(5+5*N);cx.stroke();cx.globalAlpha=(.22+.18*N)*A*k;cx.lineWidth=w*(3+.8*N);cx.stroke();
+   cx.globalAlpha=A*k;cx.lineWidth=w*(1.2+.5*N);cx.stroke();cx.strokeStyle='#fff';cx.globalAlpha=(.3+.35*N)*A*k;cx.lineWidth=w*(.4+.12*N);cx.stroke()};
+  /* after dark the neon throws its colour onto the ground and walls round the building */
+  if(N>0){const R_=9+Math.min(10,(o.b[2]-o.b[0])*.4),g=cx.createRadialGradient(o.x,o.b[3],0,o.x,o.b[3],R_);g.addColorStop(0,o.col);g.addColorStop(.5,o.col2);g.addColorStop(1,'rgba(0,0,0,0)');cx.globalAlpha=.22*N*A*k;cx.fillStyle=g;cx.beginPath();cx.ellipse(o.x,o.b[3],R_,R_*.6,0,0,7);cx.fill(); /* its colour on the ground */
+   const hy=o.b[1]-o.h*.5,H_=R_*.7,h2=cx.createRadialGradient(o.x,hy,0,o.x,hy,H_);h2.addColorStop(0,o.col);h2.addColorStop(1,'rgba(0,0,0,0)');cx.globalAlpha=.1*N*A*k;cx.fillStyle=h2;cx.beginPath();cx.arc(o.x,hy,H_,0,7);cx.fill()} /* and a halo in the air round its signs */
   if(o.cone){const g=dlConeGeo(o.q),x=g.x,y=g.y,h=g.H,w=g.r*.95;tube([[x-w,y],[x,y-h],[x+w,y]],'#ffb030',.55);tube([[x-w*.5,y-h*.5],[x+w*.5,y-h*.5]],'#ff4fa0',.45);continue} /* a Cozy Cone, outlined */
   for(const[p,r,Lw]of o.walls){tube([[p[0],p[1]-o.h+.3],[r[0],r[1]-o.h+.3]],o.col,.45); /* along the roofline */
    if(Lw>5){const m=[(p[0]+r[0])/2,(p[1]+r[1])/2],sw=Math.min(4.5,Lw*.3),sh=Math.min(2.2,o.h*.28),yy=m[1]-o.h*.62;cx.globalAlpha=.25*A*k;cx.fillStyle=o.col2;cx.fillRect(m[0]-sw-.6,yy-sh-.6,sw*2+1.2,sh*2+1.2); /* a neon sign on the front */

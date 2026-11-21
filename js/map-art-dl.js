@@ -20,7 +20,12 @@ function nosDeco(c,p,q,L,h){if(L<4||h<5)return;const y0=h*.52;c.strokeStyle='rgb
 /* a show building: painted "go-away green" like the real ones so it fades into the planting round it: soft sage walls, a
    pale flat roof with a few rooftop units, no windows, kept low. Painted early (before the park's own buildings) so the
    façades and shops standing on or against it are drawn over it. */
-function dlShowBox(c,e,poly,hh,hs){const W_=['#a8b190','#a3ad8c','#afb797'],R_=['#c3c8b0','#bcc2a8','#c8ccb6'],h=Math.min(hh,9*OSM.S);extrude(c,null,poly,h,W_[hs%3],R_[(hs>>>3)%3],{noWin:true,ridge:false});
+function dlShowBox(c,e,poly,hh,hs,inner){const W_=['#a8b190','#a3ad8c','#afb797'],R_=['#c3c8b0','#bcc2a8','#c8ccb6'];let h=Math.min(hh,9*OSM.S);
+ /* façades standing inside its outline (New Orleans Square's French Quarter is the front of the Pirates building): the show
+    building rises to their roofline and is drawn after them, round their roofs, so their backs are hidden behind it the way
+    the real show building hides them, and only their roofs show through */
+ if(inner&&inner.length){h=Math.min(16*OSM.S,Math.max(h,...inner.map(b=>b[1])));const bb=bbox(poly);c.save();c.beginPath();c.rect(bb[0]-5,bb[1]-h-30,bb[2]-bb[0]+10,bb[3]-bb[1]+h+40);for(const[p,ih]of inner){p.forEach(([x,y],i)=>i?c.lineTo(x,y-ih):c.moveTo(x,y-ih));c.closePath()}c.clip('evenodd')}
+ extrude(c,null,poly,h,W_[hs%3],R_[(hs>>>3)%3],{noWin:true,ridge:false});if(inner&&inner.length)c.restore();
  const bb=bbox(poly),r=seeded(hs);c.fillStyle='rgba(110,118,100,.4)';for(let i=0;i<Math.min(9,(bb[2]-bb[0])*(bb[3]-bb[1])/500);i++){const x=bb[0]+4+r()*(bb[2]-bb[0]-8),y=bb[1]+4+r()*(bb[3]-bb[1]-8);if(ptIn(x,y,poly))c.fillRect(x-1.2,y-h-.9,2.4,1.6)}}
 /* The Haunted Mansion's house: on its own outline in the map (east of the railroad; the show building is beyond the tracks),
    white walls with dark-shuttered windows, a row of tall columns round its porches, a dark slate roof and a cupola */
@@ -60,10 +65,12 @@ function grandCal(c,e,q,hh){extrude(c,e,q.p,hh,'#7e5d42','#6a6552',{win:'#e9dcbc
 /* the Guardians' fortress: a tall dark industrial block with copper ribs and pipes, stepping in near the top */
 function guardiansFortress(c,e,q,bb,hh){const H=Math.max(hh,40*OSM.S);extrude(c,e,q.p,H*.72,'#3d4148','#2f3238',{noWin:true,ridge:false,deco:(c,p,q2,L,h)=>{c.strokeStyle='#b07a3a';c.lineWidth=.55;const n=Math.max(2,Math.floor(L/3));c.beginPath();for(let i=1;i<n;i++){const t=i/n,x=p[0]+(q2[0]-p[0])*t,y=p[1]+(q2[1]-p[1])*t;c.moveTo(x,y);c.lineTo(x,y-h)}c.stroke();c.fillStyle='#c9903f';c.beginPath();c.moveTo(p[0],p[1]-h*.62);c.lineTo(q2[0],q2[1]-h*.62);c.lineTo(q2[0],q2[1]-h*.62+.8);c.lineTo(p[0],p[1]-h*.62+.8);c.fill()}});
  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,w=(bb[2]-bb[0])*.28,d=(bb[3]-bb[1])*.25;extrude(c,e,[[cx_-w,cy_-d],[cx_+w,cy_-d],[cx_+w,cy_+d],[cx_-w,cy_+d]].map(([x,y])=>[x,y-H*.72]),H*.28,'#454a52','#33363c',{noWin:true,ridge:false});
- c.strokeStyle='#8a5a2a';c.lineWidth=1;c.beginPath();c.moveTo(cx_+w*.6,cy_+d-H*.72);c.quadraticCurveTo(cx_+w*1.4,cy_+d-H*.5,bb[2]-2,bb[3]-H*.3);c.stroke(); /* a big copper pipe down the side */
  if(e){e.fillStyle='rgba(255,170,90,.55)';e.fillRect(cx_-w,cy_-d-H+1,w*2,.8)}}
 /* Carthay Circle Theatre: white Spanish-colonial walls and red tiles, and its tall tower with a gold-topped blue spire */
-function carthay(c,e,q,bb,hh){extrude(c,e,q.p,hh,'#f4efe4','#b5583a',{ridge:true});const tx=(bb[0]+bb[2])/2,ty=bb[3]-4,w=3.4,H=hh+20;
+function carthay(c,e,q,bb,hh){extrude(c,e,q.p,hh,'#f4efe4','#b5583a',{ridge:true});
+ /* the tower stands at the corner looking onto Carthay Circle (places.carthaycircle), pulled a little inside the outline */
+ const cc=OSM.places.carthaycircle;let tp=[(bb[0]+bb[2])/2,bb[3]-4];if(cc){let bd=1e9;for(const p of q.p){const d=Math.hypot(p[0]-cc[0],p[1]-cc[1]);if(d<bd){bd=d;tp=p}}const mx=(bb[0]+bb[2])/2,my=(bb[1]+bb[3])/2;tp=[tp[0]+(mx-tp[0])*.15,tp[1]+(my-tp[1])*.15]}
+ const tx=tp[0],ty=tp[1],w=3.4,H=hh+20;
  poly4(c,[[tx-w,ty],[tx+w,ty],[tx+w,ty-H],[tx-w,ty-H]],'#f6f2e8');poly4(c,[[tx,ty],[tx+w,ty],[tx+w,ty-H],[tx,ty-H]],'#e2dccf');
  c.fillStyle='#3f5a7a';for(let i=0;i<3;i++)c.fillRect(tx-.8,ty-H*(.5+i*.14),1.6,2.2);
  poly4(c,[[tx-w*1.2,ty-H],[tx+w*1.2,ty-H],[tx+w*.9,ty-H-1.4],[tx-w*.9,ty-H-1.4]],'#e8e1d2');poly4(c,[[tx-w*.9,ty-H-1.4],[tx+w*.9,ty-H-1.4],[tx,ty-H-9]],'#3e6fa0');
@@ -84,14 +91,19 @@ function grizzly(c,x,y,R){const H=R*1.5;c.fillStyle='rgba(30,40,30,.25)';c.begin
 /* the Cadillac Range over Cars Land: tall red-orange buttes shaped like the tail fins of old cars, banded with strata */
 function cadillac(c,x,y,h,w,r){const lean=w*.5;const P=[[x-w,y],[x-w*.8,y-h*.7],[x-w*.3+lean,y-h],[x+w*.15+lean,y-h*.96],[x+w*.55,y-h*.55],[x+w,y]];poly4(c,P,'#c8643a');poly4(c,[[x+w*.15+lean,y-h*.96],[x+w*.55,y-h*.55],[x+w,y],[x+w*.1,y]],'#a14a2a');poly4(c,[[x-w*.8,y-h*.7],[x-w*.3+lean,y-h],[x-w*.25+lean*.7,y-h*.75],[x-w*.65,y-h*.5]],'#e08a55');
  c.save();c.beginPath();P.forEach(([a,b],i)=>i?c.lineTo(a,b):c.moveTo(a,b));c.closePath();c.clip();c.strokeStyle='rgba(240,200,150,.35)';c.lineWidth=Math.max(.4,h*.03);for(let k=1;k<7;k++){const yy=y-h*k/7;c.beginPath();c.moveTo(x-w,yy+(r()-.5)*2);c.lineTo(x+w,yy+(r()-.5)*2);c.stroke()}c.restore()}
-/* the Pixar Pal-A-Round: a big Ferris wheel on the pier, white rim and spokes, coloured gondolas, a sunburst at its hub */
-function palAround(c,e,x,y){const R=22,cy=y-R-4;c.fillStyle='rgba(30,40,60,.18)';c.beginPath();c.ellipse(x+6,y+1.5,R*.9,3,0,0,7);c.fill();
- c.strokeStyle='#d9d4ca';c.lineWidth=1.6;c.beginPath();c.moveTo(x-9,y);c.lineTo(x,cy);c.lineTo(x+9,y);c.moveTo(x-7,y);c.lineTo(x,cy);c.lineTo(x+7,y);c.stroke(); /* the A-frame legs */
- c.lineWidth=.4;c.strokeStyle='#f4efe6';for(let i=0;i<32;i++){const a=i/32*6.283;c.beginPath();c.moveTo(x,cy);c.lineTo(x+Math.cos(a)*R,cy+Math.sin(a)*R);c.stroke()}
- c.lineWidth=1.4;c.strokeStyle='#d8423a';c.beginPath();c.arc(x,cy,R,0,7);c.stroke();c.lineWidth=.6;c.strokeStyle='#f6c03a';c.beginPath();c.arc(x,cy,R*.78,0,7);c.stroke();c.strokeStyle='#3f7fc0';c.beginPath();c.arc(x,cy,R*.5,0,7);c.stroke();
- const G=['#d8423a','#3f7fc0','#f0b030','#2f9a8a','#7b4fc0','#e86aa0'];for(let i=0;i<24;i++){const a=i/24*6.283,gx=x+Math.cos(a)*R*.94,gy=cy+Math.sin(a)*R*.94;c.strokeStyle='#888';c.lineWidth=.2;c.beginPath();c.moveTo(gx,gy);c.lineTo(gx,gy+.8);c.stroke();c.fillStyle=G[i%G.length];c.beginPath();c.roundRect(gx-1.6,gy+.8,3.2,2.6,.8);c.fill();c.fillStyle='rgba(255,255,255,.6)';c.fillRect(gx-1.1,gy+1.2,2.2,.8)}
- c.fillStyle='#f6c03a';c.beginPath();for(let i=0;i<24;i++){const a=i/24*6.283,rr=i%2?3.6:6;c.lineTo(x+Math.cos(a)*rr,cy+Math.sin(a)*rr)}c.closePath();c.fill();c.fillStyle='#e86a2a';c.beginPath();c.arc(x,cy,2.4,0,7);c.fill(); /* the sunburst at the hub */
- if(e){e.strokeStyle='rgba(255,220,150,.75)';e.lineWidth=.8;for(const k of[1,.78,.5]){e.beginPath();e.arc(x,cy,R*k,0,7);e.stroke()}}}
+/* the Pixar Pal-A-Round: a 49 m Ferris wheel on the pier. Its outline in the map is a strip along the wheel's plane
+   (places.palwheel = centre, direction, diameter), which runs north-west to south-east, so from the map's southern view the
+   wheel is seen at an angle: a leaning oval. palPt(θ, f) is a point on it (f = fraction of the radius); WoC lights it too. */
+function palGeo(){const w=OSM.places.palwheel,p=OSM.places.palaround;if(w)return{x:w[0],y:w[1],ux:w[2],uy:w[3],R:w[4]/2};return p?{x:p[0],y:p[1],ux:1,uy:0,R:22}:null}
+function palPt(th,f){const G=palGeo(),r=G.R*(f==null?1:f),Hc=G.R+3;return[G.x+G.ux*r*Math.cos(th),G.y+G.uy*r*Math.cos(th)-Hc-r*Math.sin(th)]}
+function palAround(c,e){const G=palGeo();if(!G)return;const{x,y,ux,uy,R}=G,Hc=R+3,hub=[x,y-Hc],nx=-uy,ny=ux,ring=(f,col,w)=>{c.strokeStyle=col;c.lineWidth=w;c.beginPath();for(let i=0;i<=48;i++){const[px,py]=palPt(i/48*6.283,f);i?c.lineTo(px,py):c.moveTo(px,py)}c.stroke()};
+ c.fillStyle='rgba(30,40,60,.18)';c.beginPath();c.ellipse(x+5,y+1.5,R*.85,3,Math.atan2(uy,ux),0,7);c.fill(); /* its shadow on the water */
+ c.strokeStyle='#d9d4ca';c.lineWidth=1.6;c.beginPath();for(const s of[-1,1])for(const a of[-1,1]){c.moveTo(x+nx*s*6+ux*a*7,y+ny*s*6+uy*a*7);c.lineTo(hub[0]+nx*s*1.5,hub[1]+ny*s*1.5)}c.stroke(); /* the A-frame legs, one each side of the wheel */
+ c.lineWidth=.4;c.strokeStyle='#f4efe6';c.beginPath();for(let i=0;i<32;i++){const[px,py]=palPt(i/32*6.283);c.moveTo(hub[0],hub[1]);c.lineTo(px,py)}c.stroke();
+ ring(1,'#d8423a',1.4);ring(.78,'#f6c03a',.6);ring(.5,'#3f7fc0',.6);
+ const C=['#d8423a','#3f7fc0','#f0b030','#2f9a8a','#7b4fc0','#e86aa0'];for(let i=0;i<24;i++){const[gx,gy]=palPt(i/24*6.283,.94),fw=1.7*Math.max(.45,Math.abs(ux));c.strokeStyle='#888';c.lineWidth=.2;c.beginPath();c.moveTo(gx,gy);c.lineTo(gx,gy+.8);c.stroke();c.fillStyle=C[i%C.length];c.beginPath();c.roundRect(gx-fw,gy+.8,fw*2,2.6,.8);c.fill();c.fillStyle='rgba(255,255,255,.6)';c.fillRect(gx-fw*.65,gy+1.2,fw*1.3,.8)} /* gondolas hang level */
+ c.fillStyle='#f6c03a';c.beginPath();for(let i=0;i<24;i++){const[px,py]=palPt(i/24*6.283,i%2?.16:.27);c.lineTo(px,py)}c.closePath();c.fill();c.fillStyle='#e86a2a';c.beginPath();for(let i=0;i<16;i++){const[px,py]=palPt(i/16*6.283,.11);c.lineTo(px,py)}c.closePath();c.fill(); /* the sunburst at the hub, in the wheel's plane */
+ if(e){e.strokeStyle='rgba(255,220,150,.75)';e.lineWidth=.8;for(const f of[1,.78,.5]){e.beginPath();for(let i=0;i<=48;i++){const[px,py]=palPt(i/48*6.283,f);i?e.lineTo(px,py):e.moveTo(px,py)}e.stroke()}}}
 /* a roller coaster's track on its supports: two rails at height h, a post every few units down to the ground */
 function coasterTrack(c,e,p,h,rail,post){c.strokeStyle=post;c.lineWidth=.6;c.beginPath();let acc=0;for(let i=1;i<p.length;i++){const d=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);acc+=d;if(acc>3.2){acc=0;c.moveTo(p[i][0],p[i][1]);c.lineTo(p[i][0],p[i][1]-h)}}c.stroke();
  c.strokeStyle='rgba(0,0,0,.15)';c.lineWidth=1.4;c.beginPath();p.forEach(([x,y],i)=>i?c.lineTo(x+1,y+.6):c.moveTo(x+1,y+.6));c.stroke(); /* its shadow */
@@ -103,18 +115,24 @@ let DLHM=undefined;
 function dlMansionHouse(){if(DLHM!==undefined)return DLHM;DLHM=null;const hm=OSM.buildings.find(q=>q.n==='The Haunted Mansion');if(!hm)return null;const hb=bbox(hm.p);let best=0;
  for(const q of OSM.buildings){if(q.n||q===hm)continue;const b=bbox(q.p),cx_=(b[0]+b[2])/2,cy_=(b[1]+b[3])/2,a=(b[2]-b[0])*(b[3]-b[1]);if(a>1500||a<120||cx_<hb[0]-8||cx_>hb[2]+8||cy_<hb[1]-12||cy_>hb[3]+8||ptIn(cx_,cy_,hm.p))continue;if(a>best){best=a;DLHM=q}}
  return DLHM} /* the house: the biggest unnamed outline beside the show building, outside it */
-function dlBuilding(q,bb,land,hh,hs){const n=q.n||'',area=(bb[2]-bb[0])*(bb[3]-bb[1]),cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,show=f=>[{y:bb[1],f}];
+/* the Cadillac Range's rockwork is in the map as two big unnamed 28 m outlines in Cars Land */
+const dlIsRange=q=>!q.n&&q.h>=20&&OSM.lands.cl&&q.p.length>2&&(()=>{const b=bbox(q.p);return(b[2]-b[0])*(b[3]-b[1])>2000&&ptIn((b[0]+b[2])/2,(b[1]+b[3])/2,OSM.lands.cl)})();
+function dlBuilding(q,bb,land,hh,hs){const n=q.n||'',area=(bb[2]-bb[0])*(bb[3]-bb[1]),cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,k=q.h?hh/q.h:OSM.S,
+  /* façades standing on or against it (any corner inside its outline or within 1.5 units of its wall) */
+  edgeD=(x,y)=>{let m=1e9;const P=q.p;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],dx=b[0]-a[0],dy=b[1]-a[1],L2=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/L2));m=Math.min(m,Math.hypot(x-a[0]-dx*t,y-a[1]-dy*t))}return m},
+  inner=()=>OSM.buildings.filter(b=>{if(b===q||b.p.length<3||(b.n&&AT.some(t=>t.osm===b.n)))return false;const v=bbox(b.p);if(v[2]<bb[0]||v[0]>bb[2]||v[3]<bb[1]||v[1]>bb[3]||(v[2]-v[0])*(v[3]-v[1])<60)return false;return b.p.some(([x,y])=>ptIn(x,y,q.p)||edgeD(x,y)<1.5)}).map(b=>[b.p,b.h*k]),
+  show=f=>{const I=inner();return[{y:bb[3],f:(c,e)=>f(c,e,I)}]};
  if(n==='Millennium Falcon')return false; /* drawn as the ship (falcon(), map-art.js) */
  if(n==='Grizzly Peak'&&OSM.places.grizzlypk)return false;
  if(n==='Big Thunder Mountain Show Building')return false; /* inside the rocks */
- if(n==='Radiator Springs Racers'&&OSM.places.cadillac)return false; /* the Cadillac Range stands on it */
+ if(dlIsRange(q))return false; /* the Cadillac Range's rockwork outlines: painted as the range (dlLandmarks) */
  if(q===dlMansionHouse())return(c,e)=>hauntedMansion(c,e,q,bb,hs);
  if(n==='"it\'s a small world"')return[{y:bb[1],f:(c,e)=>dlShowBox(c,e,q.p,hh,hs)},{y:bb[3],f:(c,e)=>smallWorld(c,e,q,bb,hs)}];
  if(/^Guardians of the Galaxy/.test(n))return(c,e)=>guardiansFortress(c,e,q,bb,hh);
  if(n==='Carthay Circle Restaurant')return(c,e)=>carthay(c,e,q,bb,hh);
  if(/^Disney's Grand Californian Hotel/.test(n))return(c,e)=>grandCal(c,e,q,hh);
  const ride=n&&(AT.some(t=>t.osm===n)||/show building|warehouse|receiving|costuming|building \w$|offices|parade building|diorama/i.test(n)||/^(warehouse|industrial|commercial)$/.test(q.k||''));
- if(!q.c&&area>1500&&ride&&q.k!=='hotel'&&q.k!=='parking'&&land!=='ms'&&land!=='bv'&&dlInPark(cx_,cy_))return show((c,e)=>dlShowBox(c,e,q.p,hh,hs)); /* the big ride and backstage buildings behind the façades (unnamed big outlines are façade blocks, like the French Quarter's) */
+ if(!q.c&&area>1500&&ride&&q.k!=='hotel'&&q.k!=='parking'&&land!=='ms'&&land!=='bv'&&dlInPark(cx_,cy_))return show((c,e,I)=>dlShowBox(c,e,q.p,hh,hs,I)); /* the big ride and backstage buildings behind the façades (unnamed big outlines are façade blocks, like the French Quarter's) */
  return null}
 /* the landmarks that aren't one building: rock spires, mountains, the Pal-A-Round and the coaster tracks */
 function dlLandmarks(c,e,B,vis,S2){B.c=c;const P=OSM.places;
@@ -130,13 +148,11 @@ function dlLandmarks(c,e,B,vis,S2){B.c=c;const P=OSM.places;
   for(let i=0;i<400&&pts.length<26;i++){const x=lb[0]+r()*(lb[2]-lb[0]),y=lb[1]+r()*(lb[3]-lb[1]);if(!free(x,y)||pts.some(p=>Math.hypot(p[0]-x,p[1]-y)<14))continue;pts.push([x,y,16+r()*22,2.5+r()*3])}
   pts.sort((a,b)=>a[1]-b[1]);dlSpires(B,vis,pts,['#c9b28e','#e0cdaa','#a08a68'],false,9)}
  if(P.grizzlypk&&vis([P.grizzlypk[0]-40,P.grizzlypk[1]-70,P.grizzlypk[0]+40,P.grizzlypk[1]+30])){const[x,y]=P.grizzlypk;B.push({y:y+26,f:()=>grizzly(c,x,y+26,44)})}
- if(P.cadillac){const[x,y]=P.cadillac,r=seeded(2006),rs=OSM.buildings.find(q=>q.n==='Radiator Springs Racers'),rb=rs?bbox(rs.p):[x-150,y,x,y+70],fins=[];
-  /* along the Racers' show building from its west end to the peak, tallest round the peak and in the middle */
-  for(let i=0;i<7;i++){const t=i/6,fx=rb[0]+14+(x-rb[0]-14)*t,fy=rb[1]+12+(y-rb[1]-12)*t;fins.push([fx-x,fy-y-14,(30+22*Math.sin(Math.PI*t))*(.85+r()*.3),11+r()*6])} /* a lower row behind */
-  for(let i=0;i<9;i++){const t=i/8,fx=rb[0]+8+(x+6-rb[0]-8)*t,fy=rb[3]-6+(y+18-rb[3]+6)*t+(r()-.5)*10;fins.push([fx-x,fy-y-14,(42+30*Math.sin(Math.PI*t*.9+.3))*(.85+r()*.3),13+r()*7])}
-  fins.sort((a,b)=>a[1]-b[1]);
-  for(const[dx,dy,h,w]of fins){const fx=x+dx,fy=y+dy+14;if(vis([fx-w,fy-h,fx+w,fy+2]))B.push({y:fy,f:()=>cadillac(c,fx,fy,h,w,r)})}}
- if(P.palaround&&vis([P.palaround[0]-15,P.palaround[1]-30,P.palaround[0]+15,P.palaround[1]+2])){const[x,y]=P.palaround;B.push({y:y+1,f:()=>palAround(c,e,x,y)})}
+ /* the Cadillac Range: tail-fin buttes filling its two rockwork outlines, tallest round the named peak */
+ {const r=seeded(2006),pk=P.cadillac,fins=[];for(const q of OSM.buildings){if(!dlIsRange(q))continue;const b=bbox(q.p);
+   for(let y=b[1]+6;y<=b[3];y+=11)for(let x=b[0]+5+((y/11|0)%2)*6;x<=b[2];x+=13){const fx=x+(r()-.5)*5,fy=y+(r()-.5)*4;if(!ptIn(fx,fy,q.p))continue;const d=pk?Math.hypot(fx-pk[0],fy-pk[1]):60;fins.push([fx,fy,(26+30*Math.exp(-d/55))*(.8+r()*.4),8+r()*5])}}
+  fins.sort((a,b)=>a[1]-b[1]);for(const[fx,fy,h,w]of fins)if(vis([fx-w,fy-h,fx+w,fy+2]))B.push({y:fy,f:()=>cadillac(c,fx,fy,h,w,r)})}
+ {const G=palGeo();if(G&&vis([G.x-G.R-4,G.y-G.R*2-6,G.x+G.R+4,G.y+G.R]))B.push({y:G.y+Math.abs(G.uy)*G.R,f:()=>palAround(c,e)})}
  /* the other open-air coaster tracks: the Incredicoaster high over Pixar Pier on white supports, the small ones low */
  const inB=(x,y)=>OSM.buildings.some(q=>{const b=bbox(q.p);return x>b[0]&&x<b[2]&&y>b[1]&&y<b[3]&&ptIn(x,y,q.p)});
  for(const k of(OSM.coasters||[])){if(k[0]==='Big Thunder Mountain'||k[1])continue;const p=k[2],m=p[p.length>>1];if(inB(m[0],m[1]))continue;const pier=OSM.lands.pp&&ptIn(m[0],m[1],OSM.lands.pp);

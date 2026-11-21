@@ -348,6 +348,17 @@ for key,name in {'btmpeak':'Big Thunder Mountain','cadillac':'Cadillac Range','g
     for i,t in NT.items():
         if t.get('name')==name and t.get('natural')=='peak': PLACES[key]=R1(ND[i]);break
 print('peaks',PLACES.get('btmpeak'),PLACES.get('cadillac'),PLACES.get('grizzlypk'))
+# the Pal-A-Round's wheel: its outline is a thin strip along the wheel's plane, so it gives the wheel's centre, direction and size
+for wid,w in WAYS.items():
+    if w['t'].get('name')=='Pixar Pal-A-Round' and len(w['ids'])>3:
+        p=pts(w['ids'])[:-1];mx=sum(q[0] for q in p)/len(p);my=sum(q[1] for q in p)/len(p)
+        sxx=sum((q[0]-mx)**2 for q in p);syy=sum((q[1]-my)**2 for q in p);sxy=sum((q[0]-mx)*(q[1]-my) for q in p);ang=.5*math.atan2(2*sxy,sxx-syy)
+        ux,uy=math.cos(ang),math.sin(ang);L=max((q[0]-mx)*ux+(q[1]-my)*uy for q in p)-min((q[0]-mx)*ux+(q[1]-my)*uy for q in p)
+        PLACES['palwheel']=[round(mx,1),round(my,1),round(ux,3),round(uy,3),round(L,1)];break
+# Carthay Circle (the roundabout the theatre's tower looks onto)
+cc=[pts(w['ids']) for w in WAYS.values() if w['t'].get('name')=='Carthay Circle' and w['t'].get('highway')]
+if cc: q_=max(cc,key=len);PLACES['carthaycircle']=R1((sum(v[0] for v in q_)/len(q_),sum(v[1] for v in q_)/len(q_)))
+print('pal wheel',PLACES.get('palwheel'),'carthay circle',PLACES.get('carthaycircle'))
 out['monoLines']=[[R1(q) for q in simplify(p,.5)] for p in LINES['mono']]
 for k,v in KEYS.items(): print('key',k,v)
 data={'W':W,'H':H,'S':S,'resort':'dl','areas':out['areas'],'buildings':out['buildings'],'lines':out['lines'],'paths':out['paths'],'trees':out['trees'],'lamps':out['lamps'],

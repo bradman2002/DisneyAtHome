@@ -159,6 +159,12 @@ const PMP=mkPath(OSM.routes.pm),RACEP=mkPath(OSM.routes.race),TRAMP=mkPath(OSM.r
 const JCP=OSM.routes.jungle&&OSM.routes.jungle.length>3?mkPath(OSM.routes.jungle):(()=>{const a=OSM.areas.find(q=>q.k==='water'&&q.n==='Jungle Cruise');if(!a)return null;const[cx0,cy0]=polyC(a.o);return mkPath([...a.o,a.o[0]].map(([x,y])=>[x+(cx0-x)*.14,y+(cy0-y)*.14]))})();
 /* Where each ride's queue is drawn: along its real queue path when the map data has one by the entrance, otherwise back
    along the walkway from the entrance. Two abreast. */
+/* Disneyland: the buildings near each ride, so the part of its queue that runs indoors isn't drawn over the roof */
+const QIN=DL?AT.map(a=>OSM.buildings.filter(q=>q.k!=='roof'&&q.p.length>2&&(q.h||0)>3&&(()=>{const b=bbox(q.p);return b[0]<a.x+90&&b[2]>a.x-90&&b[1]<a.y+90&&b[3]>a.y-90})()).map(q=>[q.p,q.h*OSM.S])):null;
+/* which of the queue's places (the same spots the draw loop uses) are hidden: indoors, or on the ground just behind a tall
+   building that stands in front of them in the map's view (worked out once) */
+let QHID=null;function qHidden(a,L){if(!QIN)return null;if(!QHID)QHID=[];if(QHID[a.i])return QHID[a.i];const I=QIN[a.i],out=[];
+ for(let i=0;i<90;i++){const[x,y]=L.at(Math.min(L.L-.01,1+(i>>1)*1.7));let h=false;for(const[p,hh]of I){for(let s=0;s<=hh&&!h;s+=1.5)if(ptIn(x,y+s,p))h=true;if(h)break}out.push(h)}return QHID[a.i]=out}
 const QLINE=AT.map(a=>{let best=null,bd=40*40;for(const p of OSM.paths){if(!p.q||p.a||p.p.length<2)continue;for(const e of[0,p.p.length-1]){const d=(p.p[e][0]-a.dx)**2+(p.p[e][1]-a.dy)**2;if(d<bd){bd=d;best=e?p.p.slice().reverse():p.p}}}
  if(best){const L=mkPath(best);if(L.L>12)return L}
  const pts=[N[a.nd]];let prev=-1,cur=a.nd;for(let h=0;h<4;h++){const nx=ADJ[cur].filter(([v])=>v!==prev).sort((p,q)=>q[1]-p[1])[0];if(!nx)break;prev=cur;cur=nx[0];pts.push(N[cur])}
@@ -274,7 +280,7 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
  {const a=AT.find(x=>x.k==='tron');if(TRONP&&a&&aStat(a)==='Operating'&&a.ri.length){const u=(t%70)/6;if(u<1){const e2=u*u*(3-2*u);cx.save();cx.globalCompositeOperation=nf>.3?'lighter':'source-over';
    for(let i=0;i<7;i++){const d=e2*(TRONP.L+40)-i*4.2;if(d<0||d>TRONP.L)continue;const[x,y,an]=TRONP.at(d);cx.save();cx.translate(x,y-1);cx.rotate(an);cx.fillStyle=i%2?'#ff9a3c':'#4fd2ff';cx.fillRect(-1.6,-.7,3.2,1.4);cx.fillStyle=i%2?'rgba(255,154,60,.35)':'rgba(79,210,255,.35)';cx.fillRect(-7,-.35,5.4,.7);cx.restore()}cx.restore()}}}
  // queues outside attractions
- for(const a of AT){const n=Math.min(90,a.q.length);if(!n)continue;const L=QLINE[a.i];cx.fillStyle='#ffffff';for(let i=0;i<n;i++){const[x,y,an]=L.at(Math.min(L.L-.01,1+(i>>1)*1.7)),o=i%2?.9:-.9;cx.fillRect(x-Math.sin(an)*o-.75,y+Math.cos(an)*o-.75,1.5,1.5)}}
+ for(const a of AT){const n=Math.min(90,a.q.length);if(!n)continue;const L=QLINE[a.i],I=qHidden(a,L);cx.fillStyle='#ffffff';for(let i=0;i<n;i++){const[x,y,an]=L.at(Math.min(L.L-.01,1+(i>>1)*1.7)),o=i%2?.9:-.9;if(I&&I[i])continue; /* indoors or behind a tall building */cx.fillRect(x-Math.sin(an)*o-.75,y+Math.cos(an)*o-.75,1.5,1.5)}}
  // Walt Disney World Railroad train
  for(let i=0;i<5;i++){const[x,y,an]=RR.at((RRT-i*9+RR.L)%RR.L);cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle=i?'#8a3b2c':'#2b2b2b';cx.fillRect(-4,-2.2,8,4.4);if(!i){cx.fillStyle='#f0c040';cx.fillRect(1.5,-1.6,2,3.2);cx.fillStyle='rgba(240,240,240,.7)';cx.beginPath();cx.arc(-5,-3,2,0,7);cx.fill()}else{cx.fillStyle='#f2e2c4';cx.fillRect(-3.4,-1.6,6.8,1)}cx.restore()}
  // monorail trains: six cars following the beam, hidden where the line runs inside the Contemporary

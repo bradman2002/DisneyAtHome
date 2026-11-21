@@ -302,6 +302,14 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   extrude with columns on every visible wall. small world's façade follows the polygon's longest south-facing edge. Grand
   Californian: `grandCal` (brown shingle walls, cream trim, shingled roof with sparse dormers and chimneys). Pal-A-Round: kind
   'wheel' (not 'spin', whose spinning-seat art sat on it), R=22 (49 m tall), WoC's lit ring matches.
+  Third pass (owner, 21 Nov: "How can I see the back of the buildings if that's the ride building?", "The ferris wheel is oriented
+  wrong. Go through every building"): show boxes are painted at y=bb[3] again; façades touching them (a corner inside or within
+  1.5 of a wall; NOS's French Quarter wraps into the Pirates outline) raise the box to their roofline (max 16 m) and are
+  clipped out of the box only at their roofs, so their backs are hidden. The Pal-A-Round uses `places.palwheel` (centre,
+  plane direction, diameter from its OSM strip; the plane runs NW-SE) and `palPt(θ,f)`: a leaning oval; WoC's ring uses palPt.
+  Carthay's tower stands at the corner nearest `places.carthaycircle`. The Cadillac Range fills its two unnamed 28 m rockwork
+  outlines in Cars Land (`dlIsRange`); the Racers show building is a normal show box again. Queue dots (render.js `qHidden`,
+  `QIN`) skip spots indoors or on the ground behind a tall building.
 
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say

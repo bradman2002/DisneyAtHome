@@ -309,7 +309,14 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   plane direction, diameter from its OSM strip; the plane runs NW-SE) and `palPt(θ,f)`: a leaning oval; WoC's ring uses palPt.
   Carthay's tower stands at the corner nearest `places.carthaycircle`. The Cadillac Range fills its two unnamed 28 m rockwork
   outlines in Cars Land (`dlIsRange`); the Racers show building is a normal show box again. Queue dots (render.js `qHidden`,
-  `QIN`) skip spots indoors or on the ground behind a tall building.
+  `QIN`) skip spots indoors or on the ground behind a tall building (replaced next by OCC).
+- What buildings hide (owner, 21 Nov: "I can see people clipping through buildings. Go through all buildings and fix this"; both
+  resorts): `OCC`/`occBuild`/`occ(x,y)` in render.js. One mask per park region (`OSM.regions` up to `nparks`; K = 1 px/unit at
+  Disneyland, 0.5 at WDW), built once (~60 ms) after the map is painted: every building outline (not canopies 'roof' ≤5 m, not
+  Space Mountain) filled and smeared upward by its drawn height (bucketed, doubling shifts), plus the castle picture's alpha down
+  to its front. Height = `q._dh` when the art sets it (DL show boxes, Mansion, Guardians, small world) else q.h*OSM.S*.78. Guests,
+  queue dots and the night lamp glows (`OCC.L`) skip hidden spots; the map's own lamp posts are now painted in depth order (in B).
+  New tall art that differs from q.h should set `q._dh`.
 
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say

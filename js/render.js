@@ -76,7 +76,7 @@ function frame(rdt){
  cx.globalCompositeOperation='multiply';const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t),col=mix(mix([255,255,255],[255,214,170],gf),[60,74,135],nf);
  cx.fillStyle=`rgb(${col.map(Math.round)})`;cx.fillRect(0,0,W,H);
  cx.globalCompositeOperation='lighter';const la=Math.min(1,nf*1.3+gf*.15);
- if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}for(const L of MAP.tiles)if(tv(L))cx.drawImage(L.glow,L.x,L.y,L.w,L.h);for(const L of MAP.layers)cx.drawImage(L.glow,L.x,L.y,L.w,L.h);cx.restore();for(const d of dv)cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.globalAlpha=la*.32;for(const[x,y]of MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
+ if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}for(const L of MAP.tiles)if(tv(L))cx.drawImage(L.glow,L.x,L.y,L.w,L.h);for(const L of MAP.layers)cx.drawImage(L.glow,L.x,L.y,L.w,L.h);cx.restore();for(const d of dv)cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.globalAlpha=la*.32;if(!OCC.R)occBuild();for(const[x,y]of OCC.L||MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
@@ -159,12 +159,26 @@ const PMP=mkPath(OSM.routes.pm),RACEP=mkPath(OSM.routes.race),TRAMP=mkPath(OSM.r
 const JCP=OSM.routes.jungle&&OSM.routes.jungle.length>3?mkPath(OSM.routes.jungle):(()=>{const a=OSM.areas.find(q=>q.k==='water'&&q.n==='Jungle Cruise');if(!a)return null;const[cx0,cy0]=polyC(a.o);return mkPath([...a.o,a.o[0]].map(([x,y])=>[x+(cx0-x)*.14,y+(cy0-y)*.14]))})();
 /* Where each ride's queue is drawn: along its real queue path when the map data has one by the entrance, otherwise back
    along the walkway from the entrance. Two abreast. */
-/* Disneyland: the buildings near each ride, so the part of its queue that runs indoors isn't drawn over the roof */
-const QIN=DL?AT.map(a=>OSM.buildings.filter(q=>q.k!=='roof'&&q.p.length>2&&(q.h||0)>3&&(()=>{const b=bbox(q.p);return b[0]<a.x+90&&b[2]>a.x-90&&b[1]<a.y+90&&b[3]>a.y-90})()).map(q=>[q.p,q.h*OSM.S])):null;
-/* which of the queue's places (the same spots the draw loop uses) are hidden: indoors, or on the ground just behind a tall
-   building that stands in front of them in the map's view (worked out once) */
-let QHID=null;function qHidden(a,L){if(!QIN)return null;if(!QHID)QHID=[];if(QHID[a.i])return QHID[a.i];const I=QIN[a.i],out=[];
- for(let i=0;i<90;i++){const[x,y]=L.at(Math.min(L.L-.01,1+(i>>1)*1.7));let h=false;for(const[p,hh]of I){for(let s=0;s<=hh&&!h;s+=1.5)if(ptIn(x,y+s,p))h=true;if(h)break}out.push(h)}return QHID[a.i]=out}
+/* ===== WHAT THE BUILDINGS HIDE =====
+   Guests and queues are drawn after the map, so without this they would show through every building. The mask marks every
+   spot of the parks that a building covers in the map's 3/4 view: inside its outline, or on the ground behind it (north of it)
+   up to its drawn height, plus the castle picture's own shape. Built once per park region from every building, a few
+   heights at a time (fill the outlines, then smear them upward by doubling shifts), at half a unit per pixel at Walt Disney
+   World (its parks are big) and one at Disneyland. occ(x,y) says whether that spot is hidden. */
+const OCC={R:null};
+function occBuild(){OCC.R=[];const S2=OSM.S*.78,K=DL?1:.5,regs=(OSM.regions||[]).slice(0,OSM.nparks||1);
+ const blds=OSM.buildings.filter(q=>q.p.length>2&&!(q.k==='roof'&&(q.h||0)<=5)&&q.n!=='Space Mountain');
+ for(const r of regs){const x0=Math.floor(r[0]),y0=Math.floor(r[1]),W=Math.ceil((r[2]-x0)*K),H=Math.ceil((r[3]-y0)*K);if(W<2||H<2||W*H>2.6e7)continue;
+  const m=document.createElement('canvas');m.width=W;m.height=H;const mc=m.getContext('2d'),t=document.createElement('canvas');t.width=W;t.height=H;const tc=t.getContext('2d'),u=document.createElement('canvas');u.width=W;u.height=H;const uc=u.getContext('2d');
+  const buckets=new Map();for(const q of blds){const b=bbox(q.p);if(b[2]<r[0]||b[0]>r[2]||b[3]<r[1]||b[1]>r[3]+80)continue;const hh=q._dh!=null?q._dh:(q.h||4)*S2,k=Math.max(1,Math.ceil(hh*K/2)*2);(buckets.get(k)||buckets.set(k,[]).get(k)).push(q)}
+  for(const[hk,list]of buckets){tc.setTransform(1,0,0,1,0,0);tc.clearRect(0,0,W,H);tc.setTransform(K,0,0,K,-x0*K,-y0*K);tc.fillStyle='#000';tc.beginPath();for(const q of list){q.p.forEach(([x,y],i)=>i?tc.lineTo(x,y):tc.moveTo(x,y));tc.closePath()}tc.fill();
+   tc.setTransform(1,0,0,1,0,0);let cov=1;while(cov<=hk){const sh=Math.min(cov,hk+1-cov);uc.clearRect(0,0,W,H);uc.drawImage(t,0,0);tc.drawImage(u,0,-sh);cov+=sh} /* now covers every upward shift 0..height */
+   mc.drawImage(t,0,0)}
+  if(MAP.castleBox&&(MAP.castle||(typeof CASTLE_IMG!=='undefined'&&CASTLE_IMG))){const[bx,by,bw,bh]=MAP.castleBox,img=MAP.castleImg&&CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:MAP.castle,front=MAP.castleAt?MAP.castleAt[1]:by+bh;
+   mc.save();mc.setTransform(K,0,0,K,-x0*K,-y0*K);mc.beginPath();mc.rect(bx,by,bw,front-by);mc.clip();mc.drawImage(img,bx,by,bw,bh);mc.restore()} /* the castle's silhouette, down to its front */
+  const d=mc.getImageData(0,0,W,H).data,a=new Uint8Array(W*H);for(let i=0;i<W*H;i++)a[i]=d[i*4+3]>100?1:0;OCC.R.push({x0,y0,W,H,K,a})}
+ OCC.L=(MAP.lamps||[]).filter(([x,y])=>!occ(x,y-.5))} /* the lamps whose night glow isn't behind a building */
+function occ(x,y){if(!OCC.R)return false;for(const m of OCC.R){const i=((x-m.x0)*m.K)|0,j=((y-m.y0)*m.K)|0;if(i>=0&&j>=0&&i<m.W&&j<m.H)return m.a[j*m.W+i]===1}return false}
 const QLINE=AT.map(a=>{let best=null,bd=40*40;for(const p of OSM.paths){if(!p.q||p.a||p.p.length<2)continue;for(const e of[0,p.p.length-1]){const d=(p.p[e][0]-a.dx)**2+(p.p[e][1]-a.dy)**2;if(d<bd){bd=d;best=e?p.p.slice().reverse():p.p}}}
  if(best){const L=mkPath(best);if(L.L>12)return L}
  const pts=[N[a.nd]];let prev=-1,cur=a.nd;for(let h=0;h<4;h++){const nx=ADJ[cur].filter(([v])=>v!==prev).sort((p,q)=>q[1]-p[1])[0];if(!nx)break;prev=cur;cur=nx[0];pts.push(N[cur])}
@@ -280,7 +294,7 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
  {const a=AT.find(x=>x.k==='tron');if(TRONP&&a&&aStat(a)==='Operating'&&a.ri.length){const u=(t%70)/6;if(u<1){const e2=u*u*(3-2*u);cx.save();cx.globalCompositeOperation=nf>.3?'lighter':'source-over';
    for(let i=0;i<7;i++){const d=e2*(TRONP.L+40)-i*4.2;if(d<0||d>TRONP.L)continue;const[x,y,an]=TRONP.at(d);cx.save();cx.translate(x,y-1);cx.rotate(an);cx.fillStyle=i%2?'#ff9a3c':'#4fd2ff';cx.fillRect(-1.6,-.7,3.2,1.4);cx.fillStyle=i%2?'rgba(255,154,60,.35)':'rgba(79,210,255,.35)';cx.fillRect(-7,-.35,5.4,.7);cx.restore()}cx.restore()}}}
  // queues outside attractions
- for(const a of AT){const n=Math.min(90,a.q.length);if(!n)continue;const L=QLINE[a.i],I=qHidden(a,L);cx.fillStyle='#ffffff';for(let i=0;i<n;i++){const[x,y,an]=L.at(Math.min(L.L-.01,1+(i>>1)*1.7)),o=i%2?.9:-.9;if(I&&I[i])continue; /* indoors or behind a tall building */cx.fillRect(x-Math.sin(an)*o-.75,y+Math.cos(an)*o-.75,1.5,1.5)}}
+ for(const a of AT){const n=Math.min(90,a.q.length);if(!n)continue;const L=QLINE[a.i];cx.fillStyle='#ffffff';for(let i=0;i<n;i++){const[x,y,an]=L.at(Math.min(L.L-.01,1+(i>>1)*1.7)),o=i%2?.9:-.9;if(occ(x,y))continue; /* indoors or behind a building */cx.fillRect(x-Math.sin(an)*o-.75,y+Math.cos(an)*o-.75,1.5,1.5)}}
  // Walt Disney World Railroad train
  for(let i=0;i<5;i++){const[x,y,an]=RR.at((RRT-i*9+RR.L)%RR.L);cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle=i?'#8a3b2c':'#2b2b2b';cx.fillRect(-4,-2.2,8,4.4);if(!i){cx.fillStyle='#f0c040';cx.fillRect(1.5,-1.6,2,3.2);cx.fillStyle='rgba(240,240,240,.7)';cx.beginPath();cx.arc(-5,-3,2,0,7);cx.fill()}else{cx.fillStyle='#f2e2c4';cx.fillRect(-3.4,-1.6,6.8,1)}cx.restore()}
  // monorail trains: six cars following the beam, hidden where the line runs inside the Contemporary
@@ -314,7 +328,8 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
     are heading. Stopped: a loose knot. Zoomed far out, one dot per party is enough. */
  if(VIEW.layer==='crowds')crowdHeat();
  if(VIEW.guests){const z=zf(),x0=cam.x-cw/2/z-8,x1=cam.x+cw/2/z+8,y0=cam.y-ch/2/z-8,y1=cam.y+ch/2/z+8,lod=z*dpr<1.15;for(const b of GB)b.length=0;
-  for(const g of guests){if(g.st===1||g.st===2||g.st===3||g.x<x0||g.x>x1||g.y<y0||g.y>y1||inCastle(g))continue;
+  if(!OCC.R)occBuild();
+  for(const g of guests){if(g.st===1||g.st===2||g.st===3||g.x<x0||g.x>x1||g.y<y0||g.y>y1||inCastle(g)||occ(g.x,g.y))continue; /* inside or behind a building */
    if(lod){GB[g.col].push(g.x,g.y);continue}
    const mv=g.st===0,s=g.seed;for(let k=0;k<g.n;k++){let px=g.x,py=g.y;
     if(k&&mv){const back=(k+1>>1)*1.55,side=(k&1?1:-1)*1.05+((s>>k*3&7)-3.5)*.12;px-=g.hx*back+g.hy*side;py-=g.hy*back-g.hx*side}

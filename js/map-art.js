@@ -913,14 +913,15 @@ function paintMap(rx,ry,rw,rh,mss){
  const seen=(x,y)=>x>rx-10&&x<rx+rw+10&&y>ry-4&&y<ry+rh+22;
  c.fillStyle='#2a5a28';for(const[x,y,rd,k,v,inF]of MAP.crowns)if(k==='crown'&&inF&&seen(x,y)){c.beginPath();c.arc(x+rd*.2,y-rd*.5,rd*1.12,0,7);c.fill()}
  for(const[x,y,rd,k,v]of MAP.crowns)if(seen(x,y))B.push({y,f:k==='crown'?()=>c.drawImage(CROWN[v],x-rd*1.25,y-rd*2.2,rd*2.5,rd*2.5):k==='pine'?()=>c.drawImage(PINE,x-rd*.9,y-rd*2.9,rd*1.8,rd*2.9):()=>tree(c,x,y,rd*1.1,'#4f9a3c','palm')});
+ /* real street lamps, in depth order with everything else, so a building in front of one hides it */
+ for(const[x,y]of OSM.lamps)if(vis([x-1,y-4,x+1,y+1]))B.push({y,f:()=>{c.fillStyle='rgba(70,80,75,.55)';c.fillRect(x-.18,y-2.6,.36,2.6);c.fillStyle='#fffaf0';c.beginPath();c.arc(x,y-2.9,.5,0,7);c.fill()}});
  B.sort((p,q)=>p.y-q.y).forEach(o=>o.f());
  /* elevated tracks over everything: PeopleMover and monorail beams */
  const beam=(p,w,col)=>{c.strokeStyle='rgba(30,40,40,.18)';c.lineWidth=w+2;c.save();c.translate(2,2);pathOf(c,p);c.stroke();c.restore();c.strokeStyle=tone(col,-.25);c.lineWidth=w+.8;pathOf(c,p);c.stroke();c.strokeStyle=col;c.lineWidth=w;pathOf(c,p);c.stroke()};
  {const d=SMDOME();c.save();if(d){c.beginPath();c.rect(-1e5,-1e5,3e5,3e5);domePath(c,d[0],d[1],d[2]*.97);c.clip('evenodd')}beam(OSM.routes.pm,2.4,'#dfe5ec');c.restore()} /* the PeopleMover runs right up to Space Mountain and goes indoors at the dome's edge */
  {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p);if(vis(bb)){MAP.nulE=MAP.nulE||document.createElement('canvas').getContext('2d');spaceDome(c,MAP.nulE,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2)}}} /* the PeopleMover runs into Space Mountain, so the dome is painted again over its beam */
 for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');skylinerArt(c,e,vis);late.forEach(f=>f());
- /* real street lamps */
- MAP.lamps=OSM.lamps;for(const[x,y]of MAP.lamps){c.fillStyle='rgba(70,80,75,.55)';c.fillRect(x-.18,y-2.6,.36,2.6);c.fillStyle='#fffaf0';c.beginPath();c.arc(x,y-2.9,.5,0,7);c.fill()}
+ MAP.lamps=OSM.lamps; /* (painted above, in depth order) */
  return{base,glow}}
 /* ---------- attraction illustrations ---------- */
 function attractionArt(c,e,a){const x=a.x,y=a.y,L=SC[a.l];

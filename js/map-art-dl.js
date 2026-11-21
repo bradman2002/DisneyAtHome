@@ -121,13 +121,15 @@ function dlBuilding(q,bb,land,hh,hs){const n=q.n||'',area=(bb[2]-bb[0])*(bb[3]-b
   /* façades standing on or against it (any corner inside its outline or within 1.5 units of its wall) */
   edgeD=(x,y)=>{let m=1e9;const P=q.p;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],dx=b[0]-a[0],dy=b[1]-a[1],L2=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/L2));m=Math.min(m,Math.hypot(x-a[0]-dx*t,y-a[1]-dy*t))}return m},
   inner=()=>OSM.buildings.filter(b=>{if(b===q||b.p.length<3||(b.n&&AT.some(t=>t.osm===b.n)))return false;const v=bbox(b.p);if(v[2]<bb[0]||v[0]>bb[2]||v[3]<bb[1]||v[1]>bb[3]||(v[2]-v[0])*(v[3]-v[1])<60)return false;return b.p.some(([x,y])=>ptIn(x,y,q.p)||edgeD(x,y)<1.5)}).map(b=>[b.p,b.h*k]),
-  show=f=>{const I=inner();return[{y:bb[3],f:(c,e)=>f(c,e,I)}]};
+  show=f=>{const I=inner(),h0=Math.min(hh,9*OSM.S);q._dh=I.length?Math.min(16*OSM.S,Math.max(h0,...I.map(b=>b[1]))):h0;return[{y:bb[3],f:(c,e)=>f(c,e,I)}]}; /* _dh: the height drawn, for what it hides (render.js occ) */
  if(n==='Millennium Falcon')return false; /* drawn as the ship (falcon(), map-art.js) */
  if(n==='Grizzly Peak'&&OSM.places.grizzlypk)return false;
  if(n==='Big Thunder Mountain Show Building')return false; /* inside the rocks */
  if(dlIsRange(q))return false; /* the Cadillac Range's rockwork outlines: painted as the range (dlLandmarks) */
- if(q===dlMansionHouse())return(c,e)=>hauntedMansion(c,e,q,bb,hs);
+ if(q===dlMansionHouse()){q._dh=12*OSM.S+4}if(q===dlMansionHouse())return(c,e)=>hauntedMansion(c,e,q,bb,hs);
+ if(n==='"it\'s a small world"')q._dh=Math.min(hh,9*OSM.S);
  if(n==='"it\'s a small world"')return[{y:bb[1],f:(c,e)=>dlShowBox(c,e,q.p,hh,hs)},{y:bb[3],f:(c,e)=>smallWorld(c,e,q,bb,hs)}];
+ if(/^Guardians of the Galaxy/.test(n))q._dh=Math.max(hh,40*OSM.S);
  if(/^Guardians of the Galaxy/.test(n))return(c,e)=>guardiansFortress(c,e,q,bb,hh);
  if(n==='Carthay Circle Restaurant')return(c,e)=>carthay(c,e,q,bb,hh);
  if(/^Disney's Grand Californian Hotel/.test(n))return(c,e)=>grandCal(c,e,q,hh);

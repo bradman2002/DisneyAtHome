@@ -44,7 +44,8 @@ searchlights and lasers, and the Pixar Pal-A-Round lit up across the water (the 
 at the real times when Live is on (otherwise 9 PM) and can be started from Entertainment. Put your own copies of their music in
 `audio/` as `fantasmic-disneyland.mp3` and `world-of-color.mp3` (or use Load audio folder) to hear them.
 
-Area music: Disneyland's lands play the Magic Kingdom loops of the same name (Main Street, Adventureland, Frontierland,
+Cars Land lights its neon at sunset, one sign after another down Route 66, to Sh-Boom (`audio/sh-boom.mp3`), and plays
+Route 66 and Sh-Boom (`audio/route-66.mp3`, `audio/sh-boom.mp3`) as its music the rest of the time. Area music: Disneyland's lands play the Magic Kingdom loops of the same name (Main Street, Adventureland, Frontierland,
 Fantasyland, Tomorrowland), New Orleans Square plays Liberty Square's, Bayou Country Frontierland's and Toontown Fantasyland's;
 Galaxy's Edge is quiet. All of California Adventure plays `audio/area-dca.mp3` (your Buena Vista Street loop) for now.
 Disneyland's landmarks are drawn to look like the real ones (`js/map-art-dl.js`): the Haunted Mansion, "it's a small world",

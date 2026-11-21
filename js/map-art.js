@@ -920,7 +920,7 @@ function paintMap(rx,ry,rw,rh,mss){
  const beam=(p,w,col)=>{c.strokeStyle='rgba(30,40,40,.18)';c.lineWidth=w+2;c.save();c.translate(2,2);pathOf(c,p);c.stroke();c.restore();c.strokeStyle=tone(col,-.25);c.lineWidth=w+.8;pathOf(c,p);c.stroke();c.strokeStyle=col;c.lineWidth=w;pathOf(c,p);c.stroke()};
  {const d=SMDOME();c.save();if(d){c.beginPath();c.rect(-1e5,-1e5,3e5,3e5);domePath(c,d[0],d[1],d[2]*.97);c.clip('evenodd')}beam(OSM.routes.pm,2.4,'#dfe5ec');c.restore()} /* the PeopleMover runs right up to Space Mountain and goes indoors at the dome's edge */
  {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p);if(vis(bb)){MAP.nulE=MAP.nulE||document.createElement('canvas').getContext('2d');spaceDome(c,MAP.nulE,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2)}}} /* the PeopleMover runs into Space Mountain, so the dome is painted again over its beam */
-for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');skylinerArt(c,e,vis);late.forEach(f=>f());
+for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');if(DL&&typeof dlMonoThrough==='function')dlMonoThrough(c,e,vis);skylinerArt(c,e,vis);late.forEach(f=>f());
  MAP.lamps=OSM.lamps; /* (painted above, in depth order) */
  return{base,glow}}
 /* ---------- attraction illustrations ---------- */

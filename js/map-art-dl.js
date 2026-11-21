@@ -160,3 +160,14 @@ function dlLandmarks(c,e,B,vis,S2){B.c=c;const P=OSM.places;
  for(const k of(OSM.coasters||[])){if(k[0]==='Big Thunder Mountain'||k[1])continue;const p=k[2],m=p[p.length>>1];if(inB(m[0],m[1]))continue;const pier=OSM.lands.pp&&ptIn(m[0],m[1],OSM.lands.pp);
   if(OSM.lands.fan&&ptIn(m[0],m[1],OSM.lands.fan))continue; /* the Matterhorn's track runs inside the mountain */
   const yb=Math.max(...p.map(v=>v[1])),h=pier?11:3;if(vis(bbox(p)))B.push({y:yb,f:()=>coasterTrack(c,e,p,h,pier?'#f2f0ea':'#e6b33a',pier?'#e4e1da':'#c9c2b0')})}}
+/* The Disneyland Monorail runs THROUGH the Grand Californian (a portal in the hotel), not over it. The beams are painted after
+   the buildings, so along the beam the hotel is painted again on top, in a narrow corridor round the track: the beam vanishes
+   into its wall and comes out the other side. dlInGCH(x,y) tells render.js when a train car is inside or behind it. */
+const dlGCH=()=>OSM.buildings.find(q=>/^Disney's Grand Californian Hotel/.test(q.n||''));
+let DLG=null;function dlGCHGeo(){if(DLG!==null)return DLG;const q=dlGCH();DLG=q?{q,b:bbox(q.p),h:(q.h||30)*OSM.S*.78}:false;return DLG}
+function dlInGCH(x,y){const G=dlGCHGeo();if(!G||x<G.b[0]||x>G.b[2]||y<G.b[1]-G.h||y>G.b[3])return false;for(let s=0;s<=G.h;s+=1.5)if(ptIn(x,y+s,G.q.p))return true;return false}
+function dlMonoThrough(c,e,vis){const G=dlGCHGeo();if(!G||!vis([G.b[0],G.b[1]-G.h,G.b[2],G.b[3]]))return;const W=5;c.save();c.beginPath();let any=false;
+ for(const p of OSM.monoLines)for(let i=1;i<p.length;i++){const a=p[i-1],b=p[i];if(Math.max(a[0],b[0])<G.b[0]-5||Math.min(a[0],b[0])>G.b[2]+5||Math.max(a[1],b[1])<G.b[1]-G.h-5||Math.min(a[1],b[1])>G.b[3]+5)continue;
+  const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1,ux=dx/L*W,uy=dy/L*W,nx=-uy,ny=ux,A=[a[0]-ux,a[1]-uy],B2=[b[0]+ux,b[1]+uy]; /* each piece a rectangle, all wound the same way so they add up, overlapping at the joints */
+  c.moveTo(A[0]+nx,A[1]+ny);c.lineTo(B2[0]+nx,B2[1]+ny);c.lineTo(B2[0]-nx,B2[1]-ny);c.lineTo(A[0]-nx,A[1]-ny);c.closePath();any=true}
+ if(any){c.clip('nonzero');grandCal(c,null,G.q,G.h)}c.restore()}

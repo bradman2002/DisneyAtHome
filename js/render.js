@@ -57,7 +57,7 @@ const SSE_GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=3
 function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
- paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();if(DL)wocSync();tolSync();
+ paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();if(DL){wocSync();clSync()}tolSync();
  if(typeof RIDE!=='undefined'&&RIDE.on){rideFrame(rdt);BUB=[];return} /* riding in a monorail's front cab (ride.js) */
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k; /* TV mode glides between shots */
@@ -80,7 +80,7 @@ function frame(rdt){
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
- drawPageant(now,1);lumDraw(now);fmDraw(now);if(DL)wocDraw(now);tolDraw(now);drawSkyliner(true);for(const b of RBOAT)drawRiverboat(b,true);dlSnow(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
+ drawPageant(now,1);lumDraw(now);fmDraw(now);if(DL){wocDraw(now);clDraw(now)}tolDraw(now);drawSkyliner(true);for(const b of RBOAT)drawRiverboat(b,true);dlSnow(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint
  // castle projections during Happily Ever After
@@ -299,7 +299,7 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
  for(let i=0;i<5;i++){const[x,y,an]=RR.at((RRT-i*9+RR.L)%RR.L);cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle=i?'#8a3b2c':'#2b2b2b';cx.fillRect(-4,-2.2,8,4.4);if(!i){cx.fillStyle='#f0c040';cx.fillRect(1.5,-1.6,2,3.2);cx.fillStyle='rgba(240,240,240,.7)';cx.beginPath();cx.arc(-5,-3,2,0,7);cx.fill()}else{cx.fillStyle='#f2e2c4';cx.fillRect(-3.4,-1.6,6.8,1)}cx.restore()}
  // monorail trains: six cars following the beam, hidden where the line runs inside the Contemporary
  const MI=OSM.monoIn;
- for(const m of MONO){for(let k=0;k<6;k++){const[mx,my,ma]=monoXY(m,22.5-k*9);if(MI&&mx>MI[0]&&mx<MI[2]&&my>MI[1]&&my<MI[3])continue;cx.save();cx.translate(mx,my);cx.rotate(ma);
+ for(const m of MONO){for(let k=0;k<6;k++){const[mx,my,ma]=monoXY(m,22.5-k*9);if(MI&&mx>MI[0]&&mx<MI[2]&&my>MI[1]&&my<MI[3])continue;if(DL&&typeof dlInGCH==='function'&&dlInGCH(mx,my))continue; /* inside the Grand Californian, or behind it */cx.save();cx.translate(mx,my);cx.rotate(ma);
    cx.fillStyle='#fff';cx.beginPath();cx.roundRect(-4.7,-3,9.4,6,k===0?[1.2,3,3,1.2]:k===5?[3,1.2,1.2,3]:1.2);cx.fill();cx.fillStyle=m.col;cx.fillRect(-4.7,.5,9.4,1.5);
    cx.fillStyle='#223';if(k===0)cx.fillRect(1.6,-2.2,2.4,3.2);else if(k===5)cx.fillRect(-4,-2.2,2.4,3.2);else cx.fillRect(-3.2,-2,6.4,1.5);cx.restore()}}
  drawSkyliner(); drawPageant(now,0);

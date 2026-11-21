@@ -43,7 +43,7 @@ function tvShotsDL(land,place,tag,ride){const L=k=>LANDS[k]&&land(k),D=(o,n,m)=>
    D('Pixar Pal-A-Round','Pixar Pal-A-Round',3.2),L('av'),D('Guardians of the Galaxy: Mission Breakout','Guardians of the Galaxy – Mission: BREAKOUT!',3.2),L('gp'),D('Grizzly River Run','Grizzly River Run',2.8),L('pg'),L('hl')]),
   map('The Esplanade',P_.espl[0],P_.espl[1],2.4,26,'transport'),...(P_.dd?[map('Downtown Disney',P_.dd[0],P_.dd[1],2,28,'transport')]:[]),place('dlh'),place('gch'),place('pph')].filter(Boolean).filter(s=>tvIn(s.p||'mk'))}
 // what, if anything, is on right now that the camera should be watching
-function tvEvent(){const mk=tvIn('mk'),f=fireEv();if(mk&&f&&f.ph==='live')return'fire';if(DL){if(mk&&fmLive())return'fmic';if(tvIn('ep')&&wocLive())return'woc'}if(tvIn('ep')&&lumLive())return'lum';if(tvIn('hs')&&fmLive())return'fmic';if(!mk)return'';
+function tvEvent(){const mk=tvIn('mk'),f=fireEv();if(mk&&f&&f.ph==='live')return'fire';if(DL){if(mk&&fmLive())return'fmic';if(tvIn('ep')&&wocLive())return'woc';if(tvIn('ep')&&clLive())return'cl'}if(tvIn('ep')&&lumLive())return'lum';if(tvIn('hs')&&fmLive())return'fmic';if(!mk)return'';
  for(const id of['welcome','flag','kiss']){const e=EV.find(x=>x.id===id);if(e&&e.on!==false&&e.ph==='live')return id}const P=liveParade();if(P&&paradeUnits().length)return'parade:'+P.id;if(ewpShow())return'ewp';if(geyserNow()>.5&&!TV.replay)return'geyser';return''}
 function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;let s;
  const lumS=()=>TV.alt%2?{k:'map',n:'Luminous · World Showcase Lagoon',x:EVPOS.lum[0],y:EVPOS.lum[1]-30,m:2.1,dur:45,layer:'shows'}:{k:'map',n:'Luminous: The Symphony of Us · EPCOT',x:EVPOS.lum[0],y:EVPOS.lum[1]-50,m:1.35,dur:50,layer:'shows'};
@@ -51,6 +51,7 @@ function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;
  const wocS=()=>{const G=wocGeo();return TV.alt%2?{k:'map',n:'World of Color · Paradise Bay',x:G.c[0],y:G.c[1]-25,m:2,dur:45,layer:'shows'}:{k:'map',n:'World of Color · California Adventure',x:G.c[0],y:G.c[1]-10,m:3,dur:50,layer:'shows'}};
  if(DL&&(key==='fmic'||key==='fire')&&tvIn('ep')&&wocLive()&&TV.alt%3===2)s=wocS(); /* Disneyland's two water shows (and the fireworks) at once: now and then cut across the Esplanade */
  else if(DL&&key==='woc')s=wocS();
+ else if(DL&&key==='cl'){clBuildings();s=TV.alt%2?{k:'map',n:'Cars Land neon lighting · Radiator Springs',x:CLN.ctr[0],y:CLN.ctr[1]-6,m:3.6,dur:40,layer:'shows'}:{k:'map',n:'Cars Land neon lighting',x:CLN.ctr[0],y:CLN.ctr[1]-15,m:2.4,dur:45,layer:'shows'}}
  else if(DL&&key==='fire'&&tvIn('mk')&&fmLive()&&TV.alt%3===1)s=fmS();
  else if(key==='fire'&&tvIn('ep')&&lumLive()&&TV.alt%3===2)s=lumS(); /* both nighttime shows at once: now and then cut across to EPCOT's */
  else if((key==='fire'||key==='lum')&&tvIn('hs')&&fmLive()&&TV.alt%3===1)s=fmS(); /* and to the Studios' when Fantasmic! is on too */

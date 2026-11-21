@@ -317,6 +317,20 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   to its front. Height = `q._dh` when the art sets it (DL show boxes, Mansion, Guardians, small world) else q.h*OSM.S*.78. Guests,
   queue dots and the night lamp glows (`OCC.L`) skip hidden spots; the map's own lamp posts are now painted in depth order (in B).
   New tall art that differs from q.h should set `q._dh`.
+- The Disneyland Monorail goes THROUGH the Grand Californian (owner, 21 Nov: "It should go through"): `dlMonoThrough` (map-art-dl.js,
+  called right after the monorail beams in paintMap) repaints the hotel (`grandCal`) clipped to a 5-unit corridor round the
+  beams, so the beam vanishes into the wall; `dlInGCH(x,y)` hides train cars inside/behind it (render.js, like `OSM.monoIn`).
+- Cars Land (owner, 21 Nov: "Add the lighting ceremony for cars land. Make it play sh boom at that and add both these as ambient
+  music for cars land"; gave John Mayer's Route 66 and The Chords' Sh-Boom → audio/route-66.mp3, audio/sh-boom.mp3, git-ignored,
+  IDB keys 'route66'/'shboom'). `js/carsland.js` (`CLN`): ceremony at sunset rounded to 5 min (`clStart`; `CLN.force` for
+  "Watch it now"), length = Sh-Boom's; a clock function like Tree of Life (no EV, no crowd). `clBuildings` = Cars Land buildings
+  (not the range, not ride buildings) ordered along their principal axis; each one's neon (roofline tubes on its view-facing walls,
+  a sign, Cozy Cone outlines) flickers on in order over the song's first 2/3 (`clOnAt`) and stays lit to ECLOSE+30 min
+  (`clLitAll`). `clSync`/`clDraw` hooked in render.js; in `showOn`; TV key 'cl'; Entertainment card `#clStart`. Area music:
+  `AREA.cl` with `AREA_PL.cl` = playlist (Route 66 then Sh-Boom, next on 'ended'), weighted inside `OSM.lands.cl` (fading over
+  45 units outside it) against `area-dca`.
+- audio/area-dca.mp3 (owner's, git-ignored) was cut to 95 MB / 66 min (owner: "Trim area dca to not be over 100mb", GitHub's
+  file limit) at an MP3 frame boundary, with its Info header's frame and byte counts fixed.
 
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say

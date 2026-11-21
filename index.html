@@ -22,7 +22,7 @@
 <div id="app">
  <header id="bar">
   <button id="fBtn" class="link">Filter</button>
-  <div class="ttl"><button id="layerBtn" aria-haspopup="menu" aria-expanded="false"><span id="layerName">Wait Times</span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+  <div class="ttl"><label class="resortPick"><select id="resortSel" aria-label="Resort"><option value="wdw">Walt Disney World</option><option value="dl">Disneyland Resort</option></select><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label><button id="layerBtn" aria-haspopup="menu" aria-expanded="false"><span id="layerName">Wait Times</span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
    <div id="layerMenu" role="menu" hidden></div></div>
   <button id="lBtn" class="link">Show List</button>
  </header>
@@ -59,7 +59,10 @@
  </nav>
 </div>
 <!-- Classic scripts in dependency order (no build step; works from any static web host). -->
-<script src="js/park-osm.js"></script>
+<!-- Which resort: Walt Disney World (park-osm.js) or the Disneyland Resort (park-osm-dl.js). ?resort=dl or ?resort=wdw picks one and
+     it is remembered; the picker at the top of the page switches by reloading with the other one. -->
+<script>var RESORT=(function(){var r='wdw';try{var q=new URLSearchParams(location.search).get('resort');if(q==='dl'||q==='wdw'){localStorage.setItem('dah-resort',q);r=q}else r=localStorage.getItem('dah-resort')==='dl'?'dl':'wdw'}catch(e){}return r})();
+document.write('<script src="js/'+(RESORT==='dl'?'park-osm-dl.js':'park-osm.js')+'"><\/script>')</script>
 <script src="js/sim.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/choreo.js"></script>

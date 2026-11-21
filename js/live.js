@@ -4,13 +4,16 @@
    simulator's clock follows the real time in Orlando at 1× and every wait time shown is the posted one; the guests,
    vehicles and crowds are still simulated around those numbers. Scrub the time, pause or change speed and it drops back
    to a plain simulation until you press Live again. If the data can't be fetched, everything simply stays simulated. */
+/* Disneyland: its two parks' feeds (Disneyland Park in Magic Kingdom's slot, California Adventure in EPCOT's) and Anaheim's clock */
+const TZ=DL?'America/Los_Angeles':'America/New_York';
 const LIVE={on:false,follow:false,ok:false,at:0,err:'',matched:0,api:'https://api.themeparks.wiki/v1/entity/75ea578a-adc8-4116-a54d-dccb60765ef9',epApi:'https://api.themeparks.wiki/v1/entity/47f90d2c-e191-4239-a466-5892ef59a88b',epHours:null,hsApi:'https://api.themeparks.wiki/v1/entity/288747d1-8b4f-4a64-867e-ea7c9b27bad8',hsHours:null,akApi:'https://api.themeparks.wiki/v1/entity/1c84a229-8862-4648-9c71-378ddd2c7693',akHours:null,schedAt:0,inTick:false,hours:null};
+if(DL){LIVE.api='https://api.themeparks.wiki/v1/entity/7340550b-c14d-4def-80bb-acdb51d49a66';LIVE.epApi='https://api.themeparks.wiki/v1/entity/832fcd51-ea19-4e77-85c7-75d5843b127c'}
 // the time in the park: {date:'YYYY-MM-DD', s: seconds since midnight}
-function parkClock(){const p={};for(const x of new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date()))p[x.type]=x.value;
+function parkClock(){const p={};for(const x of new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date()))p[x.type]=x.value;
  return{date:`${p.year}-${p.month}-${p.day}`,s:+p.hour%24*3600+ +p.minute*60+ +p.second+Date.now()%1000/1000}}
 const liveNorm=s=>s.toLowerCase().replace(/[’']/g,'').replace(/&/g,'and').replace(/\b(the|walt disneys|disney|mickeys)\b/g,'').replace(/[^a-z0-9]/g,'').replace('jinglecruise','junglecruise'); // (the Jungle Cruise is renamed for Christmas)
 // which of the park's shows drive which of ours; the first pattern that matches wins
-const LIVE_SHOWS=[[/festival of fantasy/i,'parade'],[/boo.to.you/i,'boo'],[/once upon a christmastime parade/i,'xmas'],[/happily ever after|fireworks/i,'fire'],[/friendship faire/i,'castle'],[/flag retreat/i,'flag'],[/cavalcade/i,'caval'],[/philharmonic/i,'band']];
+const LIVE_SHOWS=DL?[[/^disneyland band/i,'band'],[/storytelling at royal theatre/i,'castle'],[/flag retreat/i,'flag']]:[[/festival of fantasy/i,'parade'],[/boo.to.you/i,'boo'],[/once upon a christmastime parade/i,'xmas'],[/happily ever after|fireworks/i,'fire'],[/friendship faire/i,'castle'],[/flag retreat/i,'flag'],[/cavalcade/i,'caval'],[/philharmonic/i,'band']];
 const isoSec=(iso,date)=>{const m=/^(\d{4}-\d\d-\d\d)T(\d\d):(\d\d)/.exec(iso||'');if(!m)return null;const s=+m[2]*3600+ +m[3]*60;return m[1]===date?s:m[1]>date?86400+s:null}; // seconds into `date`; past midnight counts on
 async function liveFetch(){try{const c=parkClock(),get=u=>fetch(u,{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(new Error('HTTP '+r.status)));
   const live=await get(LIVE.api+'/live'),ep=await get(LIVE.epApi+'/live').catch(()=>null),hs=OSM.hs?await get(LIVE.hsApi+'/live').catch(()=>null):null,ak=OSM.ak?await get(LIVE.akApi+'/live').catch(()=>null):null; /* EPCOT's, Hollywood Studios' and Animal Kingdom's rides too */
@@ -18,7 +21,8 @@ async function liveFetch(){try{const c=parkClock(),get=u=>fetch(u,{cache:'no-sto
   liveApply(live,c,ep,hs,ak);LIVE.ok=true;LIVE.at=Date.now();LIVE.err=''}catch(e){LIVE.err=String(e.message||e);if(Date.now()-LIVE.at>30*60e3)LIVE.ok=false}
  liveBadge()}
 // names that differ between the map data and the live feed (Soarin' is showing its America film for 2026)
-const LIVE_ALIAS={'Soarin\' Around The World':['Soarin\' Across America','Soarin\' Around the World'],'Canada Far and Wide':['Canada Far and Wide in Circle-Vision 360'],'Impressions de France;Beauty and the Beast Sing-Along':['Impressions de France'],'Mickey Shorts Theater':['Vacation Fun - An Original Animated Short with Mickey & Minnie'],'The Magic of Disney Animation':['Olaf Draws!'],'Expedition Everest: Legend of the Forbidden Mountain':['Expedition Everest - Legend of the Forbidden Mountain']};
+const LIVE_ALIAS=DL?{'"It\'s a Small World"':['"it\'s a small world" Holiday'],'The Haunted Mansion':['Haunted Mansion Holiday','Haunted Mansion'],"Mater's Junkyard Jamboree":["Mater's Jingle Jamboree"],"Luigi's Rollickin' Roadsters":["Luigi's Joy to the Whirl"],
+ 'Soarin\' Around the World':['Soarin’ Across America','Soarin’ Around the World'],'Pixar Pal-A-Round':['Pixar Pal-A-Round - Swinging'],'Adventureland Treehouse':['Adventureland Treehouse inspired by Walt Disney’s Swiss Family Robinson'],'Guardians of the Galaxy: Mission Breakout':['Guardians of the Galaxy - Mission: BREAKOUT!']}:{'Soarin\' Around The World':['Soarin\' Across America','Soarin\' Around the World'],'Canada Far and Wide':['Canada Far and Wide in Circle-Vision 360'],'Impressions de France;Beauty and the Beast Sing-Along':['Impressions de France'],'Mickey Shorts Theater':['Vacation Fun - An Original Animated Short with Mickey & Minnie'],'The Magic of Disney Animation':['Olaf Draws!'],'Expedition Everest: Legend of the Forbidden Mountain':['Expedition Everest - Legend of the Forbidden Mountain']};
 function liveApply(live,c,ep,hs,ak){const by={};for(const x of[...(live.liveData||[]),...(ep&&ep.liveData||[]),...(hs&&hs.liveData||[]),...(ak&&ak.liveData||[])])if(x.entityType==='ATTRACTION')by[liveNorm(x.name)]=x;
  LIVE.matched=0;for(const a of AT){const x=by[liveNorm(a.osm)]||by[liveNorm(a.n)]||(LIVE_ALIAS[a.osm]||[]).map(n=>by[liveNorm(n)]).find(Boolean);if(!x){a.live=null;continue}const w=x.queue&&x.queue.STANDBY?x.queue.STANDBY.waitTime:null;a.live={st:x.status||'OPERATING',w:typeof w==='number'?w:null,at:x.lastUpdated};LIVE.matched++}
  {const ws=AT.filter(a=>a.live&&a.live.st==='OPERATING'&&a.live.w!==null).map(a=>a.live.w);LIVE.crowd=ws.length>5?Math.max(.6,Math.min(1.5,ws.reduce((p,q)=>p+q,0)/ws.length/26)):1} /* how busy the real park is: the average posted wait against a typical day's */
@@ -40,8 +44,8 @@ function liveApply(live,c,ep,hs,ak){const by={};for(const x of[...(live.liveData
 function liveSchedule(on){for(const e of EV){if(!LIVE.shows||!(e.id in LIVE.shows))continue;if(e.t0===undefined){e.t0=e.t.slice();e.on0=e.on;e.userOn0=e.userOn}
   if(on){const t=LIVE.shows[e.id];if(t.length){e.t=t.slice();e.on=true}else e.on=false;e.userOn=true}else{e.t=e.t0.slice();e.on=e.on0;e.userOn=e.userOn0;delete e.t0}
   if(e.force&&e.force.length){e.t=[...new Set([...e.t,...e.force])].sort((a,b)=>a-b);e.on=true}} /* a show started by hand keeps going */
- if(on&&LIVE.hours)setHours(LIVE.hours[0],LIVE.hours[1]);else if(!on){setHours(9,22);dayParams()}
- if(on&&LIVE.epHours)setHoursEP(LIVE.epHours[0],LIVE.epHours[1]);else if(!on)setHoursEP(9,21);
+ if(on&&LIVE.hours)setHours(LIVE.hours[0],LIVE.hours[1]);else if(!on){setHours(DL?8:9,DL?23:22);dayParams()}
+ if(on&&LIVE.epHours)setHoursEP(LIVE.epHours[0],LIVE.epHours[1]);else if(!on)setHoursEP(DL?8:9,DL?22:21);
  if(on&&LIVE.hsHours)setHoursHS(LIVE.hsHours[0],LIVE.hsHours[1]);else if(!on)setHoursHS(9,21);
  if(on&&LIVE.akHours)setHoursAK(LIVE.akHours[0],LIVE.akHours[1]);else if(!on)setHoursAK(8,19)}
 function liveFollow(){if(!LIVE.ok)return;LIVE.on=LIVE.follow=true;liveSchedule(true);const c=parkClock();LIVE.inTick=true;dateStr=c.date;reset(Math.min(7*3600,c.s));seek(c.s,false);LIVE.inTick=false;speed=1;playing=true;sync();liveBadge()}
@@ -57,6 +61,6 @@ function liveTick(){if(!LIVE.follow){LIVENOW=false;return}const c=parkClock();LI
 {const seek0=seek;seek=function(t,force){if(!LIVE.inTick&&!CATCHUP)liveUnfollow();return seek0(t,force)}}
 function liveBadge(){const b=$('#liveBtn');if(!b)return;b.hidden=!LIVE.ok;b.classList.toggle('on',LIVE.follow);b.textContent=LIVE.follow?'● Live':'Go live';b.title=LIVE.follow?'Showing the real park right now. Live data: ThemeParks.wiki':'Jump to the real time and real wait times';
  const o=$('#osmc');if(o)o.textContent='Map data © OpenStreetMap contributors'+(LIVE.follow?' · Live data: ThemeParks.wiki':'')}
-const liveText=a=>a.ph!==undefined?'Placeholder wait (this show closed in 2024)':LIVENOW&&a.live?`Live from the park${a.live.at?' · updated '+new Date(a.live.at).toLocaleTimeString('en-US',{timeZone:'America/New_York',hour:'numeric',minute:'2-digit'}):''}`:'Simulated estimate';
+const liveText=a=>a.ph!==undefined?'Placeholder wait (this show closed in 2024)':LIVENOW&&a.live?`Live from the park${a.live.at?' · updated '+new Date(a.live.at).toLocaleTimeString('en-US',{timeZone:TZ,hour:'numeric',minute:'2-digit'}):''}`:'Simulated estimate';
 // start: fetch now and every five minutes; go live as soon as there is data (add ?sim to the address to stay simulated)
 function liveInit(){const want=!/[?&]sim\b/.test(location.search);liveFetch().then(()=>{if(want&&LIVE.ok)liveFollow()});setInterval(liveFetch,5*60e3)}

@@ -231,6 +231,29 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   after closing). Events with `rel` take their time from the park's hours (`relTimes()`).
 - OpenStreetMap attribution must stay visible on the map (ODbL).
 
+- Disneyland Resort (owner, 21 Nov 2026: "I want a selector at the top that I can change to disneyland. Lets get started with
+  disneyland now"). One engine, two resorts: `index.html` reads `?resort=` (remembered in localStorage `dah-resort`) and
+  `document.write`s either `js/park-osm.js` or `js/park-osm-dl.js`; the `#resortSel` select in the header (`.resortPick`) reloads
+  with the other one. `OSM.resort==='dl'` sets the global `DL` (sim.js). Disneyland Park takes Magic Kingdom's slot (park 0: GATE,
+  hub, castle, Main Street, `routes.rail`, `routes.parade`, `setHours`) and California Adventure takes EPCOT's (park 1: `epgate`,
+  `EPR`, `setHoursEP`, `decideEP`, `LIVE.epApi`); `HSL`/`AKL` are empty. Data: `tools/osm_extract_dl.py` reads `dl.osm`
+  (git-ignored; api.openstreetmap.org/api/0.6/map in 4 pieces, bbox 33.7985,-117.9295,33.8175,-117.9095) and writes the same
+  schema (pinned projection, W×H 1966×2237, regions [Disneyland bbox, DCA bbox, whole map], lands by place=locality names with
+  codes ms adv nos bc fr gx fan tt tom / bv hl av cl pp pg gp sf, gates = outline point nearest the Esplanade's middle, `dlout`/
+  `dcaout` = outward directions, `routes.dlmono` (Disneyland Monorail loop), `routes.riverboat`/`columbia`, `parade2` (DCA)).
+  Everyone walks in (MODE 3); no ferry, buses or boats (`FERRY=[]`; `mkPath` of an empty route returns a far-off point).
+  Tables `DL_A`, `DL_V`, `DL_EV` in sim.js (band, Royal Theatre storytelling, Flag Retreat only; live names via the DL
+  `LIVE_SHOWS`/`LIVE_ALIAS`). `TZ` in live.js is America/Los_Angeles. `MLINE.dl` (stops `dlm`, `ddm`); RESORTS = the two
+  monorail stations and the three hotels. Art: `SBC` spec drawn by `castleArt(...,CS)` (Sleeping Beauty Castle, original
+  drawing; `CASTLE_IMG` is Cinderella Castle so it's skipped), `matterhorn()`, LANDSTYLE palettes for the new lands, big show
+  buildings in Disneyland get plain roofs. TV: `tvShotsDL` (37 shots; TV parks all/mk/ep = both/Disneyland/DCA). Off at DL:
+  pageant, Main Street view (`setView` forces the map, `#views` hidden), the front-cab ride button, the WDW monorail onboard
+  audio, area music over DCA. Riverboats (owner, 21 Nov:
+  "Riverboats"; "We dont have to do mainstreet view"): `RBOAT`/`rbPos`/`drawRiverboat` in render.js, the Mark Twain and the Columbia on
+  `routes.riverboat` started at Frontierland Landing, 12 min sail + 3 min docked, Columbia half a trip behind; pure function of the
+  clock while the ride isn't Closed (live status when Live); otherwise docked (Columbia in Fowler's Harbor, `P_.fowler`); lights
+  in the night pass; `hitMap` opens the ride. Next: parades, fireworks, Fantasmic!, World of Color (no Main Street view wanted).
+
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each

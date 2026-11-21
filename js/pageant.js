@@ -11,7 +11,7 @@ const EWP={audio:new Audio(),ready:false,name:EWP_FILE,src:'folder',auto:true,on
 // a showing lasts the length of the music, or until two minutes before the next one starts (the Wilderness Lodge showing is cut short, as the barges must be at Fort Wilderness ten minutes later)
 const ewpEnd=s=>{const i=EWP.shows.indexOf(s),nx=EWP.shows[i+1];return Math.min(s.t+EWP.len,nx?nx.t-150:1e9)};
 /* ---------- course: A* over a grid of the real water ---------- */
-(function(){const CELL=6,gw=Math.ceil(W/CELL),gh=Math.ceil(H/CELL),k=document.createElement('canvas');k.width=gw;k.height=gh;const c=k.getContext('2d');c.scale(1/CELL,1/CELL);
+(function(){if(DL){EWP.legs=null;return} /* Walt Disney World only */const CELL=6,gw=Math.ceil(W/CELL),gh=Math.ceil(H/CELL),k=document.createElement('canvas');k.width=gw;k.height=gh;const c=k.getContext('2d');c.scale(1/CELL,1/CELL);
  const waters=OSM.areas.filter(a=>a.k==='water'),ring=r=>{c.beginPath();r.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fill()};
  for(const a of waters)ring(a.o);c.globalCompositeOperation='destination-out';for(const a of waters)for(const r of a.i||[])ring(r); // islands are not water
  for(const a of OSM.areas)if(a.k==='pier'||a.k==='bridge')ring(a.o);for(const q of OSM.buildings)if(q.p.length>2)ring(q.p); // nor are piers, or buildings standing in the water

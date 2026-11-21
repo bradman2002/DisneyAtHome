@@ -14,6 +14,25 @@ On a phone it works like an app: open ☰ → "Install as an app" (on iPhone and
 Screen"). It gets its own icon, opens full screen without the browser's bars, and still opens with no signal once it has been
 used (the live data and sounds need a connection; everything else is simulated anyway).
 
+## Disneyland
+
+The picker above "Wait Times" at the top switches between Walt Disney World and the Disneyland Resort in Anaheim. The page
+reloads with the other resort and remembers your choice; `?resort=dl` or `?resort=wdw` in the address picks one too (for example
+`/?tv&resort=dl` to run TV mode on Disneyland).
+
+The Disneyland map comes from OpenStreetMap like Walt Disney World's: Disneyland Park, Disney California Adventure, Downtown
+Disney, the Esplanade and the three hotels, with the streets round them. Both parks are simulated (guests, queues, about 60
+rides and 27 restaurants and shops), and with Live on, the wait times, closures and park hours are the real ones from the
+ThemeParks.wiki feeds for both parks, on Pacific time. The castle is a drawing of Sleeping Beauty Castle made for this
+site, and the Matterhorn is drawn on its real footprint. The Disneyland Railroad and the Disneyland Monorail run their
+real routes, and the Mark Twain and the Sailing Ship Columbia sail round Tom Sawyer Island on the Rivers of
+America while they're running (lit after dark; tap one for its wait). TV mode has its own Disneyland shots, and Sound & settings → TV mode picks Disneyland, California Adventure or
+both.
+
+Not on the Disneyland side yet: the parades, fireworks, Fantasmic! and World of Color, and area music in California Adventure (the Main Street street view stays Magic Kingdom's). Disneyland's lands play the Magic Kingdom loops of the same
+name (Main Street, Adventureland, Frontierland, Fantasyland, Tomorrowland), and the rides that have a recording at Walt Disney
+World (Haunted Mansion, Pirates, Space Mountain, Star Tours, Rise of the Resistance, Runaway Railway) play it.
+
 ## Live: the real park
 
 When the page opens it fetches Magic Kingdom's current wait times, ride closures, today's show times and

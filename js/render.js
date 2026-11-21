@@ -80,7 +80,7 @@ function frame(rdt){
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
- drawPageant(now,1);lumDraw(now);fmDraw(now);tolDraw(now);drawSkyliner(true);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
+ drawPageant(now,1);lumDraw(now);fmDraw(now);tolDraw(now);drawSkyliner(true);for(const b of RBOAT)drawRiverboat(b,true);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint
  // castle projections during Happily Ever After
@@ -96,6 +96,49 @@ function frame(rdt){
 /* fireworks positions in the aerial view: bursts above and behind the castle */
 function mapShell(q){const[t,kind,c0,alt]=q,z=zf(),[ux,uy]=MAP.castleAt,mx=ux+c0*120,by=uy-75,my=kind==='mine'?by:kind==='comet'?by-(14+alt*50):by-(36+alt*105);
  const b=toS(kind==='comet'?ux+c0*84+(Math.random()-.5)*20:mx,by),e=toS(mx,my);return{b,e,k:z*1.45,m:b[1]-20*z}}
+/* ---------- Disneyland's riverboats ----------
+   The Mark Twain (a white sternwheeler) and the Sailing Ship Columbia (a three-masted ship) go round Tom Sawyer Island on the
+   Rivers of America, on the real route in the map data, from Frontierland Landing. Each trip is a 12-minute sail then 3 minutes
+   at the landing; the Columbia runs half a trip behind so the two keep apart. A pure function of the clock (like the pageant),
+   only while the ride is running (live status when Live is on); otherwise the Mark Twain waits at the landing and the Columbia
+   is moored in Fowler's Harbor. Drawn bigger than life like the parade floats. */
+const RBOAT=(()=>{if(!DL||!OSM.routes.riverboat||OSM.routes.riverboat.length<4)return[];let p=OSM.routes.riverboat.slice();if(Math.hypot(p[0][0]-p[p.length-1][0],p[0][1]-p[p.length-1][1])<1)p.pop();
+ const dk=POS['Mark Twain Riverboat']?POS['Mark Twain Riverboat'].c:p[0];let k=0,bd=1e18;p.forEach((q,i)=>{const d=(q[0]-dk[0])**2+(q[1]-dk[1])**2;if(d<bd){bd=d;k=i}});p=p.slice(k).concat(p.slice(0,k+1)); /* start and end at the landing */
+ const P=mkPath(p);return[{k:'twain',a:AT.find(a=>a.osm==='Mark Twain Riverboat'),P,off:0},{k:'col',a:AT.find(a=>a.osm==='Sailing Ship Columbia'),P,off:.5}].filter(b=>b.a)})();
+const RB_SAIL=720,RB_DOCK=180;
+function rbPos(b){const run=LIVENOW&&b.a.live?b.a.live.st==='OPERATING':aStat(b.a)!=='Closed',cyc=RB_SAIL+RB_DOCK;
+ if(!run){if(b.k==='col'){const f=P_.fowler;return f?{x:f[0],y:f[1],an:-Math.PI/2,mv:0}:null}const q=b.P.at(0),q2=b.P.at(6);return{x:q[0],y:q[1],an:Math.atan2(q2[1]-q[1],q2[0]-q[0]),mv:0}}
+ const t=((T+b.off*cyc)%cyc+cyc)%cyc;if(t>=RB_SAIL){const q=b.P.at(0),q2=b.P.at(6);return{x:q[0],y:q[1],an:Math.atan2(q2[1]-q[1],q2[0]-q[0]),mv:0}}
+ const u=t/RB_SAIL,e=u<.06?u*u/.12:u>.94?1-(1-u)*(1-u)/.12:u-.03, /* ease away from the landing and back into it */d=e/(1-.06)*b.P.L;const q=b.P.at(Math.min(b.P.L-.01,d));return{x:q[0],y:q[1],an:q[2],mv:1}}
+/* draw one riverboat; lit=true draws only its lights (after the night tint) */
+function drawRiverboat(b,lit){const s=rbPos(b);if(!s)return;const{x,y,an}=s,ca=Math.cos(an),sa=Math.sin(an),L=b.k==='twain'?17:16,Wd=b.k==='twain'?5.2:4.2,
+  pt=(u,v,h)=>[x+ca*u-sa*v,y+sa*u+ca*v-(h||0)], /* u along the boat, v across it, h up (screen up, for the 3/4 view) */
+  quad=(u0,u1,w,h,col)=>{cx.fillStyle=col;cx.beginPath();cx.moveTo(...pt(u0,-w,h));cx.lineTo(...pt(u1,-w,h));cx.lineTo(...pt(u1,w,h));cx.lineTo(...pt(u0,w,h));cx.closePath();cx.fill()};
+ if(lit){if(nf<.25)return;cx.save();cx.globalCompositeOperation='lighter';cx.fillStyle=`rgba(255,205,120,${.75*nf})`;
+   if(b.k==='twain')for(const h of[2.2,4.4])for(let u=-L*.7;u<=L*.7;u+=2.2)for(const v of[-Wd*.8,Wd*.8]){const[px,py]=pt(u,v,h);cx.fillRect(px-.5,py-.5,1,1)}
+   else for(const u of[-L*.6,-L*.1,L*.4]){const[px,py]=pt(u,0,1.5);cx.beginPath();cx.arc(px,py,.9,0,7);cx.fill()}cx.restore();return}
+ cx.save();cx.fillStyle='rgba(20,40,60,.22)';cx.beginPath();cx.ellipse(x+2,y+1.5,L*1.05,Wd*1.2,an,0,7);cx.fill();
+ if(s.mv){cx.strokeStyle='rgba(255,255,255,.55)';cx.lineWidth=1;for(const v of[-1,1]){cx.beginPath();cx.moveTo(...pt(-L*.9,v*Wd*.8));cx.lineTo(...pt(-L*1.7,v*Wd*1.9));cx.stroke()}}
+ if(b.k==='twain'){ /* white sternwheeler: hull, three decks, pilot house, two black stacks, red paddlewheel at the stern */
+  cx.fillStyle='#fbfaf5';cx.beginPath();cx.moveTo(...pt(-L,-Wd));cx.lineTo(...pt(L*.75,-Wd));cx.lineTo(...pt(L,0));cx.lineTo(...pt(L*.75,Wd));cx.lineTo(...pt(-L,Wd));cx.closePath();cx.fill();
+  quad(-L-3,-L,Wd*.75,0,'#b8322a');cx.strokeStyle='#7a1f1a';cx.lineWidth=.4;for(let i=0;i<4;i++){cx.beginPath();cx.moveTo(...pt(-L-3+i,-Wd*.75,1.2));cx.lineTo(...pt(-L-3+i,Wd*.75,1.2));cx.stroke()}
+  const deck=(u0,u1,w,h0,h,top)=>{for(const v of[-w,w]){cx.fillStyle='#d6cfbf';cx.beginPath();cx.moveTo(...pt(u0,v,h0));cx.lineTo(...pt(u1,v,h0));cx.lineTo(...pt(u1,v,h));cx.lineTo(...pt(u0,v,h));cx.closePath();cx.fill();
+    cx.fillStyle='#5a5a66';for(let u=u0+1;u<u1-.6;u+=1.6){const[a1,b1]=pt(u,v,h0+.5);cx.fillRect(a1-.3,b1-(h-h0)*.6,.6,(h-h0)*.45)}} /* the deck's side, with its windows */
+   for(const[a2,b2]of[[u0,u0],[u1,u1]]){cx.fillStyle='#e6e0d2';cx.beginPath();cx.moveTo(...pt(a2,-w,h0));cx.lineTo(...pt(b2,w,h0));cx.lineTo(...pt(b2,w,h));cx.lineTo(...pt(a2,-w,h));cx.closePath();cx.fill()}
+   quad(u0,u1,w,h,top)};
+  deck(-L*.9,L*.6,Wd*.95,0,2.2,'#f4f1e8');deck(-L*.75,L*.45,Wd*.85,2.2,4.4,'#fbfaf5');deck(-L*.2,L*.2,Wd*.45,4.4,6.6,'#f1ede2');
+  cx.strokeStyle='#c9b98a';cx.lineWidth=.35;for(const h of[2.2,4.4]){cx.beginPath();cx.moveTo(...pt(-L*.85,-Wd*.92,h));cx.lineTo(...pt(L*.55,-Wd*.92,h));cx.lineTo(...pt(L*.55,Wd*.92,h));cx.stroke()}
+  cx.fillStyle='#1d1d22';for(const v of[-Wd*.55,Wd*.55]){const[bx,by]=pt(L*.35,v,4.4);cx.fillRect(bx-.7,by-9,1.4,9);cx.fillRect(bx-1.2,by-9.6,2.4,1)}}
+ else{ /* the Columbia: dark wooden hull with a white stripe, deck, three masts with square sails, rigging */
+  cx.fillStyle='#5a3a22';cx.beginPath();cx.moveTo(...pt(-L,-Wd));cx.lineTo(...pt(L*.7,-Wd));cx.lineTo(...pt(L*1.15,0));cx.lineTo(...pt(L*.7,Wd));cx.lineTo(...pt(-L,Wd));cx.closePath();cx.fill();
+  quad(-L*.95,L*.65,Wd*.8,.8,'#b08a5a');cx.strokeStyle='#f1ead8';cx.lineWidth=.5;cx.beginPath();cx.moveTo(...pt(-L,-Wd,.4));cx.lineTo(...pt(L*.7,-Wd,.4));cx.stroke();
+  const masts=[-L*.55,-L*.05,L*.4].map(u=>pt(u,0,.8));cx.strokeStyle='rgba(60,45,30,.8)';cx.lineWidth=.3;cx.beginPath();cx.moveTo(...pt(L*1.15,0,1));cx.lineTo(masts[2][0],masts[2][1]-15);cx.lineTo(masts[1][0],masts[1][1]-17);cx.lineTo(masts[0][0],masts[0][1]-15);cx.lineTo(...pt(-L,0,1));cx.stroke();
+  [-L*.55,-L*.05,L*.4].forEach((mu,i)=>{const hh=i===1?17:15,[mx,my]=pt(mu,0,.8);cx.fillStyle='#4a3020';cx.fillRect(mx-.35,my-hh,.7,hh);
+   for(const[f,w]of[[.75,3.6],[.5,4.2],[.25,4.6]]){const h0=.8+hh*f-2.6; /* square sails on yards across the hull, so they turn with the ship */
+    cx.fillStyle='#f6f1e4';cx.beginPath();cx.moveTo(...pt(mu,-w,h0));cx.lineTo(...pt(mu,w,h0));cx.lineTo(...pt(mu+.6,w,h0+3.2));cx.lineTo(...pt(mu+.6,-w,h0+3.2));cx.closePath();cx.fill();
+    cx.strokeStyle='rgba(150,135,110,.7)';cx.lineWidth=.25;cx.stroke()}
+   cx.fillStyle='#c0392b';cx.fillRect(mx-.1,my-hh-2,1.8,1)})}
+ cx.restore()}
 /* ---------- moving things on the map ---------- */
 const SPIN=AT.filter(a=>a.k==='spin');
 const LAGOON=FER.at(FER.L*.5).slice(0,2).map((v,i)=>v+(i?0:-170)); // label spot on open water, west of the ferry lane
@@ -234,6 +277,7 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
    cx.fillStyle='#fff';cx.beginPath();cx.roundRect(-4.7,-3,9.4,6,k===0?[1.2,3,3,1.2]:k===5?[3,1.2,1.2,3]:1.2);cx.fill();cx.fillStyle=m.col;cx.fillRect(-4.7,.5,9.4,1.5);
    cx.fillStyle='#223';if(k===0)cx.fillRect(1.6,-2.2,2.4,3.2);else if(k===5)cx.fillRect(-4,-2.2,2.4,3.2);else cx.fillRect(-3.2,-2,6.4,1.5);cx.restore()}}
  drawSkyliner(); drawPageant(now,0);
+ for(const b of RBOAT)drawRiverboat(b,false); /* Disneyland's riverboats */
  // resort launches
  if(h>8.5&&h<23)for(const b of LAUNCH){const R=BOATR[b.r];let[x,y,an]=R.p.at(Math.min(b.x,R.p.L-.01));if(!R.loop){const o=b.dir*5*Math.sin(Math.PI*b.x/R.p.L);x-=Math.sin(an)*o;y+=Math.cos(an)*o} /* boats going opposite ways keep to their own side */cx.save();cx.translate(x,y);cx.rotate(an+(b.dir<0&&!R.loop?Math.PI:0));if(b.tm<=0){cx.fillStyle='rgba(255,255,255,.5)';cx.beginPath();cx.moveTo(-6,0);cx.lineTo(-18,-3);cx.lineTo(-18,3);cx.fill()}
    if(R.fs){ /* a Friendship boat: a long white catamaran-style hull, a teal canopy with a white roof stripe, windows down each side */
@@ -299,6 +343,10 @@ function drawOverlays(z,now){BUB=[];const c=cx;c.setTransform(dpr,0,0,dpr,0,0);c
   if(VIEW.layer!=='transport')for(const k in RESORTS){if(k==='mk')continue;const n=z<.9?RESORTS[k].n.replace('Disney’s ','').replace(/ Resort.*/,'').replace('Transportation and Ticket Center','Ticket Center'):RESORTS[k].n.replace('Disney’s ',''),[sx,sy]=toS(RESORTS[k].c[0],RESORTS[k].c[1]-22);const tw=c.measureText(n).width+18;
    c.fillStyle=sel&&sel.k==='r'&&sel.i===k?'rgba(26,143,214,.92)':'rgba(18,96,110,.8)';c.beginPath();c.roundRect(sx-tw/2,sy-11,tw,22,11);c.fill();c.fillStyle='#fff';c.fillText(n,sx,sy+.5)}
   if(OSM.hs&&P_.hsbooth){const[ex,ey]=toS(P_.hsbooth[0]+30,P_.hsbooth[1]-40);if(ex>-200&&ex<cw+200&&ey>-60&&ey<ch+60){c.font='800 15px "Nunito Sans",Figtree,system-ui,sans-serif';const L='HOLLYWOOD STUDIOS',tw=c.measureText(L).width+26;c.fillStyle='rgba(150,40,50,.82)';c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText(L,ex,ey+.5)}} /* the park's name over its entrance */
+  if(DL){const pill=(L,x,y,col,f)=>{const[ex,ey]=toS(x,y);if(ex<-200||ex>cw+200||ey<-60||ey>ch+60)return;c.font=f;const tw=c.measureText(L).width+26;c.fillStyle=col;c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText(L,ex,ey+.5)},F1='800 15px "Nunito Sans",Figtree,system-ui,sans-serif';
+   /* each park's name over its gate (on the Esplanade side), and Downtown Disney */
+   pill('DISNEYLAND',P_.gatexy[0],P_.gatexy[1]-30,'rgba(170,50,70,.85)',F1);pill('CALIFORNIA ADVENTURE',P_.epgatexy[0],P_.epgatexy[1]+34,'rgba(40,90,150,.85)',F1);
+   if(P_.dd&&z>.3)pill('DOWNTOWN DISNEY',P_.dd[0],P_.dd[1]-30,'rgba(30,110,120,.85)','800 13px "Nunito Sans",Figtree,system-ui,sans-serif');c.font='700 12px "Nunito Sans",Figtree,system-ui,sans-serif'}
   if(P_.ds){const pill=(L,x,y,col,f)=>{const[ex,ey]=toS(x,y);if(ex<-200||ex>cw+200||ey<-60||ey>ch+60)return;c.font=f;const tw=c.measureText(L).width+26;c.fillStyle=col;c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText(L,ex,ey+.5)};
    pill('DISNEY SPRINGS',P_.ds[0],P_.ds[1]-60,'rgba(30,110,120,.85)','800 15px "Nunito Sans",Figtree,system-ui,sans-serif'); /* the shopping district, and the water park next door */
    if(P_.typhoon&&z>.25)pill('Typhoon Lagoon',P_.typhoon[0],P_.typhoon[1]-40,'rgba(18,96,110,.8)','700 12px "Nunito Sans",Figtree,system-ui,sans-serif')}
@@ -308,7 +356,7 @@ function drawOverlays(z,now){BUB=[];const c=cx;c.setTransform(dpr,0,0,dpr,0,0);c
   if(EPCOT){const[ex,ey]=toS(EPCOT.sse[0],EPCOT.sse[1]-75);if(ex>-200&&ex<cw+200&&ey>-60&&ey<ch+60){c.font='800 15px "Nunito Sans",Figtree,system-ui,sans-serif';const tw=c.measureText('EPCOT').width+26;c.fillStyle='rgba(60,40,110,.8)';c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText('EPCOT',ex,ey+.5)}
    c.font='700 12px "Nunito Sans",Figtree,system-ui,sans-serif';if(z>.9)for(const p of EPCOT.pav){const[sx,sy]=toS(p.x,p.y-30);if(sx<-80||sx>cw+80||sy<-20||sy>ch+20)continue;const tw=c.measureText(p.n).width+18;c.fillStyle='rgba(40,46,66,.66)';c.beginPath();c.roundRect(sx-tw/2,sy-11,tw,22,11);c.fill();c.fillStyle='#fff';c.fillText(p.n,sx,sy+.5)}}
   c.font='italic 700 '+Math.max(12,Math.min(22,z*26))+'px "Nunito Sans",Figtree,system-ui,sans-serif';c.strokeStyle='rgba(30,90,120,.45)';c.lineWidth=3;
-  for(const[n,p]of[['Seven Seas Lagoon',LAGOON],['Bay Lake',BAYLAKE],['Discovery Island',P_.disc&&z>.7?[P_.disc[0],P_.disc[1]]:null],['World Showcase Lagoon',EPCOT&&!lumLive()?EPCOT.c:null]]){if(!p)continue;const[sx,sy]=toS(...p);c.fillStyle='rgba(255,255,255,.85)';c.strokeText(n,sx,sy);c.fillText(n,sx,sy)}}
+  for(const[n,p]of[...(DL?[['Rivers of America',P_.rivers&&z>.7?[P_.rivers[0]-20,P_.rivers[1]+40]:null],['Paradise Bay',P_.pbay&&z>.7?P_.pbay:null]]:[]),['Seven Seas Lagoon',LAGOON],['Bay Lake',BAYLAKE],['Discovery Island',P_.disc&&z>.7?[P_.disc[0],P_.disc[1]]:null],['World Showcase Lagoon',EPCOT&&!lumLive()?EPCOT.c:null]]){if(!p)continue;const[sx,sy]=toS(...p);c.fillStyle='rgba(255,255,255,.85)';c.strokeText(n,sx,sy);c.fillText(n,sx,sy)}}
  const isSel=(k,i)=>sel&&sel.k===k&&sel.i===i;
  if(document.body.classList.contains('idle')&&!(typeof TV!=='undefined'&&TV.on))return; /* full screen with controls faded: no callouts over the show */
  if(VIEW.layer==='wait'&&!VIEW.fwWaits&&fireEv()&&fireEv().ph==='live'){} // wait times stay out of the way during the fireworks (Filter turns them back on)
@@ -328,7 +376,7 @@ function drawOverlays(z,now){BUB=[];const c=cx;c.setTransform(dpr,0,0,dpr,0,0);c
    if(z>1.6){c.font='700 11px "Nunito Sans",Figtree,system-ui,sans-serif';c.fillStyle='#1e2b4f';c.textAlign='center';c.strokeStyle='#fff';c.lineWidth=3;c.strokeText(v.n,sx,sy+12);c.fillText(v.n,sx,sy+12)}}}
  else if(VIEW.layer==='transport'){const eta=k=>{const e=monoEta(k)[0];return!e?'—':e.t<1?'Boarding':e.t<60?'Arriving':Math.round(e.t/60)+' min'};
   const dock=k=>boatsAt(RESORTS[k].boat).some(([R,b])=>b.tm>0&&Math.hypot(R.p.at(Math.min(b.x,R.p.L-.01))[0]-RESORTS[k].boat[0],R.p.at(Math.min(b.x,R.p.L-.01))[1]-RESORTS[k].boat[1])<70)?'Boat docked':'Boat on the way';
-  const items=[...Object.keys(RESORTS).map(k=>RESORTS[k].boat?['boat',RESORTS[k].boat,{k:'r',i:k},()=>dock(k)]:['train',RESORTS[k].c,{k:'r',i:k},()=>eta(k)]),['boat',FER.p[0],{k:'f',i:0},()=>FERRY.some(f=>f.st==='dwell'&&f.p===0)?'Docked':'Crossing'],['boat',FER.p[FER.p.length-1],{k:'f',i:1},()=>FERRY.some(f=>f.st==='dwell'&&f.p===1)?'Docked':'Crossing'],['bus',P_.busstation,{k:'b',i:0},()=>BUS.some(b=>b.st==='dwell')?'Loading':'Next soon']];
+  const items=DL?Object.keys(RESORTS).filter(k=>MLINE.dl.stops.includes(k)).map(k=>['train',RESORTS[k].c,{k:'r',i:k},()=>eta(k)]):[...Object.keys(RESORTS).map(k=>RESORTS[k].boat?['boat',RESORTS[k].boat,{k:'r',i:k},()=>dock(k)]:['train',RESORTS[k].c,{k:'r',i:k},()=>eta(k)]),['boat',FER.p[0],{k:'f',i:0},()=>FERRY.some(f=>f.st==='dwell'&&f.p===0)?'Docked':'Crossing'],['boat',FER.p[FER.p.length-1],{k:'f',i:1},()=>FERRY.some(f=>f.st==='dwell'&&f.p===1)?'Docked':'Crossing'],['bus',P_.busstation,{k:'b',i:0},()=>BUS.some(b=>b.st==='dwell')?'Loading':'Next soon']];
   for(const[ic,[x,y],it,f]of items){const[sx,sy]=toS(x,y);const r=pin(sx,sy,ic,{});place(r,it,true);const txt=f();c.font='800 12px "Nunito Sans",Figtree,system-ui,sans-serif';const tw=c.measureText(txt).width+12;c.fillStyle='#1e2b4f';c.beginPath();c.roundRect(sx-tw/2,sy+3,tw,18,9);c.fill();c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.fillText(txt,sx,sy+12.5);
    if(it.k==='r'){const n=RESORTS[it.i].n.replace('Disney’s ','').replace(/ Resort.*/,'').replace('Transportation and Ticket Center','Ticket Center').replace(' Station','');c.font='700 11px "Nunito Sans",Figtree,system-ui,sans-serif';c.strokeStyle='rgba(20,30,50,.75)';c.lineWidth=3;c.strokeText(n,sx,sy+31);c.fillStyle='#fff';c.fillText(n,sx,sy+31)}}}
  // selection ring on the map

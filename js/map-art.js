@@ -94,9 +94,19 @@ const CST={ // [u, v0 base, width, wall height, cone height, layer 0 back → 4 
   [-15,18,4.2,16,10,1],[15,18,4.2,16,10,1],[-21,9,5.6,18,11,1],[21,9,5.6,18,11,1],
   [-6,30,3.2,10,8.5,2],[6,30,3.2,10,8.5,2],[-17.5,16,2.6,12,9,2],[17.5,16,2.6,12,9,2],[-11.5,12,2.2,9,6.5,3],[11.5,12,2.2,9,6.5,3],
   [-27,0,7,14,8,4],[27,0,7,14,8,4],[-7,8,2.6,9,7,4],[7,8,2.6,9,7,4]],
- walls:[[-28,0,28,10,'base'],[-21,9,21,19,'tier'],[-13,18,13,30,'tier'],[-7,28,7,38,'tier']]};
-function castleArt(c,e,ox,oy,k,sy){const P=(u,v)=>[ox+u*k,oy-v*k*sy];
- const WALL1='#f5d9df',WALL2='#d3a9b6',STONE1='#e4ddd6',STONE2='#b9b0a8',GOLD='#f2c444',RF1='#7aa2f2',RF2='#2c55cf',RF3='#18338f';
+ walls:[[-28,0,28,10,'base'],[-21,9,21,19,'tier'],[-13,18,13,30,'tier'],[-7,28,7,38,'tier']],
+ keep:[[0,34,7.4,14,0],[0,48,5,5.5,17]],keepWin:[0,40,2,5],great:[0,20,3.6,7.5],gate:[4.2,8.6],w:61,box:[74,80],
+ pal:['#f5d9df','#d3a9b6','#e4ddd6','#b9b0a8','#f2c444','#7aa2f2','#2c55cf','#18338f']};
+/* Sleeping Beauty Castle at Disneyland (same drawing, its own massing): much smaller, about 23 m to the spire's tip; a grey stone
+   base with the drawbridge gate over the moat, pink walls stepping up to the central gatehouse spire, round towers each side and
+   blue-turquoise roofs with gold trim. An original drawing made in code (no Disney artwork). */
+const SBC={towers:[[-6,15,2.6,8,7,0],[6,15,2.6,8,7,0],[-10,8,3.4,10,7.5,1],[10,8,3.4,10,7.5,1],[-3.5,16,2.2,7,6.5,2],[3.5,16,2.2,7,6.5,2],
+  [-14,6,2.2,8,5.5,3],[14,6,2.2,8,5.5,3],[-18,0,4.6,10,6,4],[18,0,4.6,10,6,4]],
+ walls:[[-18,0,18,7,'base'],[-12,6,12,12,'tier'],[-7,11,7,16,'tier'],[-4,15,4,19,'tier']],
+ keep:[[0,14,5,7,0],[0,21,3.2,3,8.5]],keepWin:[0,17,1.4,3],great:[0,8.5,2.6,4],gate:[3,5],w:41,box:[50,44],
+ pal:['#f9d3dc','#d897a8','#d9d4cc','#a9a299','#f2c444','#86cdf2','#2f8ccf','#1d5b98']};
+function castleArt(c,e,ox,oy,k,sy,CS){CS=CS||CST;const P=(u,v)=>[ox+u*k,oy-v*k*sy];
+ const[WALL1,WALL2,STONE1,STONE2,GOLD,RF1,RF2,RF3]=CS.pal;
  c.save();c.lineJoin='round';
  // rocky base and moat wall
  const rk=c.createLinearGradient(0,oy-6,0,oy+7);rk.addColorStop(0,'#cfc5b6');rk.addColorStop(1,'#8f8576');c.fillStyle=rk;c.beginPath();c.moveTo(...P(-34,-2));c.quadraticCurveTo(...P(-26,4),...P(0,3));c.quadraticCurveTo(...P(26,4),...P(34,-2));c.quadraticCurveTo(...P(0,-6),...P(-34,-2));c.fill();
@@ -119,21 +129,21 @@ function castleArt(c,e,ox,oy,k,sy){const P=(u,v)=>[ox+u*k,oy-v*k*sy];
   else{g.addColorStop(0,'#fff6f6');g.addColorStop(.55,WALL1);g.addColorStop(1,WALL2);c.fillStyle=g;c.fillRect(x,y,(u1-u0)*k,(v1-v0)*k*sy);crenel(u0,u1,v1,WALL2);
    c.fillStyle=GOLD;c.fillRect(x,y+1*k*sy,(u1-u0)*k,Math.max(.3,.3*k*sy));for(let u=u0+2.4;u<u1-1.6;u+=3.2)if(Math.abs(u)>2.2)gwin(u,v0+2,1,3)}};
  // back towers, keep, upper tiers
- for(const t of CST.towers)if(t[5]===0)tower(t);
- wall(CST.walls[3]);
+ for(const t of CS.towers)if(t[5]===0)tower(t);
+ wall(CS.walls[3]);
  // the keep: tall central tower with an octagonal lantern and the main spire
- tower([0,34,7.4,14,0]);tower([0,48,5,5.5,17]);gwin(0,40,2,5);
- for(const t of CST.towers)if(t[5]===1)tower(t);
- wall(CST.walls[2]);gwin(0,20,3.6,7.5); // great window
- for(const t of CST.towers)if(t[5]===2)tower(t);
- wall(CST.walls[1]);
- for(const t of CST.towers)if(t[5]===3)tower(t);
- wall(CST.walls[0]);
+ tower(CS.keep[0]);tower(CS.keep[1]);gwin(...CS.keepWin);
+ for(const t of CS.towers)if(t[5]===1)tower(t);
+ wall(CS.walls[2]);gwin(...CS.great); // great window
+ for(const t of CS.towers)if(t[5]===2)tower(t);
+ wall(CS.walls[1]);
+ for(const t of CS.towers)if(t[5]===3)tower(t);
+ wall(CS.walls[0]);
  // pointed-arch passage with gold trim
- const[gx,gy]=P(-4.2,0);const pw=8.4*k,ph=8.6*k*sy;c.fillStyle='#2e2933';c.beginPath();c.moveTo(gx,gy);c.lineTo(gx,gy-ph*.55);c.quadraticCurveTo(gx,gy-ph*.92,gx+pw/2,gy-ph);c.quadraticCurveTo(gx+pw,gy-ph*.92,gx+pw,gy-ph*.55);c.lineTo(gx+pw,gy);c.fill();
+ const[gx,gy]=P(-CS.gate[0],0);const pw=CS.gate[0]*2*k,ph=CS.gate[1]*k*sy;c.fillStyle='#2e2933';c.beginPath();c.moveTo(gx,gy);c.lineTo(gx,gy-ph*.55);c.quadraticCurveTo(gx,gy-ph*.92,gx+pw/2,gy-ph);c.quadraticCurveTo(gx+pw,gy-ph*.92,gx+pw,gy-ph*.55);c.lineTo(gx+pw,gy);c.fill();
  c.strokeStyle=GOLD;c.lineWidth=Math.max(.5,.35*k);c.stroke();
  if(e){e.fillStyle='rgba(255,190,110,.6)';e.fillRect(gx+pw*.2,gy-ph*.5,pw*.6,ph*.5)}
- for(const t of CST.towers)if(t[5]===4)tower(t);
+ for(const t of CS.towers)if(t[5]===4)tower(t);
  c.restore()}
 function turret(c,e,x,y){const w=5,h=9;c.fillStyle='rgba(30,40,30,.18)';c.beginPath();c.ellipse(x+3,y+1,4,2,0,0,7);c.fill();
  const g=c.createLinearGradient(x-w/2,0,x+w/2,0);g.addColorStop(0,'#fff3f4');g.addColorStop(.6,'#f1d3d8');g.addColorStop(1,'#c9a3ab');c.fillStyle=g;c.fillRect(x-w/2,y-h,w,h);c.fillStyle='#f0c040';c.fillRect(x-w/2,y-h,w,.6);
@@ -157,6 +167,19 @@ const LANDSTYLE={ // [walls], [roofs]
  lib:[['#b9563f','#efe8da','#a84a3a','#e6dccb','#4f6b8a'],['#566070','#3d4a5c','#6a5a4a','#4a4f58']],
  fan:[['#f4e8d6','#f1dcc8','#e8d9ef','#f6efe0'],['#6a4fb0','#3f6ad0','#b33a4a','#2f7a6a','#8a4fb0']],
  tom:[['#e4ebf3','#d6e0ec','#eef2f7'],['#9fbfe0','#c7d3e2','#7fa2c9','#b7c4d6']],
+ /* Disneyland's lands that Magic Kingdom doesn't have, and California Adventure's */
+ nos:[['#efe2cf','#e8c9b0','#d9b9a3','#f3e6d6','#c9a98f'],['#5a4f63','#6b4a3a','#3f5a5f','#7a4a3f']],     // French Quarter stucco, iron balconies
+ bc:[['#a8875f','#9a7a52','#b8986a','#c2a77e'],['#5f6b3a','#6f4a2f','#4f5a35']],                          // bayou shacks
+ tt:[['#fbd6e4','#ffe6a8','#c9e6f6','#d8f0c8','#f6c9a8'],['#e8507a','#3f8ad0','#f0a020','#5ab04a','#a050c0']], // cartoon colours
+ gx:[['#d8c4a4','#cbb593','#e0cfb2'],['#b8a07a','#a58c66','#c9b28a']],                                    // Batuu's sandy spires
+ bv:[['#f0e2cc','#e8d2b4','#f4ead8','#dcc8a8'],['#9a5a3a','#6a4a3a','#3f5a4a','#b0703f']],
+ hl:[['#ece6f2','#e2dcea','#f4f0f6'],['#8a8fa8','#a0a6bc','#6a6f88']],
+ av:[['#d6dbe2','#c9cfd8','#e2e6ec'],['#7a2f2f','#8a8f98','#5a606a']],
+ cl:[['#e8b98a','#d9a070','#f0caa0','#c98a5a'],['#a8603a','#8a4a2f','#c0703f']],                          // Radiator Springs
+ pp:[['#f4f0e6','#e8f0f6','#fbe6d6'],['#3f7fc0','#d9473f','#f0b030','#2f9a8a']],                         // the seaside pier
+ pg:[['#f4ead6','#efe0c8','#e8f0e8'],['#3f8a8a','#c0563a','#5a7aa8']],
+ gp:[['#a87a52','#9a6a45','#b88a5f'],['#4a6a45','#6b4a30','#3f5a3f']],
+ sf:[['#f0dcd0','#e8ccc0','#f6e8e0','#d8b8a8'],['#c04050','#3f5a6a','#8a4a3f']],
  none:[['#d9d6cf','#cfccc4'],['#9aa0a6','#8d939a','#a8aaa6']]};
 const hsh=i=>{i=(i*2654435761)>>>0;return(i^(i>>>15))>>>0};
 function poly4(c,pts,fill){c.fillStyle=fill;c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.fill()}
@@ -591,6 +614,25 @@ function treeOfLife(c,e,x,y,R,S2){const H=44*S2,top=y-H,r=seeded(1998);TOL_AT={x
  cl.sort((p,q)=>p[1]-q[1]);for(const[cx_,cy_,rr]of cl){c.fillStyle='#3f6e34';c.beginPath();c.arc(cx_+rr*.15,cy_+rr*.2,rr,0,7);c.fill()}
  for(const[cx_,cy_,rr]of cl){const g=c.createRadialGradient(cx_-rr*.4,cy_-rr*.4,rr*.1,cx_,cy_,rr);g.addColorStop(0,'#9ccc6a');g.addColorStop(1,'#4f8a3e');c.fillStyle=g;c.beginPath();c.arc(cx_,cy_-rr*.1,rr*.92,0,7);c.fill()}
  if(e){const g=e.createRadialGradient(x,y-H*.4,1,x,y-H*.4,H*.55);g.addColorStop(0,'rgba(140,200,255,.45)');g.addColorStop(.6,'rgba(170,120,255,.2)');g.addColorStop(1,'rgba(170,120,255,0)');e.fillStyle=g;e.fillRect(x-H*.6,y-H,H*1.2,H*1.1)}}
+/* Disneyland's Matterhorn: one tall crooked grey rock peak (about 44 m) on its round footprint, its upper part under snow with a
+   ragged lower edge and streaks running down the gullies, pines round its foot and a waterfall into the pool. Lit from the left. */
+function matterhorn(c,e,x,y,R,S2){const H=Math.max(44*S2,R*1.6),r=seeded(1959),top=[x+R*.08,y-H],sh=[x+R*.62,y-H*.48],lf=[x-R*.7,y-H*.42];
+ c.fillStyle='rgba(30,40,30,.25)';c.beginPath();c.ellipse(x+H*.3,y+2,R*1.25,R*.42,0,0,7);c.fill();
+ const face=(pts,col)=>{c.fillStyle=col;c.beginPath();pts.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.closePath();c.fill()};
+ /* rock: the sunlit west face and the shaded east face, with a shoulder on each side */
+ face([[x-R,y],lf,[x-R*.18,y-H*.72],top,[x+R*.05,y]],'#9c968c');face([[x+R*.05,y],top,[x+R*.3,y-H*.7],sh,[x+R,y]],'#6f6a62');
+ face([[x-R*.18,y-H*.72],top,[x+R*.05,y-H*.55],[x-R*.25,y-H*.5]],'#b1aba0');
+ c.strokeStyle='rgba(60,55,50,.45)';c.lineWidth=Math.max(.2,R*.02);for(let i=0;i<14;i++){const t=r(),xx=x-R*.8+r()*R*1.6,yy=y-H*(.1+t*.5);c.beginPath();c.moveTo(xx,yy);c.lineTo(xx+(r()-.5)*R*.2,yy-H*.12);c.stroke()}
+ /* snow: the upper part, ragged at its lower edge, brighter on the lit side */
+ const sn=(px,py,k)=>[top[0]+(px-top[0])*k,top[1]+(py-top[1])*k];
+ c.fillStyle='#f6f8fb';c.beginPath();c.moveTo(...top);const L=[sn(...lf,.85),sn(x-R*.55,y,.42),sn(x-R*.2,y,.5),sn(x+R*.1,y,.38),sn(x+R*.45,y,.48),sn(...sh,.8)];
+ c.lineTo(...sn(...lf,.92));for(const q of L)c.lineTo(q[0]+(r()-.5)*R*.12,q[1]+r()*H*.05);c.closePath();c.fill();
+ c.fillStyle='rgba(165,180,200,.55)';c.beginPath();c.moveTo(...top);c.lineTo(...sn(x+R*.1,y,.38));c.lineTo(...sn(x+R*.45,y,.48));c.lineTo(...sn(...sh,.8));c.closePath();c.fill();
+ c.strokeStyle='rgba(246,248,251,.9)';c.lineWidth=Math.max(.3,R*.04);for(let i=0;i<7;i++){const a=sn(x-R*.6+i*R*.2,y,.45+r()*.1);c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(a[0]+(r()-.5)*R*.1,a[1]+H*(.08+r()*.12));c.stroke()}
+ /* the waterfall down the front and the pines at its foot */
+ c.strokeStyle='rgba(225,240,255,.85)';c.lineWidth=Math.max(.4,R*.05);c.beginPath();c.moveTo(x-R*.3,y-H*.3);c.quadraticCurveTo(x-R*.34,y-H*.12,x-R*.3,y-1);c.stroke();
+ for(let i=0;i<16;i++){const a=Math.PI*(.05+r()*.9),px=x+Math.cos(a)*R*(.85+r()*.2),py=y-Math.sin(a)*R*.08,h=R*(.18+r()*.12);c.fillStyle=r()<.5?'#2f5a34':'#3b6b3c';c.beginPath();c.moveTo(px-h*.35,py);c.lineTo(px,py-h);c.lineTo(px+h*.35,py);c.closePath();c.fill()}
+ if(e){e.fillStyle='rgba(200,225,255,.18)';e.beginPath();e.moveTo(...top);e.lineTo(x-R*.6,y-H*.35);e.lineTo(x+R*.6,y-H*.35);e.closePath();e.fill()}}
 /* Expedition Everest's Forbidden Mountain: a cluster of grey-brown rock peaks capped with snow, the tallest about 61 m,
    with the coaster's track glimpsed on its flank */
 function everestMtn(c,e,x,y,S2){const H=61*S2,r=seeded(1955);
@@ -664,7 +706,8 @@ function buildMap(){
  MAP.tiles=[];if(FULL){const TS=1100,k=MAP.mss*.6;for(let y=0;y<H;y+=TS)for(let x=0;x<W;x+=TS){const w=Math.min(TS+3,W-x),h=Math.min(TS+3,H-y); /* each tile reaches a little into the next, so no hairline seam shows where they meet */if(PARKR.some(R=>x>=R[0]&&y>=R[1]&&x+w<=R[2]&&y+h<=R[3]))continue;MAP.tiles.push({x,y,w,h,k,base:null,glow:null})}}
  // close-up layers: the park (the railroad loop plus the entrance), then each stop on the monorail loop
  const rr=bbox(OSM.routes.rail);
- MAP.detail=[box(rr[0]-70,rr[1]-60,rr[2]+70,P.monostation[1]+90,MSS),box(P.cont[0]-230,P.cont[1]-230,P.cont[0]+300,P.cont[1]+200,MSS-.5),box(P.ttc[0]-230,P.ttc[1]-190,P.ttc[0]+250,P.ttc[1]+200,MSS-.5),
+ if(DL){const c=bbox(OSM.dca);MAP.detail=[box(rr[0]-70,rr[1]-60,rr[2]+70,P.monostation[1]+90,MSS),box(c[0]-40,c[1]-40,c[2]+40,c[3]+40,MSS-.5)]} /* Disneyland: the park, then California Adventure */
+ else MAP.detail=[box(rr[0]-70,rr[1]-60,rr[2]+70,P.monostation[1]+90,MSS),box(P.cont[0]-230,P.cont[1]-230,P.cont[0]+300,P.cont[1]+200,MSS-.5),box(P.ttc[0]-230,P.ttc[1]-190,P.ttc[0]+250,P.ttc[1]+200,MSS-.5),
   box(P.poly[0]-260,P.poly[1]-280,P.poly[0]+260,P.poly[1]+190,MSS-.5),box(P.gf[0]-200,P.gf[1]-280,P.gf[0]+300,P.gf[1]+230,MSS-.5)];
  if(P.epcot&&OSM.epcot){const e=bbox(OSM.epcot);MAP.detail.push(box(e[0]-40,e[1]-40,e[2]+40,e[3]+40,MSS-.5))} /* Epcot close up */
  if(OSM.hs){const e=bbox(OSM.hs);MAP.detail.push(box(e[0]-40,e[1]-40,e[2]+40,e[3]+40,MSS-.5))} /* Hollywood Studios close up */
@@ -783,11 +826,12 @@ function paintMap(rx,ry,rw,rh,mss){
  /* buildings, rockwork and trees, painted north-to-south so nearer things overlap farther ones */
  const{b:tronB,cv:tronCv}=tronParts();
  let evB=null; /* Everest's show building, whose footprint the mountain fills */
- const B=[],late=[],castleB=OSM.buildings.find(q=>q.n==='Cinderella Castle'),towerB=OSM.buildings.find(q=>q.n==='The Twilight Zone Tower of Terror');
+ const B=[],late=[],castleB=OSM.buildings.find(q=>q.n===(DL?'Sleeping Beauty Castle':'Cinderella Castle')),towerB=OSM.buildings.find(q=>q.n==='The Twilight Zone Tower of Terror');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbOf(q.p);if(!cull)b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);if(!vis(bb))continue;
   const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landOf(cx_,cy_)||akResOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
-  if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain')continue;
+  if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain'||DL&&q.n==='Matterhorn Bobsleds')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
+   if(DL&&!q.c&&(bb[2]-bb[0])*(bb[3]-bb[1])>1800&&land&&!EPL.has(land)){const N_=['#bdb6aa','#aaa49b','#c6c0b5','#b3ada3'];roof=N_[(hs>>>4)%N_.length];wall=['#d8d0c2','#cfc6b6'][hs%2]} /* Disneyland's big show buildings hide behind the facades: plain roofs, not the land's colours */
   if(q.n==='Disney’s Contemporary Resort'||q.n==="Disney's Contemporary Resort"){late.push(()=>aframe(c,e,bb,hh));continue} // painted after the monorail beams, which run behind and through it
   if(q.k==='tent'){B.push({y:bb[3],f:()=>tent(c,cx_,bb[3],(bb[2]-bb[0])/2,hh+4,['#d65a8a','#5a8ad6','#e2a321','#7b4fc0'][hs%4])});continue}
   if(land.startsWith('ep')&&q.n==='The Land'){const qq=q;B.push({y:bb[3],f:()=>landPavilion(c,e,qq,bb,S2)});continue}
@@ -833,19 +877,20 @@ function paintMap(rx,ry,rw,rh,mss){
    const big=Math.min(1,Math.sqrt((bb[2]-bb[0])*(bb[3]-bb[1]))/45);for(let i=0;i<Math.max(3,(bb[2]-bb[0])*(bb[3]-bb[1])/110);i++){const x=bb[0]+R2()*(bb[2]-bb[0]),y=bb[1]+R2()*(bb[3]-bb[1]);if(ptIn(x,y,a.o))sp.push([x,y,(3+R2()*14)*(.35+.65*big)*tall,(2+R2()*4)*(.5+.5*big)])}
    sp.sort((u,v)=>u[1]-v[1]);for(const[x,y,h,w]of sp){poly4(c,[[x-w,y],[x-w*.6,y-h*.6],[x-w*.2,y-h],[x+w*.3,y-h*.85],[x+w*.7,y-h*.4],[x+w,y]],col[0]);poly4(c,[[x-w*.2,y-h],[x+w*.3,y-h*.85],[x+w*.1,y-h*.2],[x-w*.4,y-h*.5]],col[1])}}})}
  // Cinderella Castle on its real footprint
- if(castleB){const bb=bbox(castleB.p),k=Math.max((bb[2]-bb[0])/66,58*OSM.S/66)*1.25,cx_=(bb[0]+bb[2])/2,oy=bb[3]-2;MAP.castleAt=[cx_,oy,k];MAP.castleFoot=bb;
-  const img=CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:null;
+ if(castleB){const CS=DL?SBC:CST,bb=bbox(castleB.p),k=DL?Math.max((bb[2]-bb[0])/CS.w,30*OSM.S/CS.w)*1.3:Math.max((bb[2]-bb[0])/66,58*OSM.S/66)*1.25,cx_=(bb[0]+bb[2])/2,oy=bb[3]-2;MAP.castleAt=[cx_,oy,k];MAP.castleFoot=bb;
+  const img=!DL&&CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:null; /* the illustration is Cinderella Castle: Disneyland's castle is drawn */
   if(img){ // the illustrated castle image, standing on the castle's real footprint (bottom centre = the front gate)
    const w=66*k*1.3,h=w*img.naturalHeight/img.naturalWidth,x0=cx_-w/2,y0=oy-h+2;MAP.castleImg=true;
    B.push({y:bb[3],f:()=>{c.drawImage(img,x0,y0,w,h);e.save();e.globalAlpha=.32;e.drawImage(img,x0,y0,w,h);e.restore()}}); // the glow copy makes it read as floodlit at night
    if(!(MAP.castleMSS>=mss)){const cc=document.createElement('canvas');cc.width=Math.ceil(w*mss);cc.height=Math.ceil(h*mss);cc.getContext('2d').drawImage(img,0,0,cc.width,cc.height);
     MAP.castle=cc;MAP.castleBox=[x0,y0,w,h];MAP.castleMSS=mss}}
-  else{B.push({y:bb[3],f:()=>castleArt(c,e,cx_,oy,k,.9)});
-   if(!(MAP.castleMSS>=mss)){const cw_=74*k,ch_=80*k,cc=document.createElement('canvas');cc.width=Math.ceil(cw_*mss);cc.height=Math.ceil(ch_*mss);const ccx=cc.getContext('2d');ccx.scale(mss,mss);castleArt(ccx,null,cw_/2,ch_-4,k,.9);
+  else{B.push({y:bb[3],f:()=>castleArt(c,e,cx_,oy,k,.9,CS)});
+   if(!(MAP.castleMSS>=mss)){const cw_=CS.box[0]*k,ch_=CS.box[1]*k,cc=document.createElement('canvas');cc.width=Math.ceil(cw_*mss);cc.height=Math.ceil(ch_*mss);const ccx=cc.getContext('2d');ccx.scale(mss,mss);castleArt(ccx,null,cw_/2,ch_-4,k,.9,CS);
     MAP.castle=cc;MAP.castleBox=[cx_-cw_/2,oy-ch_+4,cw_,ch_];MAP.castleMSS=mss}}}
  ttTrack(c,e,B,vis); /* Test Track's outdoor track on its stilts */
  // Space Mountain on its real footprint
  {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p),rx=(bb[2]-bb[0])/2;B.push({y:bb[3],f:()=>spaceDome(c,e,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,rx)})}}
+ if(DL){const q=OSM.buildings.find(q=>q.n==='Matterhorn Bobsleds');if(q){const bb=bbox(q.p),rx=Math.min(bb[2]-bb[0],bb[3]-bb[1])/2;if(vis(bb))B.push({y:bb[3],f:()=>matterhorn(c,e,(bb[0]+bb[2])/2,bb[3]-rx*.35,rx,S2)})}} /* Disneyland's Matterhorn on its real footprint */
  // details OpenStreetMap doesn't model: flume mountain, mine mountain, treehouse, TRON canopy
  for(const a of AT){if(!['mtn2','mtn3','tree'].includes(a.k)&&!(a.k==='tron'&&!tronB)||!vis([a.x-40,a.y-40,a.x+40,a.y+40]))continue; /* TRON has its own art on its real outlines, when the map data has them */const f=attractionArt(c,e,a);if(!f)continue;const S=a.k==='tron'?1.6:1.25;
   B.push({y:a.y+12,f:()=>{for(const ctx of[c,e]){ctx.save();ctx.translate(a.x,a.y);ctx.scale(S,S);ctx.translate(-a.x,-a.y)}f();c.restore();e.restore()}})}

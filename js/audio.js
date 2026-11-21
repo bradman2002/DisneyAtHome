@@ -57,7 +57,7 @@ function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlayi
 function auTick(){if(!AU.ready||FF)return;
  // a large jump in simulated time means a seek or a fast speed: resync state without firing stale one-shots
  const jump=Math.abs(T-AU.lt)>Math.max(60,speed*3);AU.lt=T;if(jump){auSync();}
- const z=.6+.4*Math.min(1,cam.m/2),open=T>=8.5*3600&&T<22.5*3600,dens=Math.min(1,guests.length*K/24000),day=1-nf,zl=.5+.5*Math.min(1,Math.max(0,(cam.m-1)/1.5)),LP=k=>zl*prox(LANDS[k][1],LANDS[k][2],230);
+ const z=.6+.4*Math.min(1,cam.m/2),open=T>=8.5*3600&&T<22.5*3600,dens=Math.min(1,guests.length*K/24000),day=1-nf,zl=.5+.5*Math.min(1,Math.max(0,(cam.m-1)/1.5)),LP=k=>{const L=LANDS[k]||(DL&&k==='lib'?LANDS.nos:null);return L?zl*prox(L[1],L[2],230):0}; /* Disneyland has no Liberty Square: New Orleans Square's riverfront stands in */
  // beds
  const SHOW=showOn(); /* during a show only the show (and its own crowd) is heard */
  lvl('crowd',(open?.12+.55*dens:.02)*z*(SHOW?0:1));
@@ -98,6 +98,7 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(typeof AKR!=='undefined'&&AKR&&!SV.on&&cam.x>AKR[0]-250&&cam.x<AKR[2]+250&&cam.y>AKR[1]-250&&cam.y<AKR[3]+250){if(T>=AOPEN*3600-1800&&T<=ACLOSE*3600+900)t.ak=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Animal Kingdom: one loop for the whole park, on its own hours (it closes earlier) */
  if(T<OPEN*3600-1800||T>CLOSE*3600+900)return t;
  if(SV.on){t.ms=1;return t}
+ if(DL&&OSM.dca&&ptIn(cam.x,cam.y,OSM.dca))return t; /* California Adventure has no area music yet; Disneyland's lands use the same-named Magic Kingdom loops */
  if(typeof EPCOT!=='undefined'&&EPCOT&&cam.x>EPR[0]-250&&cam.x<EPR[2]+250&&cam.y>EPR[1]-250&&cam.y<EPR[3]+250){t.ep=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over EPCOT: its one loop, fading as you zoom out */
  if(typeof HSR!=='undefined'&&HSR&&cam.x>HSR[0]-250&&cam.x<HSR[2]+250&&cam.y>HSR[1]-250&&cam.y<HSR[3]+250){t.hs=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Hollywood Studios: one loop for the whole park, like EPCOT */
  /* nearness of each land's centre to the middle of the screen; the nearest dominates, and everything fades as you zoom out */
@@ -171,7 +172,7 @@ let MONOHOVER=false; /* the mouse is over a monorail (set in ui.js) */
 function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monorail=0;t.skyliner=0;
  if(SV.on)return t;
  /* the monorail's onboard audio (audio/ride-monorail.mp3): while TV mode rides along with a train, while a train's card is open, or while the mouse is over one; only in operating hours */
- if(T>OPEN*3600-5400&&T<CLOSE*3600+3600)t.monorail=follow&&follow.k==='m'?1:sel&&sel.k==='m'&&sheet==='detail'?.95:MONOHOVER?.85:0;const z=Math.max(0,Math.min(1,(cam.m-1.9)/1.1));
+ if(!DL&&T>OPEN*3600-5400&&T<CLOSE*3600+3600)t.monorail=follow&&follow.k==='m'?1:sel&&sel.k==='m'&&sheet==='detail'?.95:MONOHOVER?.85:0;const z=Math.max(0,Math.min(1,(cam.m-1.9)/1.1));
  /* the Skyliner's sounds (audio/ride-skyliner.mp3): close in on one of its lines while it runs */
  if(OSM.skyliner&&typeof skyOpen==='function'&&skyOpen()){if(!RA.skyPts){RA.skyPts=[];for(const L of OSM.skyliner.lines){const P=mkPath(L.p);for(let d=0;d<P.L;d+=12)RA.skyPts.push(P.at(d))}}
   const E=SKY_E();let dm=1e9;for(const p of RA.skyPts)dm=Math.min(dm,Math.hypot(cam.x-p[0],cam.y-(p[1]-E)));t.skyliner=Math.min(1,z*Math.exp(-dm/40)*1.4)}

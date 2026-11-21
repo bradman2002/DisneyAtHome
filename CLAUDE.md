@@ -293,6 +293,15 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   building to `places.cadillac`, `palAround`, open-air coaster tracks (`OSM.coasters`; Pixar Pier's high on white posts, ones
   inside buildings or Fantasyland skipped). LANDSTYLE.ms/nos are overridden at DL (Victorian colours; `nosDeco` balconies).
   The extractor now writes `falcon`, `coasters` ([name, tunnel, pts]) and peak places btmpeak/cadillac/grizzlypk.
+  Second pass (owner, 21 Nov: Grand Californian, around Pirates and the Haunted Mansion looked weird, "so many grey buildings",
+  "make sure the orientation of everything looks good"; "The ferris wheel looks wrong"): show boxes only for NAMED ride/backstage
+  buildings (AT osm names or show building/warehouse/... names); unnamed big outlines are façade blocks (NOS's French Quarter
+  is one) and keep their land style. Show boxes are "go-away green" (sage walls, pale roofs, max 9 m) painted at y=bb[1] so
+  façades on or against them draw over them (`dlBuilding` may return a list of {y,f}). The Mansion house is its own outline
+  (`dlMansionHouse`: the biggest unnamed outline beside the HM show building, outside it, east of the railroad), drawn by
+  extrude with columns on every visible wall. small world's façade follows the polygon's longest south-facing edge. Grand
+  Californian: `grandCal` (brown shingle walls, cream trim, shingled roof with sparse dormers and chimneys). Pal-A-Round: kind
+  'wheel' (not 'spin', whose spinning-seat art sat on it), R=22 (49 m tall), WoC's lit ring matches.
 
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say

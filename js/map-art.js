@@ -831,7 +831,7 @@ function paintMap(rx,ry,rw,rh,mss){
   const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landOf(cx_,cy_)||akResOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain'||DL&&q.n==='Matterhorn Bobsleds')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
-   if(DL&&typeof dlBuilding==='function'){const f=dlBuilding(q,bb,land,hh,hs);if(f===false)continue;if(f){B.push({y:bb[3],f:()=>f(c,e)});continue}} /* Disneyland's landmarks and show buildings (map-art-dl.js) */
+   if(DL&&typeof dlBuilding==='function'){const f=dlBuilding(q,bb,land,hh,hs);if(f===false)continue;if(Array.isArray(f)){for(const it of f)B.push({y:it.y,f:()=>it.f(c,e)});continue}if(f){B.push({y:bb[3],f:()=>f(c,e)});continue}} /* Disneyland's landmarks and show buildings (map-art-dl.js) */
   if(q.n==='Disney’s Contemporary Resort'||q.n==="Disney's Contemporary Resort"){late.push(()=>aframe(c,e,bb,hh));continue} // painted after the monorail beams, which run behind and through it
   if(q.k==='tent'){B.push({y:bb[3],f:()=>tent(c,cx_,bb[3],(bb[2]-bb[0])/2,hh+4,['#d65a8a','#5a8ad6','#e2a321','#7b4fc0'][hs%4])});continue}
   if(land.startsWith('ep')&&q.n==='The Land'){const qq=q;B.push({y:bb[3],f:()=>landPavilion(c,e,qq,bb,S2)});continue}

@@ -253,6 +253,8 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `routes.riverboat` started at Frontierland Landing, 12 min sail + 3 min docked, Columbia half a trip behind; pure function of the
   clock while the ride isn't Closed (live status when Live); otherwise docked (Columbia in Fowler's Harbor, `P_.fowler`); lights
   in the night pass; `hitMap` opens the ride. Next: parades, fireworks, Fantasmic!, World of Color (no Main Street view wanted).
+  Shared ride audio at DL: RIDEAUD matches by osm name (Mansion, Pirates, Space Mountain, Star Tours, Rise, Runaway Railway); DL's
+  differently spelled small world and Soarin' are added to RIDEAUD when DL (owner, 21 Nov: "add small world and soarin").
 
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say

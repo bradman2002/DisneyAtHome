@@ -31,7 +31,8 @@ both.
 
 Not on the Disneyland side yet: the parades, fireworks, Fantasmic! and World of Color, and area music in California Adventure (the Main Street street view stays Magic Kingdom's). Disneyland's lands play the Magic Kingdom loops of the same
 name (Main Street, Adventureland, Frontierland, Fantasyland, Tomorrowland), and the rides that have a recording at Walt Disney
-World (Haunted Mansion, Pirates, Space Mountain, Star Tours, Rise of the Resistance, Runaway Railway) play it.
+World (Haunted Mansion, Pirates, Space Mountain, Star Tours, Rise of the Resistance, Runaway Railway, “it’s a small world”,
+Soarin’) play it.
 
 ## Live: the real park
 

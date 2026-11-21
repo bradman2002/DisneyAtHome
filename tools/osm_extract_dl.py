@@ -77,7 +77,7 @@ def rel(name=None,rid=None):
 def rel_outline(rl):
     rg=rings_from([ref for ty,ref,role in rl['m'] if ty=='way' and role in('outer','')]) if rl else []
     return max(rg,key=lambda r:abs(area(r))) if rg else None
-def rel_chain(rl): return chain([ref for ty,ref,role in rl['m'] if ty=='way']) if rl else []
+def rel_chain(rl): return chain(list(dict.fromkeys(ref for ty,ref,role in rl['m'] if ty=='way'))) if rl else []  # some ways are listed twice (the parade route), which would close a loop and cut the chain short
 # ---------------- the two parks: their outlines and regions ----------------
 DLP=rel_outline(rel(rid='5586855'));DCA=rel_outline(rel(rid='15626312'))
 print('Disneyland outline',len(DLP),'California Adventure outline',len(DCA))

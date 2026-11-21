@@ -52,7 +52,7 @@ function lvl(k,v,tc){const l=AU.L[k];if(!isFinite(v))v=0;if(l)l.g.gain.setTarget
 /* Is a show's music playing where you can hear it? Then the park's own sound (land music, ride audio, nature and the
    general crowd) fades right out and leaves the show alone. The water pageant and Luminous only count when the map is
    near them. */
-function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||(typeof fmPlaying==='function'&&fmPlaying()&&fmNear()>.1)||(typeof tolPlaying==='function'&&tolPlaying()&&tolNear()>.1)||
+function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||(typeof fmPlaying==='function'&&fmPlaying()&&fmNear()>.1)||(typeof wocPlaying==='function'&&wocPlaying()&&wocNear()>.1)||(typeof tolPlaying==='function'&&tolPlaying()&&tolNear()>.1)||
  (typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying())||(typeof kissPlaying==='function'&&kissPlaying())}
 function auTick(){if(!AU.ready||FF)return;
  // a large jump in simulated time means a seek or a fast speed: resync state without firing stale one-shots
@@ -93,16 +93,24 @@ function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(
    The files are long (25 to 60 minutes) and simply loop; each keeps its place while it is silent. A missing file is
    skipped. */
 const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3',hs:'audio/area-hs.mp3',ak:'audio/area-ak.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT; hs: Hollywood Studios (the Hollywood Boulevard loop for now), heard anywhere over that park; ak: Animal Kingdom (the Tree of Life loop), heard anywhere over it during its own hours */
+if(DL)AREA.dca='audio/area-dca.mp3'; /* California Adventure: the owner's Buena Vista Street loop, for the whole park for now */
+/* Disneyland's lands play the Magic Kingdom loop that fits: the same-named lands their own, New Orleans Square Liberty Square's
+   (the Haunted Mansion's riverfront), Bayou Country Frontierland's and Toontown Fantasyland's. Galaxy's Edge has none, so it
+   stays quiet (it still counts as a land, so the neighbours' music fades out as you go in) */
+const DLAREA={ms:'ms',adv:'adv',fr:'fr',bc:'fr',nos:'lib',fan:'fan',tt:'fan',tom:'tom',gx:null};
 const AM={el:{},vol:{},bad:{},pos:{},off:{}};
 function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(typeof AKR!=='undefined'&&AKR&&!SV.on&&cam.x>AKR[0]-250&&cam.x<AKR[2]+250&&cam.y>AKR[1]-250&&cam.y<AKR[3]+250){if(T>=AOPEN*3600-1800&&T<=ACLOSE*3600+900)t.ak=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Animal Kingdom: one loop for the whole park, on its own hours (it closes earlier) */
+ if(DL&&OSM.dca&&ptIn(cam.x,cam.y,OSM.dca)){if(!SV.on&&T>=EOPEN*3600-1800&&T<=ECLOSE*3600+900)t.dca=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over California Adventure: its one loop, on its own hours */
  if(T<OPEN*3600-1800||T>CLOSE*3600+900)return t;
  if(SV.on){t.ms=1;return t}
- if(DL&&OSM.dca&&ptIn(cam.x,cam.y,OSM.dca))return t; /* California Adventure has no area music yet; Disneyland's lands use the same-named Magic Kingdom loops */
  if(typeof EPCOT!=='undefined'&&EPCOT&&cam.x>EPR[0]-250&&cam.x<EPR[2]+250&&cam.y>EPR[1]-250&&cam.y<EPR[3]+250){t.ep=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over EPCOT: its one loop, fading as you zoom out */
  if(typeof HSR!=='undefined'&&HSR&&cam.x>HSR[0]-250&&cam.x<HSR[2]+250&&cam.y>HSR[1]-250&&cam.y<HSR[3]+250){t.hs=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Hollywood Studios: one loop for the whole park, like EPCOT */
  /* nearness of each land's centre to the middle of the screen; the nearest dominates, and everything fades as you zoom out */
  const zoom=Math.max(0,Math.min(1,(cam.m-.55)/.9)),w={};let sum=0,top=0;
+ if(DL){for(const lk in DLAREA){const L=LANDS[lk];if(!L)continue;let d=Math.hypot(cam.x-L[1],cam.y-L[2]);if(lk==='ms'&&LANDS.hub)d=Math.min(d,Math.hypot(cam.x-LANDS.hub[1],cam.y-LANDS.hub[2])*.8);
+   const v=Math.exp(-d/150),q=v**5,k=DLAREA[lk];sum+=q;top=Math.max(top,v);if(k)w[k]=(w[k]||0)+q}
+  if(sum>0)for(const k in w)t[k]=w[k]/sum*Math.min(1,top*2.2)*zoom;return t}
  for(const k in AREA){const L=LANDS[k];if(!L)continue;let d=Math.hypot(cam.x-L[1],cam.y-L[2]);if(k==='ms'&&LANDS.hub)d=Math.min(d,Math.hypot(cam.x-LANDS.hub[1],cam.y-LANDS.hub[2])*.8); /* the hub in front of the castle plays Main Street's music, as in the park */
   const v=Math.exp(-d/150);w[k]=v**5;sum+=w[k];top=Math.max(top,v)}
  /* the nearest land dominates sharply (fifth power), so the hub hears mostly one land, not a muddle of six */
@@ -123,22 +131,26 @@ setInterval(areaTick,120);
    "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
    name: happily-ever-after.mp3, minnies-christmas-fireworks.mp3, let-the-magic-begin.mp3, kiss-goodnight.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
-   electrical-water-pageant.mp3, luminous.mp3, fantasmic.mp3, tree-of-life.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
+   electrical-water-pageant.mp3, luminous.mp3, fantasmic.mp3, tree-of-life.mp3, and at Disneyland believe-in-holiday-magic.mp3,
+   a-christmas-fantasy-parade.mp3, fantasmic-disneyland.mp3 and world-of-color.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 function pickAudioFolder(){const i=document.createElement('input');i.type='file';i.multiple=true;i.webkitdirectory=true;i.onchange=()=>loadAudioFiles([...i.files]);i.click()}
 async function loadAudioFiles(files){const st=t=>{const e=$('#afStat');if(e)e.textContent=t};let n=0,miss=0;
  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){} /* ask the browser not to clear it to save space */
  for(const f of files){const nm=f.name.toLowerCase();let key=null,use=null;
-  if(nm==='happily-ever-after.mp3'){key='hea';use=()=>heaUse(f,f.name)}
+  if(DL&&nm==='believe-in-holiday-magic.mp3'){key='believe';use=()=>blvUse(f,f.name)}
+  else if(nm==='happily-ever-after.mp3'){key='hea';use=()=>heaUse(f,f.name)}
   else if(nm==='minnies-christmas-fireworks.mp3'){key='minnie';use=()=>{const M=FW.shows.minnie;M.src='picked';M.el.src=URL.createObjectURL(f);M.el.load()}}
   else if(nm==='kiss-goodnight.mp3'){key='kiss';use=()=>{KISS.a.src='picked';KISS.a.audio.src=URL.createObjectURL(f);KISS.a.audio.load()}}
   else if(nm==='let-the-magic-begin.mp3'){key='welcome';use=()=>{WELC.a.src='picked';WELC.a.audio.src=URL.createObjectURL(f);WELC.a.audio.load()}}
   else if(nm==='electrical-water-pageant.mp3'){key='ewp';use=()=>ewpUse(f,f.name)}
-  else if(nm==='fantasmic.mp3'){key='fantasmic';use=()=>{FM.a.src='picked';FM.a.audio.src=URL.createObjectURL(f);FM.a.audio.load()}}
+  else if(DL&&nm==='fantasmic-disneyland.mp3'){key='fantasmic-dl';use=()=>{FM.a.src='picked';FM.a.audio.src=URL.createObjectURL(f);FM.a.audio.load()}}
+  else if(DL&&nm==='world-of-color.mp3'){key='woc';use=()=>{WOC.a.src='picked';WOC.a.audio.src=URL.createObjectURL(f);WOC.a.audio.load()}}
+  else if(!DL&&nm==='fantasmic.mp3'){key='fantasmic';use=()=>{FM.a.src='picked';FM.a.audio.src=URL.createObjectURL(f);FM.a.audio.load()}}
   else if(nm==='tree-of-life.mp3'){key='treeoflife';use=()=>{TOL.a.src='picked';TOL.a.audio.src=URL.createObjectURL(f);TOL.a.audio.load()}}
   else if(nm==='luminous.mp3'){key='luminous';use=()=>{LUM.a.src='picked';LUM.a.audio.src=URL.createObjectURL(f);LUM.a.audio.load()}}
-  else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.id;use=()=>parUse(P,f,f.name)}
+  else{const P=PARADES.find(P=>P.file&&P.file.split('/').pop()===nm);if(P){key=P.key||P.id;use=()=>parUse(P,f,f.name)}
    else if(/^ride-(\w+)\.mp3$/.test(nm)){const k=/^ride-(\w+)\.mp3$/.exec(nm)[1];key='ride-'+k;use=()=>{RA.bad[k]=0;RA.url[k]=URL.createObjectURL(f)}}
    else{const m=/^area-(\w+)\.mp3$/.exec(nm);if(m&&AREA[m[1]]){key='area-'+m[1];use=()=>{const a=AM.el[m[1]];AM.bad[m[1]]=0;if(a){a.dataset.saved=1;a.src=URL.createObjectURL(f)}}}}}
   if(!key)continue;st(`Saving ${f.name}…`);try{await saveFile(key,f);use();n++}catch(e){miss++;console.warn('Could not keep',f.name,e)}}

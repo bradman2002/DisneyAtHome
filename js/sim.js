@@ -51,8 +51,11 @@ const DL_V=[['Plaza Inn','Plaza Inn','eat','ms'],['Carnation Café','Carnation C
  ['Docking Bay 7 Food and Cargo','Docking Bay 7 Food and Cargo','eat','gx'],['Oga’s Cantina',"Oga's Cantina",'eat','gx'],
  ['Carthay Circle Restaurant','Carthay Circle Restaurant','eat','bv'],['Fiddler, Fifer & Practical Café','Fiddler, Fifer, & Practical Café','eat','bv'],['Award Wieners','Award Wieners','eat','hl'],['Flo’s V8 Café',"Flo's V8 Café",'eat','cl'],['Cozy Cone Motel','Cozy Cone Motel','eat','cl'],
  ['Lamplight Lounge','Lamplight Lounge','eat','pp'],['Paradise Garden Grill','Paradise Garden Grill','eat','pg'],['Smokejumpers Grill','Smokejumpers Grill','eat','gp'],['Wine Country Trattoria','Wine Country Trattoria','eat','sf'],['Aunt Cass Café','Aunt Cass Café','eat','sf']];
-/* Disneyland's daily shows that need no soundtrack (the parades, fireworks, Fantasmic! and World of Color come later) */
-const DL_EV=[{id:'band',n:'Disneyland Band',ts:['10:30','12:30','14:30','17:30'],dur:20,lead:8,pref:.12},{id:'castle',n:'Storytelling at Royal Theatre',ts:['11:00','12:15','13:30','15:00','16:15'],dur:20,lead:15,pref:.25},
+/* Disneyland's shows: the holiday-season fireworks and parade (8 Nov to 31 Dec without live data; with it, the real nights and
+   times), the daily band, storytelling and Flag Retreat, Fantasmic! on the Rivers of America (fantasmic.js) and World of Color
+   on Paradise Bay in California Adventure (worldofcolor.js). */
+const DL_EV=[{id:'fmic',n:'Fantasmic!',ts:['21:00'],dur:22,lead:45,pref:.5,exit:.7},{id:'woc',n:'World of Color',ts:['21:00'],dur:22,lead:40,pref:.55,exit:.7,pk:1},{id:'fire',n:'Believe… In Holiday Magic (fireworks)',ts:['21:30'],dur:8,lead:40,pref:.75,exit:.6,season:[1108,1231]},
+ {id:'xmas',n:'A Christmas Fantasy Parade',ts:['15:30','18:30'],dur:15.5,lead:35,pref:.45,season:[1108,1231]},{id:'band',n:'Disneyland Band',ts:['10:30','12:30','14:30','17:30'],dur:20,lead:8,pref:.12},{id:'castle',n:'Storytelling at Royal Theatre',ts:['11:00','12:15','13:30','15:00','16:15'],dur:20,lead:15,pref:.25},
  {id:'flag',n:'Flag Retreat Ceremony',ts:['16:45'],dur:12,lead:8,pref:.1}];
 const PARK={name:PARK_NAMES[0],
 LANDS:Object.fromEntries(Object.entries(LC).map(([k,c])=>[k,[k==='hub'?'Central Hub':LANDNAME[k],c[0],c[1]]])),
@@ -298,7 +301,7 @@ const hm24=s=>{const m=Math.floor(s/60);return Math.floor(m/60)+':'+String(m%60)
    backwards as the crowd grows, and each guest takes a spot near where they already are. */
 function invite(ev,key){ev.nw=0;ev.nexp=0;for(const g of guests){if((g.pk||0)!==(ev.pk||0)||g.intent==='exit'||g.st===7||R()>=ev.pref)continue;g.evId=ev.id;g.evK=key;g.evT=key-150-ev.lead*60*R()**2.2;ev.nexp++}}
 const isPar=ev=>typeof isParade==='function'?isParade(ev.id):ev.id==='parade',paradeLen=ev=>(typeof parOf==='function'&&parOf(ev.id)?parOf(ev.id).len:300)*OSM.S,paradeHead=ev=>ev.p*(PR.L+paradeLen(ev));
-function spot(ev,g){let s=null;if(ev.id==='fmic'){s=spot0(ev,g);if(!s)return null;s[2]=nearestNode(s[0],s[1]);s[4]=0;return s} /* the amphitheater's seats aren't pavement in the map data, but that's where people sit */
+function spot(ev,g){let s=null;if(ev.id==='fmic'&&!DL){s=spot0(ev,g);if(!s)return null;s[2]=nearestNode(s[0],s[1]);s[4]=0;return s} /* the amphitheater's seats aren't pavement in the map data, but that's where people sit */
  for(let i=0;i<8;i++){s=spot0(ev,g);if(!s)return null;if(PAVE(s[0],s[1])){s[4]=0;break}s[4]=1} // only on pavement: try again if the spot fell on a lawn, a building or the water
  s[2]=nearestNode(s[0],s[1]);if(s[4]){s[0]=N[s[2]][0]+rr(-1.5,1.5);s[1]=N[s[2]][1]+rr(-1.5,1.5)}return s}
 function spot0(ev,g){ // [x, y, (walk-graph node, filled in by spot), distance along the parade route]
@@ -308,6 +311,7 @@ function spot0(ev,g){ // [x, y, (walk-graph node, filled in by spot), distance a
    if(!best)return null;const[d,x,y,a]=best,o=(R()<.5?-1:1)*(6.5+rr(0,1.2+4.8*f));return near(x-Math.sin(a)*o,y+Math.cos(a)*o,d)}
   case'lum':{const L=lumSpots();if(!L.length)return null;const n=N[L[R()*L.length|0]],k=1+f*1.5;return near(n[0]+rr(-4,4)*k,n[1]+rr(-4,4)*k)} /* along the World Showcase promenade, round the lagoon */
   case'fmic':{const G=typeof fmGeo==='function'&&fmGeo();if(!G||!G.seats.length)return null;const a=Math.atan2(G.u[1],G.u[0])+rr(-1.05,1.05),r=G.shore(a)+3+rr(0,16)*(.35+.65*f);return near(G.lc[0]+Math.cos(a)*r,G.lc[1]+Math.sin(a)*r)} /* in the amphitheater's seats, facing the lagoon (filling from the front) */
+  case'woc':{const G=typeof wocGeo==='function'&&wocGeo();if(!G)return null;const x=G.x0-10+rr(0,G.w+20),y=G.shore(Math.max(G.x0,Math.min(G.x1,x)))-2-rr(0,14)*(.35+.65*f);return near(x,y)} /* along the Paradise Gardens shore, facing the fountains (filling from the front) */
   case'castle':case'welcome':return near(P_.stage[0]+rr(-34,34),P_.stage[1]+rr(14,22+26*f));
   case'flag':{const fp=P_.flagpole||P_.townsq,a=rr(0,6.283),d=7+rr(0,14)*(.4+.6*f);return near(fp[0]+Math.cos(a)*d,fp[1]+Math.sin(a)*d*.8+3)} /* around the pole, leaving it clear */
   case'band':{const k=.4+.6*f;return near(P_.townsq[0]+rr(-22,22)*k,P_.townsq[1]+rr(-14,14)*k)}

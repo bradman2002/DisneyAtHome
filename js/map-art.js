@@ -10,7 +10,7 @@
    and south face, the way theme-park guide maps are drawn. */
 /* castle illustration (images/castle.png); loaded before the map is built, with the drawn castle as a fallback */
 let CASTLE_IMG=null;
-function loadCastleImage(){return new Promise(res=>{const i=new Image();i.onload=()=>{CASTLE_IMG=i;res()};i.onerror=()=>{console.warn('images/castle.png not found; using the drawn castle');res()};i.src='images/castle.png'})}
+function loadCastleImage(){return new Promise(res=>{const i=new Image();i.onload=()=>{CASTLE_IMG=i;res()};i.onerror=()=>{console.warn(i.src+' not found; using the drawn castle');res()};i.src=DL?'images/castle-dl.png':'images/castle.png'})} /* Disneyland: the owner's Sleeping Beauty Castle illustration */
 let MSS=3; // pixels per map unit in the close-up layers (2 on phones)
 const MAP={};
 /* "Keep the whole map in memory" (Sound & settings, remembered): paint every piece of the map in the background once the page
@@ -878,9 +878,9 @@ function paintMap(rx,ry,rw,rh,mss){
    sp.sort((u,v)=>u[1]-v[1]);for(const[x,y,h,w]of sp){poly4(c,[[x-w,y],[x-w*.6,y-h*.6],[x-w*.2,y-h],[x+w*.3,y-h*.85],[x+w*.7,y-h*.4],[x+w,y]],col[0]);poly4(c,[[x-w*.2,y-h],[x+w*.3,y-h*.85],[x+w*.1,y-h*.2],[x-w*.4,y-h*.5]],col[1])}}})}
  // Cinderella Castle on its real footprint
  if(castleB){const CS=DL?SBC:CST,bb=bbox(castleB.p),k=DL?Math.max((bb[2]-bb[0])/CS.w,30*OSM.S/CS.w)*1.3:Math.max((bb[2]-bb[0])/66,58*OSM.S/66)*1.25,cx_=(bb[0]+bb[2])/2,oy=bb[3]-2;MAP.castleAt=[cx_,oy,k];MAP.castleFoot=bb;
-  const img=!DL&&CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:null; /* the illustration is Cinderella Castle: Disneyland's castle is drawn */
+  const img=CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:null; /* the owner's illustration of each resort's castle (castle.png / castle-dl.png); the drawn castle if it is missing */
   if(img){ // the illustrated castle image, standing on the castle's real footprint (bottom centre = the front gate)
-   const w=66*k*1.3,h=w*img.naturalHeight/img.naturalWidth,x0=cx_-w/2,y0=oy-h+2;MAP.castleImg=true;
+   const w=DL?CS.box[0]*k*1.1:66*k*1.3,h=w*img.naturalHeight/img.naturalWidth,x0=cx_-w/2,y0=oy-h*(DL?.95:1)+2;MAP.castleImg=true; /* Disneyland's picture has its drawbridge and path at the bottom: they reach out in front of the footprint */
    B.push({y:bb[3],f:()=>{c.drawImage(img,x0,y0,w,h);e.save();e.globalAlpha=.32;e.drawImage(img,x0,y0,w,h);e.restore()}}); // the glow copy makes it read as floodlit at night
    if(!(MAP.castleMSS>=mss)){const cc=document.createElement('canvas');cc.width=Math.ceil(w*mss);cc.height=Math.ceil(h*mss);cc.getContext('2d').drawImage(img,0,0,cc.width,cc.height);
     MAP.castle=cc;MAP.castleBox=[x0,y0,w,h];MAP.castleMSS=mss}}

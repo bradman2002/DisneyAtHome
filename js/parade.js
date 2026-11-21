@@ -209,6 +209,10 @@ function paradeStreetItems(){const out=[];for(const u of paradeUnits()){if(u.y<P
 /* Each parade takes exactly as long as its soundtrack: first note at step-off, last float into Town Square as the music
    ends. (If you set a longer parade in the schedule, the music loops.) A soundtrack missing from audio/ can be picked
    with "Load soundtrack…" and is remembered in this browser. */
+/* Disneyland: A Christmas Fantasy Parade steps off with the Christmas floats (an original line-up, like Walt Disney World's) to the
+   owner's audio/a-christmas-fantasy-parade.mp3; the Walt Disney World parades have no event there and load nothing. Its saved copy
+   is kept under its own key so the Florida track is never used for it. */
+if(DL)for(const P of PARADES){if(P.id==='xmas'){P.n='A Christmas Fantasy';P.file='audio/a-christmas-fantasy-parade.mp3';P.key='dlxmas'}else P.file=null}
 for(const P of PARADES){const A=P.a={audio:new Audio(),ready:false,name:P.file||'',auto:true,liveKey:null,src:P.file?'folder':'none'},a=A.audio;if(!P.file)continue;a.preload='auto';
  a.addEventListener('canplay',()=>{A.ready=true;parBadge()});
  a.addEventListener('loadedmetadata',()=>{const d=a.duration,ev=paradeEv(P.id);if(!d||!isFinite(d)||!ev)return;if(!ev.userDur)ev.dur=Math.round(d/6)/10;a.loop=ev.dur*60>d+30;parBadge()});
@@ -216,8 +220,8 @@ for(const P of PARADES){const A=P.a={audio:new Audio(),ready:false,name:P.file||
  loadTrack(a,P.file)}
 const PAR=PARADES[0].a; // Festival of Fantasy's soundtrack state (kept under its old name)
 function parUse(P,blob,name){const A=P.a;A.src='picked';A.name=name||'parade soundtrack';A.audio.src=URL.createObjectURL(blob);A.audio.load();parBadge()}
-async function parLoadSaved(P){try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get(P.id);r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob)parUse(P,v.blob,v.name)}catch(e){}}
-async function parSave(P,f){try{const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},P.id);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
+async function parLoadSaved(P){try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get(P.key||P.id);r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob)parUse(P,v.blob,v.name)}catch(e){}}
+async function parSave(P,f){try{const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},P.key||P.id);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){}}
 function parPick(id){const P=parOf(id||'parade'),i=document.createElement('input');i.type='file';i.accept='audio/*,.mp3,.m4a,.wav,.ogg';i.onchange=()=>{const f=i.files[0];if(f){parUse(P,f,f.name);parSave(P,f)}};i.click()}
 function parBadge(){for(const P of PARADES){const el=document.querySelector(`[data-par="${P.id}"] .pstat`),A=P.a;if(el)el.innerHTML=A.name?`<b>${esc(A.name)}</b> — ${A.ready?'ready':'loading…'}${A.audio.duration?` · ${Math.floor(A.audio.duration/60)}:${String(Math.round(A.audio.duration%60)).padStart(2,'0')}`:''}${A.blocked?' (tap Play to allow audio)':''}`:'No soundtrack loaded. The parade still runs, with a drum cadence.'}}
 const parPlaying=id=>{const P=parOf(id);return!!P&&P.a.ready&&!P.a.audio.paused};

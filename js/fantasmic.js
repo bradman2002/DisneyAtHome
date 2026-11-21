@@ -8,20 +8,20 @@
    The owner's own soundtrack, audio/fantasmic.mp3 (never committed; or the copy kept by Load audio folder), plays in
    time with it when it is there, heard when the map is looking at the amphitheater, and the show lasts as long as it.
    Hollywood Studios' guests fill the seats beforehand (spot0 'fmic' in sim.js). */
-const FM={file:'audio/fantasmic.mp3',a:{audio:new Audio(),ready:false,src:'folder',name:'audio/fantasmic.mp3'},G:null,ci:0,lastSt:-9,cues:null,liveKey:null};
+const FM={file:DL?'audio/fantasmic-disneyland.mp3':'audio/fantasmic.mp3',idb:DL?'fantasmic-dl':'fantasmic',a:{audio:new Audio(),ready:false,src:'folder',name:DL?'audio/fantasmic-disneyland.mp3':'audio/fantasmic.mp3'},G:null,ci:0,lastSt:-9,cues:null,liveKey:null};
 {const A=FM.a,a=A.audio,ev=()=>EV.find(e=>e.id==='fmic');a.preload='auto';
  a.addEventListener('canplay',()=>{A.ready=true});
  a.addEventListener('loadedmetadata',()=>{const d=a.duration,e=ev();if(d&&isFinite(d)&&e&&!e.userDur)e.dur=d/60});
- a.addEventListener('error',async()=>{if(A.src!=='folder')return;A.src='none';try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('fantasmic');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob){A.src='picked';a.src=URL.createObjectURL(v.blob);a.load()}}catch(e){}});
- if(OSM.hs)setTimeout(()=>loadTrack(a,FM.file),0)}
+ a.addEventListener('error',async()=>{if(A.src!=='folder')return;A.src='none';try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get(FM.idb);r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob){A.src='picked';a.src=URL.createObjectURL(v.blob);a.load()}}catch(e){}});
+ if(OSM.hs||DL)setTimeout(()=>loadTrack(a,FM.file),0)}
 const fmEv=()=>EV.find(e=>e.id==='fmic');
 function fmClock(){const ev=fmEv();if(!ev||ev.key==null||(ev.ph!=='live'&&ev.ph!=='done'))return null;return T-ev.key}
 const fmLive=()=>{const ev=fmEv();return!!ev&&ev.ph==='live'};
 const fmPlaying=()=>!FM.a.audio.paused;
-const fmLen=()=>{const ev=fmEv();return(ev?ev.dur:29)*60};
+const fmLen=()=>{const ev=fmEv();return(ev?ev.dur:DL?22:29)*60};
 /* the show's places, from the map: the lagoon round the island, the island and its mountain (the stage building), the
    seats (the side of the lagoon away from the island, toward the amphitheater), the mist screens in front of the island */
-function fmGeo(){if(FM.G!==null)return FM.G;FM.G=false;const st=OSM.buildings.find(q=>q.n==='Fantasmic'&&q.p.length>2);if(!st)return false;
+function fmGeo(){if(FM.G!==null)return FM.G;FM.G=false;if(DL)return(FM.G=fmGeoDL());const st=OSM.buildings.find(q=>q.n==='Fantasmic'&&q.p.length>2);if(!st)return false;
  const sb=bbox(st.p),sc=[(sb[0]+sb[2])/2,(sb[1]+sb[3])/2],lag=OSM.areas.filter(a=>a.k==='water'&&ptIn(sc[0],sc[1],a.o)).sort((p,q)=>bbox(p.o)[2]-bbox(p.o)[0]-(bbox(q.o)[2]-bbox(q.o)[0]))[0];if(!lag)return false;
  const lb=bbox(lag.o),lc=[(lb[0]+lb[2])/2,(lb[1]+lb[3])/2],isl=(lag.i||[]).find(h=>ptIn(sc[0],sc[1],h))||[[sb[0]-6,sb[1]],[sb[2]+6,sb[1]],[sb[2]+6,sb[3]],[sb[0]-6,sb[3]]],ib=bbox(isl);
  /* the audience: the seating's aisles fan out from the lagoon, so the walkways just outside its shore lie on the seats' side */
@@ -34,7 +34,25 @@ function fmGeo(){if(FM.G!==null)return FM.G;FM.G=false;const st=OSM.buildings.fi
  /* the seats: rows between the lagoon's shore and the amphitheater's back walkway, in the half facing the island */
  const shore=a=>{let r=4;while(r<120&&ptIn(lc[0]+Math.cos(a)*r,lc[1]+Math.sin(a)*r,lag.o))r+=1.5;return r};
  FM.G={shore,sc,sb,lag,lc,isl,ib,u,v,reach,front,screens,jets,seats,peak:[sc[0],sc[1]-(st.h||18)*OSM.S*.78],hh:(st.h||18)*OSM.S*.78};return FM.G}
-if(OSM.hs){const g=fmGeo();if(g)EVPOS.fmic=g.lc}
+/* Disneyland's: the show plays on the Rivers of America, from the south end of Tom Sawyer Island. The audience stands along
+   the New Orleans Square and Frontierland waterfront round the river's south bend; the mist screens rise from the water in
+   front of the island's tip, the fountains in a row between them and the shore. The Mark Twain and the Columbia take part
+   (fmBoatPos below). */
+function fmGeoDL(){const lag=OSM.areas.find(a=>a.k==='water'&&a.n==='Rivers of America');if(!lag||!lag.i||!lag.i.length)return false;
+ const isl=lag.i.slice().sort((p,q)=>q.length-p.length)[0],tip=isl.reduce((m,p)=>p[1]>m[1]?p:m,isl[0]),wet=(x,y)=>ptIn(x,y,lag.o)&&!lag.i.some(h=>ptIn(x,y,h));
+ let u=[.33,.94];const ul=Math.hypot(...u);u=[u[0]/ul,u[1]/ul];const v=[-u[1],u[0]],sc=[tip[0]+1,tip[1]-13],lc=[tip[0]+u[0]*13,tip[1]+u[1]*13],reach=26,
+  ib=[sc[0]-8,sc[1]-8,sc[0]+8,sc[1]+8],front=[tip[0]+u[0]*4,tip[1]+u[1]*4],screens=[[front[0],front[1]+4]],jets=[];
+ for(let i=0;i<16;i++){const k=(i/15-.5)*52,x=lc[0]+v[0]*k+u[0]*3,y=lc[1]+v[1]*k+u[1]*3;if(wet(x,y)&&wet(x+3,y)&&wet(x-3,y)&&wet(x,y+3))jets.push([x,y])}
+ const seats=[];for(let i=0;i<N.length;i++){const[x,y]=N[i],d=Math.hypot(x-lc[0],y-lc[1]);if(d>12&&d<70&&!ptIn(x,y,lag.o)&&((x-lc[0])*u[0]+(y-lc[1])*u[1])>d*.1)seats.push(i)}
+ const shore=a=>{let r=4;while(r<120&&ptIn(lc[0]+Math.cos(a)*r,lc[1]+Math.sin(a)*r,lag.o))r+=1.5;return r};
+ return{shore,sc,sb:ib,lag,lc,isl,ib,u,v,reach,front,screens,jets,seats,wet,peak:[sc[0],sc[1]-4],hh:10}}
+if(OSM.hs||DL){const g=fmGeo();if(g)EVPOS.fmic=g.lc}
+/* At Disneyland the real riverboats are in the show: the Columbia sails past in the pirate scene and the Mark Twain in the
+   finale, with the characters waving from its deck. rbPos (render.js) asks here first; null leaves the boat to its timetable. */
+function fmBoatDist(b){const G=fmGeo();if(!G||!b.P)return null;if(b._fmd!=null)return b._fmd;let bd=1e18,best=0;for(let d=0;d<b.P.L;d+=2){const q=b.P.at(d),e=(q[0]-G.lc[0])**2+(q[1]-G.lc[1])**2;if(e<bd){bd=e;best=d}}return(b._fmd=best)}
+function fmBoatPos(b){if(!DL)return null;const st=fmClock();if(st===null||st>fmLen()+5)return null;const[kind]=fmAt(st),C=null,L=fmLen();
+ let t0,dur;if(b.k==='twain'){t0=FM_SCENES.find(q=>q[1]==='finale')[0]*L;dur=110}else{t0=FM_SCENES.find(q=>q[1]==='adventure')[0]*L+25;dur=95}
+ const u=(st-t0)/dur;if(u<0||u>1)return null;const d0=fmBoatDist(b);if(d0===null)return null;const d=((d0+(u-.5)*230)%b.P.L+b.P.L)%b.P.L,q=b.P.at(d);return{x:q[0],y:q[1],an:q[2],mv:1}}
 // how much the map is looking at the amphitheater
 function fmNear(){const G=fmGeo();if(SV.on||!G)return 0;return Math.max(0,Math.min(1,prox(G.lc[0],G.lc[1],320)*1.7-.08))}
 /* the running order, as fractions of the show: [start, name, two hues] */
@@ -51,7 +69,7 @@ const FM_SCENES=[[0,'intro',[265,215]],[.05,'imagine',[300,45]],[.25,'adventure'
 const fmScene=f=>{let s=FM_SCENES[0];for(const q of FM_SCENES)if(f>=q[0])s=q;return s};
 function fmStart(){const ev=fmEv();if(!ev)return;if(ev.ph==='live'){fmLook();closeSheet();return}ev.on=true;const s=Math.ceil(T)+3;(ev.force||(ev.force=[])).push(s);ev.t=[...new Set([...ev.t,s])].sort((a,b)=>a-b);
  if(!AU.ready)auInit();FM.liveKey=null;speed=1;playing=true;fmLook();closeSheet();sync();
- if(!FM.a.ready)toast('Add audio/fantasmic.mp3 (or include it in Load audio folder) to hear the show');FM.a.audio.play().then(()=>FM.a.audio.pause()).catch(()=>{})}
+ if(!FM.a.ready)toast('Add '+FM.file+' (or include it in Load audio folder) to hear the show');FM.a.audio.play().then(()=>FM.a.audio.pause()).catch(()=>{})}
 function fmLook(){const G=fmGeo();if(!G)return;if(SV.on)setView(false);follow=null;sel=null;cam.x=cam.tx=G.lc[0];cam.y=cam.ty=G.lc[1]-25;cam.tm=Math.max(2.4,Math.min(cam.tm,3.4));cam.m=cam.tm}
 function fmForceTidy(ev){if(!ev.force||!ev.force.length)return;for(const s of ev.force.slice())if(T>s+ev.dur*60+120||T<s-120){ev.force.splice(ev.force.indexOf(s),1);const i=ev.t.indexOf(s);if(i>=0&&ev.t.length>1)ev.t.splice(i,1)}}
 /* the soundtrack follows the show's clock (nothing else keeps time at the Studios) */
@@ -138,13 +156,15 @@ function fmDraw(now){const st=fmClock(),G=fmGeo();if(st===null||!G||SV.on)return
  {const g=cx.createRadialGradient(G.lc[0],G.lc[1],2,G.lc[0],G.lc[1],G.reach);g.addColorStop(0,hsl(h1,80,55,.35*A));g.addColorStop(1,hsl(h2,80,50,0));cx.fillStyle=g;cx.beginPath();cx.arc(G.lc[0],G.lc[1],G.reach,0,7);cx.fill()}
  for(let i=0;i<4;i++){const a=-Math.PI/2+Math.sin(t*.5+i*1.7)*.6,x0=G.sc[0]+(i-1.5)*6,y0=G.sc[1],len=G.reach*2.4,g=cx.createLinearGradient(x0,y0,x0+Math.cos(a)*len,y0+Math.sin(a)*len);g.addColorStop(0,hsl(i%2?h1:h2,60,85,.35*A));g.addColorStop(1,hsl(h1,60,85,0));cx.fillStyle=g;cx.beginPath();cx.moveTo(x0,y0);cx.lineTo(x0+Math.cos(a-.05)*len,y0+Math.sin(a-.05)*len);cx.lineTo(x0+Math.cos(a+.05)*len,y0+Math.sin(a+.05)*len);cx.closePath();cx.fill()}
  /* fountains along the front of the lagoon */
- for(let i=0;i<G.jets.length;i++){const[x,y]=G.jets[i],mode=Math.floor(st/20)%3,amp=mode===0?.5+.5*Math.sin(t*2.2+i*.6):mode===1?(Math.floor(t*2+i)%2?1:.35):.4+.6*Math.abs(Math.sin(t*1.3+i*.25)),H=(kind==='finale'||kind==='end'?26:16)*(fmCh()?Math.max(.25,Math.min(1.25,amp*.5+env*.6+beat*.35)):amp)*on;lumJet(x,y,H,Math.sin(t+i)*.6,i%2?h1:h2,A,1.1,t,i)}
+ const tw=DL&&typeof RBOAT!=='undefined'&&RBOAT.some(b=>fmBoatPos(b))?.3:1; /* at Disneyland the fountains drop low while a riverboat sails through, so it can be seen */
+ for(let i=0;i<G.jets.length;i++){const[x,y]=G.jets[i],mode=Math.floor(st/20)%3,amp=mode===0?.5+.5*Math.sin(t*2.2+i*.6):mode===1?(Math.floor(t*2+i)%2?1:.35):.4+.6*Math.abs(Math.sin(t*1.3+i*.25)),H=(kind==='finale'||kind==='end'?26:16)*(fmCh()?Math.max(.25,Math.min(1.25,amp*.5+env*.6+beat*.35)):amp)*on*tw;lumJet(x,y,H,Math.sin(t+i)*.6,i%2?h1:h2,A,1.1,t,i)}
  /* the mist screens, lit by the projectors */
  if(kind!=='end'||f<.99)for(let i=0;i<G.screens.length;i++){const[x,y]=G.screens[i];fmMist(x,y,15,28,h1,h2,t+i,A*.85*(kind==='finale'?.6:1),kind)}
  /* the lagoon on fire: flames across the front, after the dragon's breath */
- if(kind==='dragon'){const C=fmCh(),d0=C?1101:L*.6,d1=C?1241:L*.72,k=Math.max(0,Math.min(1,(st-d0)/40,(d1-st)/10));for(let i=0;i<26;i++){const a=(i/25-.5)*2.2,r=G.reach*(.45+.35*((i*7)%5)/5),x=G.lc[0]+G.u[0]*r*Math.cos(a)+G.v[0]*r*Math.sin(a),y=G.lc[1]+G.u[1]*r*Math.cos(a)+G.v[1]*r*Math.sin(a);fmFire(x,y,(3.8+((i*13)%7)*.6)*k,t,i)}}
+ if(kind==='dragon'){const C=fmCh(),d0=C?1101:L*.6,d1=C?1241:L*.72,k=Math.max(0,Math.min(1,(st-d0)/40,(d1-st)/10));for(let i=0;i<26;i++){const a=(i/25-.5)*2.2,r=G.reach*(.45+.35*((i*7)%5)/5),x=G.lc[0]+G.u[0]*r*Math.cos(a)+G.v[0]*r*Math.sin(a),y=G.lc[1]+G.u[1]*r*Math.cos(a)+G.v[1]*r*Math.sin(a);if(G.wet&&!G.wet(x,y))continue;fmFire(x,y,(3.8+((i*13)%7)*.6)*k,t,i)}}
  cx.restore();
  /* figures on the island: the dragon, Sorcerer Mickey on the peak, the riverboat in the finale */
  if(kind==='dragon')fmDragon(G,t,on,Math.max(0,Math.sin(t*1.4)));
  if(kind==='intro'||kind==='mickey'||kind==='end')fmSorcerer(G.peak[0],G.peak[1],t,on);
- if(kind==='finale'){const C=fmCh(),t0=C?C.scenes.find(q=>q[1]==='finale')[0]:L*.8,a=(st-t0)/40*Math.PI*2;fmBoat(G,a,t,on)}}
+ if(kind==='finale'&&!DL){const C=fmCh(),t0=C?C.scenes.find(q=>q[1]==='finale')[0]:L*.8,a=(st-t0)/40*Math.PI*2;fmBoat(G,a,t,on)}
+ if(DL&&typeof RBOAT!=='undefined'&&typeof drawChar==='function'){const b=RBOAT.find(b=>b.k==='twain'),s=b&&fmBoatPos(b);if(s){const k=OSM.S*2.2;cx.save();for(const[w,dx]of[['mickey',-4],['minnie',-1.5],['donald',1],['goofy',3.5]])drawChar(cx,k,(s.x+Math.cos(s.an)*dx)/k,(s.y+Math.sin(s.an)*dx-7)/k,w,t);cx.restore()}}}

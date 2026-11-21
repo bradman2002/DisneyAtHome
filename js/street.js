@@ -260,14 +260,24 @@ const HEA_EL=HEA.audio;HEA_EL.preload='auto';HEA_EL.addEventListener('canplay',(
 /* which fireworks show is on: mode 'auto' picks Minnie's when the live data says tonight is a party night (it lists
    Minnie's Wonderful Christmastime Fireworks), otherwise Happily Ever After; Entertainment can force either */
 const FW={v:'hea',mode:'auto',shows:{hea:{n:'Happily Ever After',ready:false,el:HEA_EL},minnie:{n:'Minnie’s Wonderful Christmastime Fireworks',file:'audio/minnies-christmas-fireworks.mp3',ready:false,el:new Audio(),src:'folder'}}};
-{const M=FW.shows.minnie,a=M.el;a.preload='auto';a.addEventListener('canplay',()=>{M.ready=true;if(HEA.audio===a){HEA.ready=true;svBadge()}});
+/* Disneyland: Believe… In Holiday Magic over Sleeping Beauty Castle. Its music is the owner's audio/believe-in-holiday-magic.mp3 (or
+   the copy kept by Load audio folder / Load soundtrack…, key 'believe'); its bursts are CHOREO_BELIEVE once that is made from the
+   track with tools/fireworks_from_audio.py, and until then Minnie's Christmas choreography stands in (the show then lasts as long
+   as that). The Walt Disney World tracks aren't loaded at Disneyland. */
+if(DL){FW.shows.believe={n:'Believe… In Holiday Magic',file:'audio/believe-in-holiday-magic.mp3',ready:false,el:new Audio(),src:'folder'};
+ const M=FW.shows.believe,a=M.el;a.preload='auto';a.addEventListener('canplay',()=>{M.ready=true;if(HEA.audio===a){HEA.ready=true;HEA.name=M.n;svBadge()}});
+ a.addEventListener('error',async()=>{if(M.src!=='folder')return;M.src='none';if(HEA.audio===a){HEA.name='';svBadge()}try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('believe');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob)blvUse(v.blob,v.name)}catch(e){}});
+ setTimeout(()=>loadTrack(a,M.file),0)}
+function blvUse(blob,name){const M=FW.shows.believe;if(!M)return;M.src='picked';M.el.src=URL.createObjectURL(blob);M.el.load();if(HEA.audio===M.el){HEA.name=name||M.n;svBadge()}}
+function blvPick(){const i=document.createElement('input');i.type='file';i.accept='audio/*,.mp3,.m4a,.wav,.ogg';i.onchange=async()=>{const f=i.files[0];if(!f)return;blvUse(f,f.name);try{await saveFile('believe',f)}catch(e){}};i.click()}
+if(!DL){const M=FW.shows.minnie,a=M.el;a.preload='auto';a.addEventListener('canplay',()=>{M.ready=true;if(HEA.audio===a){HEA.ready=true;svBadge()}});
  a.addEventListener('error',async()=>{if(M.src!=='folder')return;M.src='none';try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('minnie');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob){M.src='picked';a.src=URL.createObjectURL(v.blob);a.load()}}catch(e){}});
  setTimeout(()=>loadTrack(a,M.file),0)}
 const fwName=()=>FW.shows[FW.v].n;
-function fwSet(v){if(v===FW.v||(v==='minnie'&&typeof CHOREO_MINNIE==='undefined'))return;const ev=EV.find(e=>e.id==='fire');if(ev&&ev.ph==='live')return; /* never switch in the middle of a show */
- if(!HEA.audio.paused)HEA.audio.pause();if(FW.v==='hea')HEA.hname=HEA.name;FW.v=v;const S=FW.shows[v];HEA.audio=S.el;HEA.ready=S.ready;HEA.name=v==='hea'?(HEA.hname||HEA.name):S.n;CHOREO=v==='minnie'?CHOREO_MINNIE:CHOREO_HEA;
+function fwSet(v){if(v===FW.v||(v==='minnie'||v==='believe')&&typeof CHOREO_MINNIE==='undefined')return;const ev=EV.find(e=>e.id==='fire');if(ev&&ev.ph==='live')return; /* never switch in the middle of a show */
+ if(!HEA.audio.paused)HEA.audio.pause();if(FW.v==='hea')HEA.hname=HEA.name;FW.v=v;const S=FW.shows[v];HEA.audio=S.el;HEA.ready=S.ready;HEA.name=v==='hea'?(HEA.hname||HEA.name):S.n;CHOREO=v==='minnie'?CHOREO_MINNIE:v==='believe'?(typeof CHOREO_BELIEVE!=='undefined'?CHOREO_BELIEVE:CHOREO_MINNIE):CHOREO_HEA;
  HEA.ci=0;HEA.lastSt=-9;HEA.rk.length=0;HEA.pt.length=0;if(ev){ev.n=S.n+' (fireworks)';if(!ev.userDur)ev.dur=Math.ceil(CHOREO.end/6)/10+.3}if(typeof svBadge==='function')svBadge()}
-function fwAuto(){fwSet(FW.mode!=='auto'?FW.mode:(typeof LIVENOW!=='undefined'&&LIVENOW&&LIVE.fwShow==='minnie'?'minnie':'hea'))}
+function fwAuto(){if(DL)return fwSet('believe');fwSet(FW.mode!=='auto'?FW.mode:(typeof LIVENOW!=='undefined'&&LIVENOW&&LIVE.fwShow==='minnie'?'minnie':'hea'))}
 const IDB=()=>new Promise((res,rej)=>{const r=indexedDB.open('mk-sim',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 async function heaSave(file){try{const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:file,name:file.name},'hea');t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){console.warn('Could not save the soundtrack in this browser',e)}}
 async function heaLoadSaved(){try{const db=await IDB();const v=await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('hea');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)});if(v&&v.blob)heaUse(v.blob,v.name)}catch(e){}}
@@ -348,7 +358,7 @@ function augmentChoreo(){const C=CHOREO.cues,out=[],SH=['peony','chrys','ring','
    Wonderful Christmastime Fireworks (choreo-minnie.js, derived from its soundtrack by tools/fireworks_from_audio.py).
    CHOREO is whichever is showing; both get the same fuller-show treatment above. */
 const CHOREO_HEA=CHOREO;augmentChoreo();
-if(typeof CHOREO_MINNIE!=='undefined'){CHOREO=CHOREO_MINNIE;augmentChoreo();CHOREO=CHOREO_HEA}
+if(typeof CHOREO_MINNIE!=='undefined'){CHOREO=CHOREO_MINNIE;augmentChoreo();CHOREO=CHOREO_HEA}if(typeof CHOREO_BELIEVE!=='undefined'){CHOREO=CHOREO_BELIEVE;augmentChoreo();CHOREO=CHOREO_HEA}
 function streetShell(q){const[t,kind,cx,alt]=q;const z=CZ+60+Math.abs(cx)*30,wx=cx*85,wy=kind==='mine'?2:kind==='comet'?18+alt*45:38+alt*62;
  return{b:svProj(wx*(kind==='comet'?.6:1)+(kind==='comet'?(Math.random()-.5)*14:0),kind==='comet'?24:6,z),e:svProj(wx,wy,z),k:SV.f/z,m:svProj(wx,24,z)[1]}}
 function cueLaunch(q){const[t,k,x,alt]=q;return t-(k==='comet'||k==='mine'?.9+alt*.8:1.3+alt*1.3)}
@@ -431,6 +441,6 @@ function syncTrack(o,a,d,moveMusic){
  else if(d<0&&d>-2)T+=d          // music slightly behind (buffering): let the simulation wait a moment
  else moveMusic()}               // anything else: put the music where the show is
 function loadTrack(audio,path){streamUrl(path).then(u=>{audio.src=u||path;audio.load()})} /* streamed when the server allows it (see streamUrl in audio.js); a missing file still errors, so the saved-folder copy takes over */
-function heaInit(){HEA.name=HEA_FILE;HEA.src='folder';loadTrack(HEA.audio,HEA_FILE);
+function heaInit(){if(DL)return; /* Happily Ever After is Magic Kingdom's */HEA.name=HEA_FILE;HEA.src='folder';loadTrack(HEA.audio,HEA_FILE);
  HEA.audio.addEventListener('error',()=>{if(HEA.src==='folder'){HEA.src='none';HEA.name='';HEA.ready=false;svBadge();heaLoadSaved()}})}
 heaInit();

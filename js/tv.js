@@ -43,21 +43,26 @@ function tvShotsDL(land,place,tag,ride){const L=k=>LANDS[k]&&land(k),D=(o,n,m)=>
    D('Pixar Pal-A-Round','Pixar Pal-A-Round',3.2),L('av'),D('Guardians of the Galaxy: Mission Breakout','Guardians of the Galaxy – Mission: BREAKOUT!',3.2),L('gp'),D('Grizzly River Run','Grizzly River Run',2.8),L('pg'),L('hl')]),
   map('The Esplanade',P_.espl[0],P_.espl[1],2.4,26,'transport'),...(P_.dd?[map('Downtown Disney',P_.dd[0],P_.dd[1],2,28,'transport')]:[]),place('dlh'),place('gch'),place('pph')].filter(Boolean).filter(s=>tvIn(s.p||'mk'))}
 // what, if anything, is on right now that the camera should be watching
-function tvEvent(){const mk=tvIn('mk'),f=fireEv();if(mk&&f&&f.ph==='live')return'fire';if(tvIn('ep')&&lumLive())return'lum';if(tvIn('hs')&&fmLive())return'fmic';if(!mk)return'';
+function tvEvent(){const mk=tvIn('mk'),f=fireEv();if(mk&&f&&f.ph==='live')return'fire';if(DL){if(mk&&fmLive())return'fmic';if(tvIn('ep')&&wocLive())return'woc'}if(tvIn('ep')&&lumLive())return'lum';if(tvIn('hs')&&fmLive())return'fmic';if(!mk)return'';
  for(const id of['welcome','flag','kiss']){const e=EV.find(x=>x.id===id);if(e&&e.on!==false&&e.ph==='live')return id}const P=liveParade();if(P&&paradeUnits().length)return'parade:'+P.id;if(ewpShow())return'ewp';if(geyserNow()>.5&&!TV.replay)return'geyser';return''}
 function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;let s;
  const lumS=()=>TV.alt%2?{k:'map',n:'Luminous · World Showcase Lagoon',x:EVPOS.lum[0],y:EVPOS.lum[1]-30,m:2.1,dur:45,layer:'shows'}:{k:'map',n:'Luminous: The Symphony of Us · EPCOT',x:EVPOS.lum[0],y:EVPOS.lum[1]-50,m:1.35,dur:50,layer:'shows'};
- const fmS=()=>{const G=fmGeo();return TV.alt%2?{k:'map',n:'Fantasmic! · Hollywood Hills Amphitheater',x:G.lc[0],y:G.lc[1]-30,m:2.1,dur:45,layer:'shows'}:{k:'map',n:'Fantasmic! · Hollywood Studios',x:G.lc[0],y:G.lc[1]-25,m:3.2,dur:50,layer:'shows'}};
- if(key==='fire'&&tvIn('ep')&&lumLive()&&TV.alt%3===2)s=lumS(); /* both nighttime shows at once: now and then cut across to EPCOT's */
+ const fmS=()=>{const G=fmGeo();return TV.alt%2?{k:'map',n:DL?'Fantasmic! · Rivers of America':'Fantasmic! · Hollywood Hills Amphitheater',x:G.lc[0],y:G.lc[1]-30,m:2.1,dur:45,layer:'shows'}:{k:'map',n:DL?'Fantasmic! · Disneyland':'Fantasmic! · Hollywood Studios',x:G.lc[0],y:G.lc[1]-25,m:3.2,dur:50,layer:'shows'}};
+ const wocS=()=>{const G=wocGeo();return TV.alt%2?{k:'map',n:'World of Color · Paradise Bay',x:G.c[0],y:G.c[1]-25,m:2,dur:45,layer:'shows'}:{k:'map',n:'World of Color · California Adventure',x:G.c[0],y:G.c[1]-10,m:3,dur:50,layer:'shows'}};
+ if(DL&&(key==='fmic'||key==='fire')&&tvIn('ep')&&wocLive()&&TV.alt%3===2)s=wocS(); /* Disneyland's two water shows (and the fireworks) at once: now and then cut across the Esplanade */
+ else if(DL&&key==='woc')s=wocS();
+ else if(DL&&key==='fire'&&tvIn('mk')&&fmLive()&&TV.alt%3===1)s=fmS();
+ else if(key==='fire'&&tvIn('ep')&&lumLive()&&TV.alt%3===2)s=lumS(); /* both nighttime shows at once: now and then cut across to EPCOT's */
  else if((key==='fire'||key==='lum')&&tvIn('hs')&&fmLive()&&TV.alt%3===1)s=fmS(); /* and to the Studios' when Fantasmic! is on too */
  else if(key==='lum')s=lumS();
  else if(key==='fmic')s=fmS();
- else if(key==='fire')s=TV.alt%2?{k:'map',n:'Fireworks over the castle',x:P_.castle[0],y:P_.castle[1]-40,m:1.45,dur:45,layer:'wait'}:{k:'street',n:EV.find(e=>e.id==='fire').n.replace(' (fireworks)',''),dur:75};
+ else if(key==='fire'&&DL)s=TV.alt%2?{k:'map',n:fwName()+' · Sleeping Beauty Castle',x:P_.castle[0],y:P_.castle[1]-30,m:1.8,dur:45,layer:'wait'}:{k:'map',n:fwName(),x:P_.castle[0],y:P_.castle[1]+60,m:1.2,dur:50,layer:'wait'}; /* no street view at Disneyland: two map shots */
+  else if(key==='fire')s=TV.alt%2?{k:'map',n:'Fireworks over the castle',x:P_.castle[0],y:P_.castle[1]-40,m:1.45,dur:45,layer:'wait'}:{k:'street',n:EV.find(e=>e.id==='fire').n.replace(' (fireworks)',''),dur:75};
  else if(key==='geyser')s={k:'map',n:'Fire Rock Geyser · Wilderness Lodge',x:P_.geyser[0]+4,y:P_.geyser[1]-14,m:3.6,dur:150,layer:'transport'};
  else if(key==='welcome')s={k:'map',n:'Let the Magic Begin',x:P_.stage[0],y:P_.stage[1]+18,m:3.3,dur:70,layer:'shows'};
  else if(key==='flag')s={k:'map',n:'Flag Retreat · Town Square',x:P_.townsq[0],y:P_.townsq[1]-4,m:3.4,dur:50,layer:'shows'};
  else if(key==='kiss')s=TV.alt%2?{k:'map',n:'Kiss Goodnight',x:P_.castle[0],y:P_.castle[1]-20,m:2.2,dur:40,layer:'shows'}:{k:'street',n:'Kiss Goodnight',dur:50};
- else if(key.startsWith('parade')){const n=parOf(key.slice(7)).n+' Parade';s=TV.alt%2?{k:'street',n,dur:45}:{k:'follow',n,f:{k:'parade'},m:2.7,dur:45,layer:'wait'}}
+ else if(key.startsWith('parade')){const n=parOf(key.slice(7)).n+' Parade';s=TV.alt%2&&!DL?{k:'street',n,dur:45}:{k:'follow',n,f:{k:'parade'},m:2.7,dur:45,layer:'wait'}}
  else if(key==='ewp'&&TV.alt%2===0)s={k:'follow',n:'Electrical Water Pageant',f:{k:'w'},m:2.5,dur:60,layer:'shows'};
  else{const L=TV.list||(TV.list=tvShots());TV.i=(TV.i+1)%L.length;s=L[TV.i]}
  TV.shot=s;TV.until=performance.now()+s.dur*1000;sel=null;follow=null;if(sheet)closeSheet();
@@ -86,7 +91,7 @@ function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
  if(now-TV.pageAt>9000){TV.pageAt=now;TV.page=(TV.page+1)%pages}if(TV.page>=pages)TV.page=0;
  $('#tvList').innerHTML=run.length?run.slice(TV.page*per,TV.page*per+per).map(a=>`<div class="tr"><span>${esc(a.n)}</span><b class="${wc(a.wt)}">${a.wt}<small>min</small></b></div>`).join(''):'<div class="tr"><span>The park is closed</span></div>';
  $('#tvFoot').textContent=(run.length?`${run.length} rides running${off?' · '+off+' closed or down':''} · ${TV.page+1}/${pages} · `:'')+`~${((TV.park==='all'?guests.length:guests.reduce((n,g)=>n+((g.pk||0)===TVPK[TV.park]),0))*K).toLocaleString()} guests in the park${TV.park==='all'?'s':''}`;
- const up=[];for(const e of EV){if(e.on===false||!tvIn(e.id==='lum'?'ep':e.id==='fmic'?'hs':'mk'))continue;const n=e.ph==='live'?T:e.t.find(t=>t>T);if(n!==undefined)up.push([n,e.n.replace(' (fireworks)','').replace(' (placeholder)',''),e.ph==='live'])}
+ const up=[];for(const e of EV){if(e.on===false||!tvIn(['mk','ep','hs','ak'][e.pk||0]))continue;const n=e.ph==='live'?T:e.t.find(t=>t>T);if(n!==undefined)up.push([n,e.n.replace(' (fireworks)','').replace(' (placeholder)',''),e.ph==='live'])}
  if(EWP.legs&&EWP.on&&tvIn('mk')){const s=ewpShow(),n=ewpNext();if(s)up.push([T,'Electrical Water Pageant',true]);else if(n)up.push([n.t,'Electrical Water Pageant · '+n.n,false])}
  up.sort((a,b)=>a[0]-b[0]);$('#tvUp').innerHTML=up.slice(0,innerWidth<=760||innerHeight<=500?1:3).map(([t,n,live])=>`<div class="tr"><span>${esc(n)}</span><b>${live?'Now':fmt(t)}</b></div>`).join('')}
 async function tvWake(){try{if(TV.on&&navigator.wakeLock&&document.visibilityState==='visible')TV.lock=await navigator.wakeLock.request('screen')}catch(e){}} // keep the screen from sleeping

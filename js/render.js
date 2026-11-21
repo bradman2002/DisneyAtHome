@@ -57,7 +57,7 @@ const SSE_GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=3
 function frame(rdt){
  if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
- paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();tolSync();
+ paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();if(DL)wocSync();tolSync();
  if(typeof RIDE!=='undefined'&&RIDE.on){rideFrame(rdt);BUB=[];return} /* riding in a monorail's front cab (ride.js) */
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k; /* TV mode glides between shots */
@@ -80,7 +80,7 @@ function frame(rdt){
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
- drawPageant(now,1);lumDraw(now);fmDraw(now);tolDraw(now);drawSkyliner(true);for(const b of RBOAT)drawRiverboat(b,true);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
+ drawPageant(now,1);lumDraw(now);fmDraw(now);if(DL)wocDraw(now);tolDraw(now);drawSkyliner(true);for(const b of RBOAT)drawRiverboat(b,true);dlSnow(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
  if(nf>.35){cx.globalAlpha=Math.min(.9,nf);drawParadeMap(now);cx.globalAlpha=1} // a parade after dark is lit up: draw it again over the night tint
  // castle projections during Happily Ever After
@@ -106,7 +106,7 @@ const RBOAT=(()=>{if(!DL||!OSM.routes.riverboat||OSM.routes.riverboat.length<4)r
  const dk=POS['Mark Twain Riverboat']?POS['Mark Twain Riverboat'].c:p[0];let k=0,bd=1e18;p.forEach((q,i)=>{const d=(q[0]-dk[0])**2+(q[1]-dk[1])**2;if(d<bd){bd=d;k=i}});p=p.slice(k).concat(p.slice(0,k+1)); /* start and end at the landing */
  const P=mkPath(p);return[{k:'twain',a:AT.find(a=>a.osm==='Mark Twain Riverboat'),P,off:0},{k:'col',a:AT.find(a=>a.osm==='Sailing Ship Columbia'),P,off:.5}].filter(b=>b.a)})();
 const RB_SAIL=720,RB_DOCK=180;
-function rbPos(b){const run=LIVENOW&&b.a.live?b.a.live.st==='OPERATING':aStat(b.a)!=='Closed',cyc=RB_SAIL+RB_DOCK;
+function rbPos(b){{const fo=typeof fmBoatPos==='function'&&fmBoatPos(b);if(fo)return fo}const run=LIVENOW&&b.a.live?b.a.live.st==='OPERATING':aStat(b.a)!=='Closed',cyc=RB_SAIL+RB_DOCK;
  if(!run){if(b.k==='col'){const f=P_.fowler;return f?{x:f[0],y:f[1],an:-Math.PI/2,mv:0}:null}const q=b.P.at(0),q2=b.P.at(6);return{x:q[0],y:q[1],an:Math.atan2(q2[1]-q[1],q2[0]-q[0]),mv:0}}
  const t=((T+b.off*cyc)%cyc+cyc)%cyc;if(t>=RB_SAIL){const q=b.P.at(0),q2=b.P.at(6);return{x:q[0],y:q[1],an:Math.atan2(q2[1]-q[1],q2[0]-q[0]),mv:0}}
  const u=t/RB_SAIL,e=u<.06?u*u/.12:u>.94?1-(1-u)*(1-u)/.12:u-.03, /* ease away from the landing and back into it */d=e/(1-.06)*b.P.L;const q=b.P.at(Math.min(b.P.L-.01,d));return{x:q[0],y:q[1],an:q[2],mv:1}}
@@ -139,6 +139,12 @@ function drawRiverboat(b,lit){const s=rbPos(b);if(!s)return;const{x,y,an}=s,ca=M
     cx.strokeStyle='rgba(150,135,110,.7)';cx.lineWidth=.25;cx.stroke()}
    cx.fillStyle='#c0392b';cx.fillRect(mx-.1,my-hh-2,1.8,1)})}
  cx.restore()}
+/* Disneyland: snow falls on Main Street, U.S.A. as Believe… In Holiday Magic ends (from two minutes before the end until five after),
+   between Town Square and the hub; flakes drift down from about 30 m and light up a little in the street lights */
+function dlSnow(now){if(!DL)return;const ev=fireEv();if(!ev||ev.key==null||ev.on===false)return;const t=T-(ev.key+CHOREO.end);if(t<-120||t>300)return;
+ const k=t<0?(t+120)/120:t>240?(300-t)/60:1,n=Math.round(260*k),mx=P_.mainst[0],y0=P_.hub[1]+10,y1=P_.townsq[1]+10,sec=now/1000;
+ cx.save();cx.fillStyle='rgba(255,255,255,.92)';for(let i=0;i<n;i++){const h1=(Math.sin(i*12.9898)*43758.5453)%1,h2=(Math.sin(i*78.233)*12345.678)%1,a=Math.abs(h1),b=Math.abs(h2),
+  gx=mx+(a-.5)*80+Math.sin(sec*.8+i)*2,gy=y0+b*(y1-y0),hh=30-((sec*2.4+b*30+a*7)%30);cx.beginPath();cx.arc(gx,gy-hh,.45+a*.35,0,7);cx.fill()}cx.restore()}
 /* ---------- moving things on the map ---------- */
 const SPIN=AT.filter(a=>a.k==='spin');
 const LAGOON=FER.at(FER.L*.5).slice(0,2).map((v,i)=>v+(i?0:-170)); // label spot on open water, west of the ferry lane
@@ -356,7 +362,7 @@ function drawOverlays(z,now){BUB=[];const c=cx;c.setTransform(dpr,0,0,dpr,0,0);c
   if(EPCOT){const[ex,ey]=toS(EPCOT.sse[0],EPCOT.sse[1]-75);if(ex>-200&&ex<cw+200&&ey>-60&&ey<ch+60){c.font='800 15px "Nunito Sans",Figtree,system-ui,sans-serif';const tw=c.measureText('EPCOT').width+26;c.fillStyle='rgba(60,40,110,.8)';c.beginPath();c.roundRect(ex-tw/2,ey-13,tw,26,13);c.fill();c.fillStyle='#fff';c.fillText('EPCOT',ex,ey+.5)}
    c.font='700 12px "Nunito Sans",Figtree,system-ui,sans-serif';if(z>.9)for(const p of EPCOT.pav){const[sx,sy]=toS(p.x,p.y-30);if(sx<-80||sx>cw+80||sy<-20||sy>ch+20)continue;const tw=c.measureText(p.n).width+18;c.fillStyle='rgba(40,46,66,.66)';c.beginPath();c.roundRect(sx-tw/2,sy-11,tw,22,11);c.fill();c.fillStyle='#fff';c.fillText(p.n,sx,sy+.5)}}
   c.font='italic 700 '+Math.max(12,Math.min(22,z*26))+'px "Nunito Sans",Figtree,system-ui,sans-serif';c.strokeStyle='rgba(30,90,120,.45)';c.lineWidth=3;
-  for(const[n,p]of[...(DL?[['Rivers of America',P_.rivers&&z>.7?[P_.rivers[0]-20,P_.rivers[1]+40]:null],['Paradise Bay',P_.pbay&&z>.7?P_.pbay:null]]:[]),['Seven Seas Lagoon',LAGOON],['Bay Lake',BAYLAKE],['Discovery Island',P_.disc&&z>.7?[P_.disc[0],P_.disc[1]]:null],['World Showcase Lagoon',EPCOT&&!lumLive()?EPCOT.c:null]]){if(!p)continue;const[sx,sy]=toS(...p);c.fillStyle='rgba(255,255,255,.85)';c.strokeText(n,sx,sy);c.fillText(n,sx,sy)}}
+  for(const[n,p]of[...(DL?[['Rivers of America',P_.rivers&&z>.7?[P_.rivers[0]-20,P_.rivers[1]+40]:null],['Paradise Bay',P_.pbay&&z>.7&&!wocLive()?P_.pbay:null]]:[]),['Seven Seas Lagoon',LAGOON],['Bay Lake',BAYLAKE],['Discovery Island',P_.disc&&z>.7?[P_.disc[0],P_.disc[1]]:null],['World Showcase Lagoon',EPCOT&&!lumLive()?EPCOT.c:null]]){if(!p)continue;const[sx,sy]=toS(...p);c.fillStyle='rgba(255,255,255,.85)';c.strokeText(n,sx,sy);c.fillText(n,sx,sy)}}
  const isSel=(k,i)=>sel&&sel.k===k&&sel.i===i;
  if(document.body.classList.contains('idle')&&!(typeof TV!=='undefined'&&TV.on))return; /* full screen with controls faded: no callouts over the show */
  if(VIEW.layer==='wait'&&!VIEW.fwWaits&&fireEv()&&fireEv().ph==='live'){} // wait times stay out of the way during the fireworks (Filter turns them back on)

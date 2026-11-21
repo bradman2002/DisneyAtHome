@@ -28,7 +28,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - These files pack many statements onto one long line. Never add a `//` comment in the middle of such a line: it
   silently comments out everything after it (this has broken the speed button and guest arrivals). Use `/* */`,
   or put the comment on its own line.
-- Load order in index.html matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv (choreo-luminous, luminous, choreo-fantasmic and fantasmic load just before live).
+- Load order in index.html matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv (choreo-luminous, luminous, choreo-fantasmic, fantasmic and worldofcolor load just before live).
 
 ## Files
 - `js/park-osm.js` — GENERATED geometry for the park and resort area from OpenStreetMap (buildings, walkways,
@@ -244,8 +244,8 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   Everyone walks in (MODE 3); no ferry, buses or boats (`FERRY=[]`; `mkPath` of an empty route returns a far-off point).
   Tables `DL_A`, `DL_V`, `DL_EV` in sim.js (band, Royal Theatre storytelling, Flag Retreat only; live names via the DL
   `LIVE_SHOWS`/`LIVE_ALIAS`). `TZ` in live.js is America/Los_Angeles. `MLINE.dl` (stops `dlm`, `ddm`); RESORTS = the two
-  monorail stations and the three hotels. Art: `SBC` spec drawn by `castleArt(...,CS)` (Sleeping Beauty Castle, original
-  drawing; `CASTLE_IMG` is Cinderella Castle so it's skipped), `matterhorn()`, LANDSTYLE palettes for the new lands, big show
+  monorail stations and the three hotels. Art: `SBC` spec drawn by `castleArt(...,CS)` (Sleeping Beauty Castle fallback drawing;
+  normally `images/castle-dl.png`, see below), `matterhorn()`, LANDSTYLE palettes for the new lands, big show
   buildings in Disneyland get plain roofs. TV: `tvShotsDL` (37 shots; TV parks all/mk/ep = both/Disneyland/DCA). Off at DL:
   pageant, Main Street view (`setView` forces the map, `#views` hidden), the front-cab ride button, the WDW monorail onboard
   audio, area music over DCA. Riverboats (owner, 21 Nov:
@@ -253,8 +253,35 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `routes.riverboat` started at Frontierland Landing, 12 min sail + 3 min docked, Columbia half a trip behind; pure function of the
   clock while the ride isn't Closed (live status when Live); otherwise docked (Columbia in Fowler's Harbor, `P_.fowler`); lights
   in the night pass; `hitMap` opens the ride. Next: parades, fireworks, Fantasmic!, World of Color (no Main Street view wanted).
+  DL holiday shows (owner, 21 Nov: "Add the Disneyland fireworks and parades", picked the holiday ones, audio later): EV `fire`
+  = Believe… In Holiday Magic (`FW.shows.believe`, file audio/believe-in-holiday-magic.mp3, IDB key 'believe', `blvUse`/`blvPick`;
+  `fwAuto` forces it at DL; choreography `CHOREO_BELIEVE` if a js/choreo-believe.js is added (load it after choreo-minnie and
+  run augmentChoreo like Minnie's), else CHOREO_MINNIE; heaInit and Minnie's track are skipped at DL), `dlSnow` in render.js
+  (Main Street snow from 2 min before the end to 5 after). EV `xmas` = A Christmas Fantasy Parade: PARADES 'xmas' renamed with file
+  audio/a-christmas-fantasy-parade.mp3 and IDB key `P.key`='dlxmas'; other parades get file null at DL. Both season [1108,1231];
+  live via DL LIVE_SHOWS (/^.?believe/, /christmas fantasy parade/). The extractor de-duplicates relation members (the parade route
+  lists ways twice; that had cut it short at the hub). TV uses map shots for both (no street view at DL).
   Shared ride audio at DL: RIDEAUD matches by osm name (Mansion, Pirates, Space Mountain, Star Tours, Rise, Runaway Railway); DL's
   differently spelled small world and Soarin' are added to RIDEAUD when DL (owner, 21 Nov: "add small world and soarin").
+  DL water shows (owner, 21 Nov: "Add Fantasmic and World of Color"): EV `fmic` (pk 0, 22 min, 21:00) reuses fantasmic.js:
+  `fmGeoDL` (Rivers of America, stage at the island's south tip, audience direction u fixed toward the NOS/Frontierland bend,
+  jets filtered to open water, `G.wet`), file audio/fantasmic-disneyland.mp3 / IDB 'fantasmic-dl' (WDW's fantasmic.mp3 is ignored
+  at DL), fixed FM_SCENES (CHOREO_FM is WDW's track). `fmBoatPos(b)` overrides rbPos: Columbia in 'adventure', Mark Twain (with
+  characters drawn in fmDraw) in 'finale'; fountains drop to 30% while a boat passes. Spots at DL use the normal pavement check.
+  EV `woc` (pk 1) is js/worldofcolor.js (`WOC`, `wocGeo` finds the widest open band in Paradise Bay's north half, jets in 4 rows,
+  `wocWall` mist pictures per scene, Pal-A-Round ring, holiday scenes `WOC_XMAS` 15 Nov to 6 Jan), file audio/world-of-color.mp3 /
+  IDB 'woc', spot0 'woc' along the Paradise Gardens shore. Live: fmic via DL LIVE_SHOWS, woc from the DCA feed (`ep`). TV cuts
+  between them (DL keys 'fmic'/'woc'); TV's upcoming list now maps events to parks by `e.pk`.
+  DL audio (owner, 21 Nov, gave the four show tracks + "Buena Vista St California Adventure.mp3"; "Add the magic kingdom ambient
+  music to the applicable spots in disneyland. Use the california adventure audio that i gave for that whole park for now"):
+  `DLAREA` in audio.js maps DL lands to MK loops (nos→lib, bc→fr, tt→fan, gx silent but still weighted so neighbours fade);
+  `AREA.dca` = audio/area-dca.mp3 over the whole DCA outline on EOPEN/ECLOSE. `js/choreo-believe.js` (`CHOREO_BELIEVE`, 808 s,
+  from the owner's 13:29 "Master Mix") is loaded only at DL via document.write in index.html. Track lengths: Fantasmic DL 26:29,
+  World of Color 30:05 (shows take these lengths), Christmas Fantasy parade 16:09.
+  DL castle image (owner, 21 Nov: "Here is the disneyland castle", an AI picture with a baked-in checkerboard): `images/castle-dl.png`,
+  cut out by `tools/checker_cutout.py` (grid-aware flood fill from the border, plus enclosed pockets holding both checker colours).
+  `loadCastleImage` picks it at DL; drawn `w=SBC.box[0]*k*1.1`, lifted so its bottom 5% (drawbridge and path) reaches in front of the
+  footprint. The drawn `SBC` castle remains the fallback if the file is missing.
 
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say

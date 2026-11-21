@@ -29,8 +29,26 @@ real routes, and the Mark Twain and the Sailing Ship Columbia sail round Tom Saw
 America while they're running (lit after dark; tap one for its wait). TV mode has its own Disneyland shots, and Sound & settings → TV mode picks Disneyland, California Adventure or
 both.
 
-Not on the Disneyland side yet: the parades, fireworks, Fantasmic! and World of Color, and area music in California Adventure (the Main Street street view stays Magic Kingdom's). Disneyland's lands play the Magic Kingdom loops of the same
-name (Main Street, Adventureland, Frontierland, Fantasyland, Tomorrowland), and the rides that have a recording at Walt Disney
+In the holiday season Disneyland has **Believe… In Holiday Magic** over Sleeping Beauty Castle (snow falls on Main Street as it
+ends) and **A Christmas Fantasy Parade** from “it’s a small world” down Main Street to Town Square, at the real times when Live is
+on. Their music is your own copy, like the Walt Disney World shows: put `believe-in-holiday-magic.mp3` and
+`a-christmas-fantasy-parade.mp3` in `audio/` (or use Load audio folder / Load soundtrack…). Until then they run silently; the
+fireworks use Minnie's Christmas choreography as a stand-in until their bursts are timed to that track
+(`tools/fireworks_from_audio.py`, making `CHOREO_BELIEVE`), and the parade uses the Christmas floats.
+
+**Fantasmic!** plays on the Rivers of America from the south end of Tom Sawyer Island, with the guests along the New Orleans
+Square and Frontierland waterfront: mist screens, fountains, Sorcerer Mickey, the dragon setting the river alight, the Columbia
+sailing through the pirate scene and the Mark Twain carrying the characters in the finale. **World of Color** plays on Paradise
+Bay in front of Paradise Gardens Park: rows of fountains in each scene's colours, the mist wall with its pictures, flame,
+searchlights and lasers, and the Pixar Pal-A-Round lit up across the water (the Season of Light version in the holidays). Both run
+at the real times when Live is on (otherwise 9 PM) and can be started from Entertainment. Put your own copies of their music in
+`audio/` as `fantasmic-disneyland.mp3` and `world-of-color.mp3` (or use Load audio folder) to hear them.
+
+Area music: Disneyland's lands play the Magic Kingdom loops of the same name (Main Street, Adventureland, Frontierland,
+Fantasyland, Tomorrowland), New Orleans Square plays Liberty Square's, Bayou Country Frontierland's and Toontown Fantasyland's;
+Galaxy's Edge is quiet. All of California Adventure plays `audio/area-dca.mp3` (your Buena Vista Street loop) for now.
+Sleeping Beauty Castle is the owner's illustration (`images/castle-dl.png`, cut out of its checkerboard with
+`tools/checker_cutout.py`). Believe's bursts are timed to its soundtrack (`js/choreo-believe.js`). The Main Street street view stays Magic Kingdom's, and the rides that have a recording at Walt Disney
 World (Haunted Mansion, Pirates, Space Mountain, Star Tours, Rise of the Resistance, Runaway Railway, “it’s a small world”,
 Soarin’) play it.
 

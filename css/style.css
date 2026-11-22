@@ -120,3 +120,9 @@ body.fs.idle #osmc{opacity:.55}
 body.riding #bar,body.riding #nav{display:none}body.riding #app{grid-template-rows:1fr}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:400px){.resortPick button{padding:3px 7px;font-size:10.5px}}
+/* the loading screen */
+#boot{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:linear-gradient(160deg,#dfeef7,#f4f6fa 55%,#e7f2e2);transition:opacity .45s}
+#boot.done{opacity:0;pointer-events:none}
+.bootCard{text-align:center;color:var(--tx);font-weight:700}.bootLogo{font-size:26px;font-weight:800;letter-spacing:.01em;margin-bottom:18px}
+.bootSpin{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;border:3px solid rgba(26,143,214,.2);border-top-color:var(--link);animation:bootSpin .9s linear infinite}
+@keyframes bootSpin{to{transform:rotate(360deg)}}#bootMsg{font-size:14px;color:var(--mu);font-weight:600}

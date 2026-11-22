@@ -151,6 +151,18 @@ function turret(c,e,x,y){const w=5,h=9;c.fillStyle='rgba(30,40,30,.18)';c.beginP
  const rg=c.createLinearGradient(x-w/2,0,x+w/2,0);rg.addColorStop(0,'#6f9cf0');rg.addColorStop(.45,'#2f5ad0');rg.addColorStop(1,'#1a3a96');c.fillStyle=rg;c.beginPath();c.moveTo(x-w/2-.6,y-h);c.quadraticCurveTo(x-1,y-h-4,x,y-h-9);c.quadraticCurveTo(x+1,y-h-4,x+w/2+.6,y-h);c.fill();
  c.fillStyle='#f0c040';c.fillRect(x-.25,y-h-10.5,.5,1.6)}
 /* ---------- land lookup from the real land boundaries ---------- */
+/* a fast landOf for bulk use (placing ~300,000 trees): the lands drawn once into a coarse picture, one colour per land, read
+   back per spot; spots outside every land fall back to the nearest land centre, as landOf does */
+let LANDR=null;
+function landFast(x,y){if(!LANDR){const K=.25,keys=Object.keys(OSM.lands),cw_=Math.ceil(W*K),ch_=Math.ceil(H*K),cv=document.createElement('canvas');cv.width=cw_;cv.height=ch_;const g=cv.getContext('2d');g.scale(K,K);
+  keys.forEach((k,i)=>{g.fillStyle='rgb('+(i+1)+',0,0)';g.beginPath();OSM.lands[k].forEach(([px,py],j)=>j?g.lineTo(px,py):g.moveTo(px,py));g.closePath();g.fill()});
+  LANDR={K,w:cw_,h:ch_,d:g.getImageData(0,0,cw_,ch_).data,keys}}
+ const r=landRaster(x,y);if(r)return r;
+ return landNear(x,y)}
+function landRaster(x,y){if(!LANDR)landFast(-1e9,-1e9);const i=((y*LANDR.K|0)*LANDR.w+(x*LANDR.K|0))*4;if(x>=0&&y>=0&&i>=0&&i<LANDR.d.length&&LANDR.d[i+3]>250){const v=LANDR.d[i];if(v>0&&v<=LANDR.keys.length)return LANDR.keys[v-1]}return null}
+function landNear(x,y){let b='ms',d0=1e9;for(const k in LANDS){if(k==='hub')continue;const d=Math.hypot(LANDS[k][1]-x,LANDS[k][2]-y);if(d<d0){d0=d;b=k}}return d0<140?b:null}
+/* for each building: the raster's answer confirmed against that one land's outline (exact, and one test instead of all) */
+function landBld(x,y){const r=landRaster(x,y);if(r)return ptIn(x,y,OSM.lands[r])?r:landOf(x,y);return landNear(x,y)}
 function landOf(x,y){for(const k in OSM.lands)if(ptIn(x,y,OSM.lands[k]))return k;let b='ms',d0=1e9;for(const k in LANDS){if(k==='hub')continue;const d=Math.hypot(LANDS[k][1]-x,LANDS[k][2]-y);if(d<d0){d0=d;b=k}}return d0<140?b:null}
 // buildings outside the park take their look from the nearest resort
 function resortOf(x,y){let b=null,d0=330;for(const k in RESORTS){if(k==='mk')continue;const c=RESORTS[k].c,d=Math.hypot(c[0]-x,c[1]-y);if(d<d0){d0=d;b=k}}return b}
@@ -697,10 +709,15 @@ function buildMap(){
  const phone=Math.min(screen.width,screen.height)<700,P=OSM.places,box=dbox=(x0,y0,x1,y1,k)=>({x:Math.max(0,x0),y:Math.max(0,y0),w:Math.min(W,x1)-Math.max(0,x0),h:Math.min(H,y1)-Math.max(0,y0),k,base:null,glow:null});
  MSS=phone?2:3;const R0=REGIONS[0];MAP.mss=Math.min(MSS,Math.sqrt((phone?8e6:16e6)/((R0[2]-R0[0])*(R0[3]-R0[1]))));
  /* one layer per region at the same sharpness (Magic Kingdom first, then Epcot); the blank land between them isn't painted */
- MAP.layers=PARKR.map(R=>{const L={x:Math.max(0,R[0]),y:Math.max(0,R[1])};L.w=Math.min(W,R[2])-L.x;L.h=Math.min(H,R[3])-L.y;return Object.assign(L,paintMap(L.x,L.y,L.w,L.h,MAP.mss))});
- if(FULL)for(const L of MAP.layers)for(const q of[L.base,L.glow]){const c=q.getContext('2d'),s=q.width/L.w,F=50*s;c.globalCompositeOperation='destination-out'; /* fade each park's edges into the land around it */
+ /* one layer per region at the same sharpness (Magic Kingdom first, then Epcot); the blank land between them isn't painted.
+    Only the first (where the map opens) is painted before the map appears; the others follow one at a time just after
+    (paintRestLayers), so the first picture comes sooner. */
+ const fade=L=>{if(!FULL)return;for(const q of[L.base,L.glow]){const c=q.getContext('2d'),s=q.width/L.w,F=50*s;c.globalCompositeOperation='destination-out'; /* fade each park's edges into the land around it */
   const side=(x0,y0,x1,y1,gx0,gy0,gx1,gy1)=>{const g=c.createLinearGradient(gx0,gy0,gx1,gy1);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');c.fillStyle=g;c.fillRect(x0,y0,x1-x0,y1-y0)};
-  if(L.x>0)side(0,0,F,q.height,0,0,F,0);if(L.y>0)side(0,0,q.width,F,0,0,0,F);if(L.x+L.w<W-1)side(q.width-F,0,q.width,q.height,q.width,0,q.width-F,0);if(L.y+L.h<H-1)side(0,q.height-F,q.width,q.height,0,q.height,0,q.height-F);c.globalCompositeOperation='source-over'}
+  if(L.x>0)side(0,0,F,q.height,0,0,F,0);if(L.y>0)side(0,0,q.width,F,0,0,0,F);if(L.x+L.w<W-1)side(q.width-F,0,q.width,q.height,q.width,0,q.width-F,0);if(L.y+L.h<H-1)side(0,q.height-F,q.width,q.height,0,q.height,0,q.height-F);c.globalCompositeOperation='source-over'}};
+ MAP.paintLayer=L=>{Object.assign(L,paintMap(L.x,L.y,L.w,L.h,MAP.mss));fade(L)};
+ MAP.layers=PARKR.map(R=>{const L={x:Math.max(0,R[0]),y:Math.max(0,R[1]),base:null,glow:null};L.w=Math.min(W,R[2])-L.x;L.h=Math.min(H,R[3])-L.y;return L});
+ MAP.paintLayer(MAP.layers[0]);
  MAP.base=MAP.layers[0].base;MAP.glow=MAP.layers[0].glow;
  /* the land between the parks: tiles, painted when they come into view and let go after a while away (detailTick) */
  MAP.tiles=[];if(FULL){const TS=1100,k=MAP.mss*.6;for(let y=0;y<H;y+=TS)for(let x=0;x<W;x+=TS){const w=Math.min(TS+3,W-x),h=Math.min(TS+3,H-y); /* each tile reaches a little into the next, so no hairline seam shows where they meet */if(PARKR.some(R=>x>=R[0]&&y>=R[1]&&x+w<=R[2]&&y+h<=R[3]))continue;MAP.tiles.push({x,y,w,h,k,base:null,glow:null})}}
@@ -712,7 +729,9 @@ function buildMap(){
  if(P.epcot&&OSM.epcot){const e=bbox(OSM.epcot);MAP.detail.push(box(e[0]-40,e[1]-40,e[2]+40,e[3]+40,MSS-.5))} /* Epcot close up */
  if(OSM.hs){const e=bbox(OSM.hs);MAP.detail.push(box(e[0]-40,e[1]-40,e[2]+40,e[3]+40,MSS-.5))} /* Hollywood Studios close up */
  if(P.wl)MAP.detail.push(box(P.wl[0]-230,P.wl[1]-260,P.wl[0]+260,P.wl[1]+200,MSS-.5));if(P.fw)MAP.detail.push(box(P.fw[0]-220,P.fw[1]-130,P.fw[0]+230,P.fw[1]+330,MSS-.5));
- setTimeout(()=>{const d=MAP.detail[0];if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k))},400)} /* the park itself is wanted almost at once */
+ /* then, a frame or two apart: the other parks' layers, then the park's own close-up */
+ const rest=()=>{const L=MAP.layers.find(L=>!L.base);if(L){MAP.paintLayer(L);if(typeof OCC!=='undefined')OCC.R=null;setTimeout(rest,60);return} /* (what buildings hide is worked out again with every park painted) */
+  const d=MAP.detail[0];if(!d.base)Object.assign(d,paintMap(d.x,d.y,d.w,d.h,d.k))};setTimeout(rest,250)}
 /* Close-up layers are painted only when you zoom in near one, and let go again after a while away, so only the ones
    in use take memory (each is tens of MB). Checked a few times a second; one is painted at a time. */
 function dropDetail(d){for(const k of['base','glow'])if(d[k]){d[k].width=d[k].height=0;d[k]=null}if(d.tmp)MAP.detail.splice(MAP.detail.indexOf(d),1)}
@@ -828,7 +847,7 @@ function paintMap(rx,ry,rw,rh,mss){
  let evB=null; /* Everest's show building, whose footprint the mountain fills */
  const B=[],late=[],castleB=OSM.buildings.find(q=>q.n===(DL?'Sleeping Beauty Castle':'Cinderella Castle')),towerB=OSM.buildings.find(q=>q.n==='The Twilight Zone Tower of Terror');
  for(const q of OSM.buildings){if(q.p.length<3)continue;const bb=bbOf(q.p);if(!cull)b.fillRect(bb[0]-1,bb[1]-q.h*S2-1,bb[2]-bb[0]+2,bb[3]-bb[1]+q.h*S2+2);if(!vis(bb))continue;
-  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landOf(cx_,cy_)||akResOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
+  const cx_=(bb[0]+bb[2])/2,cy_=(bb[1]+bb[3])/2,ep_=epLand(cx_,cy_),land=(ep_&&ep_!=='none'?ep_:cresOf(cx_,cy_)||dsOf(cx_,cy_,q.k))||ep_||landBld(cx_,cy_)||akResOf(cx_,cy_)||resortOf(cx_,cy_)||'none',st=LANDSTYLE[land]||LANDSTYLE.none,hs=hsh(Math.round(cx_*31+cy_*17));
   if(q===castleB||(castleB&&ptIn(cx_,cy_,castleB.p))||q.n==='Space Mountain'||DL&&q.n==='Matterhorn Bobsleds')continue;
   let wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],hh=q.h*S2;
    if(DL&&typeof dlBuilding==='function'){const f=dlBuilding(q,bb,land,hh,hs);if(f===false)continue;if(Array.isArray(f)){for(const it of f)B.push({y:it.y,f:()=>it.f(c,e)});continue}if(f){B.push({y:bb[3],f:()=>f(c,e)});continue}} /* Disneyland's landmarks and show buildings (map-art-dl.js) */
@@ -899,16 +918,23 @@ function paintMap(rx,ry,rw,rh,mss){
  if(!MAP.crowns){const BW=blk.width,BH=blk.height,bd=b.getImageData(0,0,BW,BH).data,free=(x,y)=>{if(!(x>1&&y>1&&x<W-1&&y<H-1)||!inRegion(x,y))return false;return bd[((y*HS|0)*BW+(x*HS|0))*4+3]<10};
   const fm=document.createElement('canvas');fm.width=BW;fm.height=BH;{const f=fm.getContext('2d');f.scale(HS,HS);f.fillStyle='#000';for(const a of forest){areaPath(f,a);f.fill('evenodd')}}
   const fmd=fm.getContext('2d').getImageData(0,0,BW,BH).data,inForest=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&fmd[((y*HS|0)*BW+(x*HS|0))*4+3]>10;
-  const PALM={adv:.6,poly:.55,gf:.25,cont:.2,ttc:.3},kind=(x,y,f)=>{const l=landOf(x,y)||resortOf(x,y),q=r();return q<(PALM[l]||0)*f?'palm':(l==='fr'||l==='lib'||l==='wl'||l==='fw'||(!l&&f<1))&&q<(l==='wl'||l==='fw'?.55:f<1?.22:.3)?'pine':'crown'};
-  MAP.crowns=[];
+  /* which land a tree stands in, looked up once per 6-unit cell (searching every land's outline for each of ~300,000 trees took a minute) */
+  const LK=new Map(),landAt=(x,y)=>{const key=((x/6)|0)*65536+((y/6)|0);let v=LK.get(key);if(v===undefined){v=landFast(x,y)||resortOf(x,y)||'';LK.set(key,v)}return v||null};
+  const PALM={adv:.6,poly:.55,gf:.25,cont:.2,ttc:.3},kind=(x,y,f)=>{const l=landAt(x,y),q=r();return q<(PALM[l]||0)*f?'palm':(l==='fr'||l==='lib'||l==='wl'||l==='fw'||(!l&&f<1))&&q<(l==='wl'||l==='fw'?.55:f<1?.22:.3)?'pine':'crown'};
+  const mk=n=>{try{performance.mark('dah-'+n)}catch(e){}};mk('crowns0');MAP.crowns=[];
   for(const[x,y]of OSM.trees)if(!onWater(x,y))MAP.crowns.push([x,y,2.8+r()*1.6,kind(x,y,1),(r()*CROWN.length)|0,inForest(x,y)]);
-  for(let y=3;y<H;y+=3.6)for(let x=3+((y/3.6|0)%2)*1.8;x<W;x+=3.6){const jx=x+(r()-.5)*2,jy=y+(r()-.5)*2;if(FULL&&!inParkR(jx,jy)){const d=Math.min(...PARKR.map(R=>Math.hypot(Math.max(R[0]-jx,0,jx-R[2]),Math.max(R[1]-jy,0,jy-R[3]))));if(d>70||r()<d/70)continue} /* between the parks: the canopy texture instead; the park's own trees thin out over it for a little way, so the two blend */if(!free(jx,jy)||!free(jx,jy-3))continue;
-   const inF=inForest(jx,jy);if(!inF&&r()>.012)continue;MAP.crowns.push([jx,jy,inF?3+r()*2.4:3+r()*1.6,kind(jx,jy,.75),(r()*CROWN.length)|0,inF])}
-  /* soft shadows (light from the upper left) */
+  /* the filler trees, on a staggered 3.6-unit grid. Only round the parks (each park's box plus the 72 units over which its trees
+     thin out into the canopy texture): walking the whole map was ~8 million points at Walt Disney World, a long wait at start-up */
+  const RB=FULL?PARKR.map(R=>[Math.max(0,R[0]-72),Math.max(0,R[1]-72),Math.min(W,R[2]+72),Math.min(H,R[3]+72)]):[[0,0,W,H]];
+  RB.forEach((G,gi)=>{const y0=3+Math.ceil(Math.max(0,G[1]-3)/3.6)*3.6;for(let y=y0;y<G[3];y+=3.6){const x0=3+((y/3.6|0)%2)*1.8;for(let x=x0+Math.ceil(Math.max(0,G[0]-x0)/3.6)*3.6;x<G[2];x+=3.6){
+   let dup=false;for(let k=0;k<gi;k++){const E=RB[k];if(x>=E[0]&&x<E[2]&&y>=E[1]&&y<E[3]){dup=true;break}}if(dup)continue; /* already done for an earlier park */
+   const jx=x+(r()-.5)*2,jy=y+(r()-.5)*2;if(FULL&&!inParkR(jx,jy)){let d=1e9;for(const R of PARKR)d=Math.min(d,Math.hypot(Math.max(R[0]-jx,0,jx-R[2]),Math.max(R[1]-jy,0,jy-R[3])));if(d>70||r()<d/70)continue} /* between the parks: the canopy texture instead; the park's own trees thin out over it for a little way, so the two blend */if(!free(jx,jy)||!free(jx,jy-3))continue;
+   const inF=inForest(jx,jy);if(!inF&&r()>.012)continue;MAP.crowns.push([jx,jy,inF?3+r()*2.4:3+r()*1.6,kind(jx,jy,.75),(r()*CROWN.length)|0,inF])}}})
+  mk('crowns-placed');/* soft shadows (light from the upper left) */
   const sh=document.createElement('canvas');sh.width=BW;sh.height=BH;const sx=sh.getContext('2d');sx.scale(HS,HS);sx.fillStyle='#000';
   for(const[x,y,rd]of MAP.crowns){sx.beginPath();sx.ellipse(x+rd*.9,y+rd*.5,rd*1.2,rd*.85,0,0,7);sx.fill()}
   for(const q of OSM.buildings){if(q.p.length<3)continue;const hh=q.h*S2;for(let t=0;t<=1;t+=.25){sx.beginPath();q.p.forEach(([x,y],i)=>i?sx.lineTo(x+hh*.55*t,y+hh*.12*t):sx.moveTo(x+hh*.55*t,y+hh*.12*t));sx.closePath();sx.fill()}}
-  MAP._shadow=softBlur(softBlur(sh,Math.max(1.5,4*HS)),Math.max(1.2,2*HS))}
+  mk('shadows-drawn');MAP._shadow=softBlur(softBlur(sh,Math.max(1.5,4*HS)),Math.max(1.2,2*HS));mk('shadows-blurred')}
  c.save();c.globalAlpha=.34;c.drawImage(MAP._shadow,0,0,W,H);c.restore();
  const seen=(x,y)=>x>rx-10&&x<rx+rw+10&&y>ry-4&&y<ry+rh+22;
  c.fillStyle='#2a5a28';for(const[x,y,rd,k,v,inF]of MAP.crowns)if(k==='crown'&&inF&&seen(x,y)){c.beginPath();c.arc(x+rd*.2,y-rd*.5,rd*1.12,0,7);c.fill()}

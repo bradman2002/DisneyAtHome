@@ -181,6 +181,8 @@ const RESORT_PAGE={wdw:'index.html',dl:'disneyland.html'};
 {for(const b of document.querySelectorAll('.resortPick button')){const r=b.dataset.resort,on=r===(DL?'dl':'wdw');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.onclick=()=>{if(on)return;const u=new URL(RESORT_PAGE[r],location.href);for(const[k,v]of new URLSearchParams(location.search))if(k!=='resort')u.searchParams.set(k,v);location.href=u.toString()}}
  setTimeout(()=>{for(const f of DL?['index.html','js/park-osm.js']:['disneyland.html','js/park-osm-dl.js','js/map-art-dl.js','js/choreo-believe.js']){const l=document.createElement('link');l.rel='prefetch';l.href=f;document.head.appendChild(l)}},20000);
  document.title=DL?'DisneyAtHome · Disneyland':'DisneyAtHome';const cvv=$('#cv');if(cvv&&DL)cvv.setAttribute('aria-label','Map of the Disneyland Resort');const vw=$('#views');if(vw&&DL)vw.style.display='none'}
-loadCastleImage().then(()=>{buildMap();resize();reset(7*3600);seekLater(9*3600-900);sync();ui(true);liveInit();soundAuto();
+/* the loading screen (#boot in index.html) says what it's waiting for */
+function bootMsg(t){const e=$('#bootMsg');if(e)e.textContent=t}
+loadCastleImage().then(()=>{bootMsg('Painting the map…');return new Promise(r=>setTimeout(r,30))}).then(()=>{try{performance.mark('dah-paint-start')}catch(e){}buildMap();try{performance.mark('dah-map')}catch(e){}resize();reset(7*3600);seekLater(9*3600-900);sync();ui(true);liveInit();soundAuto();
  let last=performance.now(),uit=0;
- (function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;frame(dt);uit+=dt;if(uit>.25){uit=0;ui(false)}requestAnimationFrame(loop)})(last)});
+ (function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;frame(dt);if(!loop.shown){loop.shown=1;const b=$('#boot');if(b){b.classList.add('done');setTimeout(()=>b.remove(),500)}} /* the first picture is up: the loading screen goes */uit+=dt;if(uit>.25){uit=0;ui(false)}requestAnimationFrame(loop)})(last)});

@@ -69,14 +69,14 @@ function frame(rdt){
  cx.setTransform(dpr*z,0,0,dpr*z,dpr*(cw/2-cam.x*z),dpr*(ch/2-cam.y*z)); /* not snapped to whole pixels: a slow pan then glides instead of stepping */
  detailTick(z);const vis=d=>d.base&&z*dpr>MAP.mss*1.15&&d.x<cam.x+cw/2/z&&d.x+d.w>cam.x-cw/2/z&&d.y<cam.y+ch/2/z&&d.y+d.h>cam.y-ch/2/z; // sharper close-up layers, once painted
  const tv=d=>d.base&&d.x<cam.x+cw/2/z&&d.x+d.w>cam.x-cw/2/z&&d.y<cam.y+ch/2/z&&d.y+d.h>cam.y-ch/2/z;for(const L of MAP.tiles)if(tv(L))cx.drawImage(L.base,L.x,L.y,L.w,L.h); /* the land between the parks, under them */
- for(const L of MAP.layers)cx.drawImage(L.base,L.x,L.y,L.w,L.h);for(const d of MAP.detail)if(vis(d))cx.drawImage(d.base,d.x,d.y,d.w,d.h);
+ for(const L of MAP.layers)if(L.base)cx.drawImage(L.base,L.x,L.y,L.w,L.h);for(const d of MAP.detail)if(vis(d))cx.drawImage(d.base,d.x,d.y,d.w,d.h);
  drawLive(now);
  if(MAP.castleImg){const[bx,by,bw,bh]=MAP.castleBox;cx.drawImage(CASTLE_IMG&&CASTLE_IMG.naturalWidth?CASTLE_IMG:MAP.castle,bx,by,bw,bh)} /* the castle again on top, from the original image so it lines up exactly with the one in the background */ // keep rides behind the castle hidden
  // daylight → sunset → night
  cx.globalCompositeOperation='multiply';const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t),col=mix(mix([255,255,255],[255,214,170],gf),[60,74,135],nf);
  cx.fillStyle=`rgb(${col.map(Math.round)})`;cx.fillRect(0,0,W,H);
  cx.globalCompositeOperation='lighter';const la=Math.min(1,nf*1.3+gf*.15);
- if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}for(const L of MAP.tiles)if(tv(L))cx.drawImage(L.glow,L.x,L.y,L.w,L.h);for(const L of MAP.layers)cx.drawImage(L.glow,L.x,L.y,L.w,L.h);cx.restore();for(const d of dv)cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.globalAlpha=la*.32;if(!OCC.R)occBuild();for(const[x,y]of OCC.L||MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
+ if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}for(const L of MAP.tiles)if(tv(L))cx.drawImage(L.glow,L.x,L.y,L.w,L.h);for(const L of MAP.layers)if(L.glow)cx.drawImage(L.glow,L.x,L.y,L.w,L.h);cx.restore();for(const d of dv)cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.globalAlpha=la*.32;if(!OCC.R)occBuild();for(const[x,y]of OCC.L||MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
   // castle uplighting
   cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
  sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';

@@ -28,7 +28,8 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - These files pack many statements onto one long line. Never add a `//` comment in the middle of such a line: it
   silently comments out everything after it (this has broken the speed button and guest arrivals). Use `/* */`,
   or put the comment on its own line.
-- Load order in index.html matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv (choreo-luminous, luminous, choreo-fantasmic, fantasmic and worldofcolor load just before live).
+- Scripts are listed in `BOOT_JS` in index.html and added (async=false, in order) only after the loading screen `#boot` has
+  been drawn (plain script tags held back the first picture); disneyland.html is regenerated from it. Load order matters: park-osm → sim → audio → choreo → choreo-minnie → map-art → street → characters → parade → pageant → live → render → ui → tv (choreo-luminous, luminous, choreo-fantasmic, fantasmic and worldofcolor load just before live).
 
 ## Files
 - `js/park-osm.js` — GENERATED geometry for the park and resort area from OpenStreetMap (buildings, walkways,
@@ -242,6 +243,12 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   start-up, `liveFollow` and liveTick's forward jumps set `BGSEEK` and `frame()` runs `bgSeekTick(30)` per frame (a time-lapse,
   target moving with the clock; liveTick only updates the target meanwhile; FF stays on so sounds/shows wait); a normal `seek`
   cancels it; jumps ≤15 min still seek at once.
+  First open (owner: "It still takes a long time before anything loads when I open it for the first time"): the tree placement
+  in paintMap called landOf (≈0.4 ms, every land outline) for ~300,000 trees: about a minute. Now `landFast` (lands rasterised
+  once at 0.25 px/unit, per-6-unit memo) and the building loop uses `landBld` (raster, confirmed by one ptIn); the filler grid
+  only covers the parks' boxes +72. Only `MAP.layers[0]` is painted before the first frame; `MAP.paintLayer` does the rest 60 ms
+  apart, then detail[0] (OCC rebuilt after each). performance marks dah-scripts/-paint-start/-crowns0/-crowns-placed/-map.
+  Measured visible, locally: Disneyland map at ~3.0 s, WDW ~8.7 s (the first paint still draws the whole map for its masks).
   `OSM.resort==='dl'` sets the global `DL` (sim.js). Disneyland Park takes Magic Kingdom's slot (park 0: GATE,
   hub, castle, Main Street, `routes.rail`, `routes.parade`, `setHours`) and California Adventure takes EPCOT's (park 1: `epgate`,
   `EPR`, `setHoursEP`, `decideEP`, `LIVE.epApi`); `HSL`/`AKL` are empty. Data: `tools/osm_extract_dl.py` reads `dl.osm`

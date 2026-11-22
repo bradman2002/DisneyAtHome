@@ -7,10 +7,10 @@ def R(a,b):
     global s
     assert a in s,a;s=s.replace(a,b)
 R("<title>DisneyAtHome</title>","<title>DisneyAtHome · Disneyland</title>")
-R(s[s.index('<!-- Walt Disney World. The Disneyland Resort'):s.index('<script src="js/park-osm.js"></script>')],
+R(s[s.index('<!-- Walt Disney World. The Disneyland Resort'):s.index('<!-- The scripts, in dependency order')],
   "<!-- The Disneyland Resort: made from index.html by tools/make_disneyland_page.py, so don't edit this file; change index.html. -->\n<script>var RESORT='dl'</script>\n")
-R('<script src="js/park-osm.js"></script>','<script src="js/park-osm-dl.js"></script>')
-R('<!--DL:believe-->','<script src="js/choreo-believe.js"></script>')
-R('<!--DL:mapart-->','<script src="js/map-art-dl.js"></script>')
+R("'js/park-osm.js'","'js/park-osm-dl.js'")
+R('/*DL:believe*/',"'js/choreo-believe.js'")
+R('/*DL:mapart*/',"'js/map-art-dl.js'")
 open(os.path.join(root,'disneyland.html'),'w').write(s)
 print('wrote disneyland.html')

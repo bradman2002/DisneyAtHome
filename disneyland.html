@@ -20,6 +20,8 @@
 </head>
 <body>
 <div id="app">
+ <!-- the loading screen: shown the moment the page arrives (before the big map-data file), gone with the first picture (ui.js) -->
+ <div id="boot" role="status" aria-live="polite"><div class="bootCard"><div class="bootLogo">DisneyAtHome</div><div class="bootSpin"></div><div id="bootMsg">Loading the map…</div></div></div>
  <header id="bar">
   <button id="fBtn" class="link">Filter</button>
   <div class="ttl"><div class="resortPick" role="group" aria-label="Resort"><button type="button" data-resort="wdw">Walt Disney World</button><button type="button" data-resort="dl">Disneyland</button></div><button id="layerBtn" aria-haspopup="menu" aria-expanded="false"><span id="layerName">Wait Times</span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
@@ -61,29 +63,34 @@
 <!-- Classic scripts in dependency order (no build step; works from any static web host). -->
 <!-- The Disneyland Resort: made from index.html by tools/make_disneyland_page.py, so don't edit this file; change index.html. -->
 <script>var RESORT='dl'</script>
-<script src="js/park-osm-dl.js"></script>
-<script src="js/sim.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/choreo.js"></script>
-<script src="js/choreo-minnie.js"></script>
-<script src="js/choreo-believe.js"></script>
-<script src="js/choreo-luminous.js"></script>
-<script src="js/map-art.js"></script>
-<script src="js/map-art-dl.js"></script>
-<script src="js/street.js"></script>
-<script src="js/characters.js"></script>
-<script src="js/parade.js"></script>
-<script src="js/pageant.js"></script>
-<script src="js/luminous.js"></script>
-<script src="js/treeoflife.js"></script>
-<script src="js/ride.js"></script>
-<script src="js/choreo-fantasmic.js"></script>
-<script src="js/fantasmic.js"></script>
-<script src="js/worldofcolor.js"></script>
-<script src="js/carsland.js"></script>
-<script src="js/live.js"></script>
-<script src="js/render.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/tv.js"></script>
+<!-- The scripts, in dependency order (classic scripts sharing globals). They are added only after the loading screen has been
+     drawn: plain <script src> tags here would hold back the page's first picture until every one of them had run. -->
+<script>var BOOT_JS=[
+ 'js/park-osm-dl.js',
+ 'js/sim.js',
+ 'js/audio.js',
+ 'js/choreo.js',
+ 'js/choreo-minnie.js',
+ 'js/choreo-believe.js',
+ 'js/choreo-luminous.js',
+ 'js/map-art.js',
+ 'js/map-art-dl.js',
+ 'js/street.js',
+ 'js/characters.js',
+ 'js/parade.js',
+ 'js/pageant.js',
+ 'js/luminous.js',
+ 'js/treeoflife.js',
+ 'js/ride.js',
+ 'js/choreo-fantasmic.js',
+ 'js/fantasmic.js',
+ 'js/worldofcolor.js',
+ 'js/carsland.js',
+ 'js/live.js',
+ 'js/render.js',
+ 'js/ui.js',
+ 'js/tv.js'];
+(function(){var go=false;function start(){if(go)return;go=true;try{performance.mark('dah-scripts')}catch(e){}for(var i=0;i<BOOT_JS.length;i++){if(!BOOT_JS[i])continue;var e=document.createElement('script');e.src=BOOT_JS[i];e.async=false;document.body.appendChild(e)}}
+ requestAnimationFrame(function(){setTimeout(start,0)});setTimeout(start,150)})(); /* async=false keeps them running in order; the timer starts them in a hidden tab, which draws nothing */</script>
 </body>
 </html>

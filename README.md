@@ -16,9 +16,11 @@ used (the live data and sounds need a connection; everything else is simulated a
 
 ## Disneyland
 
-The picker above "Wait Times" at the top switches between Walt Disney World and the Disneyland Resort in Anaheim. The page
-reloads with the other resort and remembers your choice; `?resort=dl` or `?resort=wdw` in the address picks one too (for example
-`/?tv&resort=dl` to run TV mode on Disneyland).
+The picker above "Wait Times" at the top switches between Walt Disney World and the Disneyland Resort in Anaheim. Each resort
+is its own page: `index.html` is Walt Disney World and `disneyland.html` is Disneyland (for example `disneyland.html?tv` runs TV
+mode on Disneyland). Once a page has settled, it quietly downloads the other resort's page and map data, so switching on a hosted
+copy doesn't wait for the download. `disneyland.html` is made from `index.html` by `tools/make_disneyland_page.py`; run that after
+changing `index.html`. Old `?resort=dl` links still open Disneyland.
 
 The Disneyland map comes from OpenStreetMap like Walt Disney World's: Disneyland Park, Disney California Adventure, Downtown
 Disney, the Esplanade and the three hotels, with the streets round them. Both parks are simulated (guests, queues, about 60

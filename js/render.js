@@ -55,7 +55,7 @@ function sseNight(now,a,z){const S=SSE_AT;if(!S||a<.05)return;const{x,yc,R}=S;if
 const SSE_GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=32;const x=g.getContext('2d'),r=x.createRadialGradient(16,16,0,16,16,16);r.addColorStop(0,'rgba(235,240,255,.9)');r.addColorStop(.3,'rgba(190,210,255,.3)');r.addColorStop(1,'rgba(160,190,255,0)');x.fillStyle=r;x.fillRect(0,0,32,32);return g})();
 /* ---------- frame ---------- */
 function frame(rdt){
- if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
+ if(BGSEEK){BGSEEK.to=Math.min(86399,BGSEEK.to+rdt*speed);bgSeekTick(30)}else if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
  paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();if(DL){wocSync();clSync()}tolSync();
  if(typeof RIDE!=='undefined'&&RIDE.on){rideFrame(rdt);BUB=[];return} /* riding in a monorail's front cab (ride.js) */

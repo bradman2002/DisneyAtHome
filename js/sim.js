@@ -365,6 +365,14 @@ function step(dt){T+=dt;if(T>=86400){reset(0)}
 /* SEEKGEN counts deliberate time jumps (slider, ±15, Watch…), so the soundtracks can tell those apart from
    the simulation merely falling behind (background tab, slow frame) — see catchUp() in street.js */
 let SEEKGEN=0,CATCHUP=false;
-function seek(t,force){t=Math.max(0,Math.min(86399,t));if(!CATCHUP)SEEKGEN++;FF=true;if(force||t<T-1){reset(Math.min(7*3600,t));}while(T<t)step(Math.min(10,t-T));FF=false;lighting()}
+function seek(t,force){BGSEEK=null;t=Math.max(0,Math.min(86399,t));if(!CATCHUP)SEEKGEN++;FF=true;if(force||t<T-1){reset(Math.min(7*3600,t));}while(T<t)step(Math.min(10,t-T));FF=false;lighting()}
+/* A big jump forward without freezing the page (start-up, following the live clock): the map shows straight away and the
+   simulation runs forward a slice per frame (bgSeekTick, from frame() in render.js) like a quick time-lapse until it reaches
+   the target, which keeps moving with the clock. Sounds and shows stay quiet (FF) until it's there. Small jumps just seek. */
+let BGSEEK=null;
+function seekLater(t){t=Math.max(0,Math.min(86399,t));if(t<T-1)reset(Math.min(7*3600,t));if(t-T<=900){seek(t,false);return}
+ SEEKGEN++;BGSEEK={to:t};FF=true;if(t-T>3600&&typeof toast==='function')toast('Catching up to '+(typeof LIVE!=='undefined'&&LIVE.follow?'the current time':hm24(t))+'…')}
+function bgSeekTick(ms){if(!BGSEEK)return false;const end=performance.now()+ms;FF=true;while(T<BGSEEK.to&&performance.now()<end)step(Math.min(10,BGSEEK.to-T));
+ if(T>=BGSEEK.to-.001){BGSEEK=null;FF=false;SEEKGEN++}lighting();return true}
 function lighting(){const h=T/3600,ev=Math.max(0,Math.min(1,(h-sunset+.25)/1.2)),mo=Math.max(0,Math.min(1,(sunrise+.6-h)/1));nf=h>12?ev:mo;
  gf=h>12?Math.max(0,Math.min(1,(h-(sunset-1.8))/1.8))*(1-nf):Math.max(0,1-Math.abs(h-(sunrise+.5))/1.2)*(1-nf)*.7}

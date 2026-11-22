@@ -123,6 +123,7 @@ function dlBuilding(q,bb,land,hh,hs){const n=q.n||'',area=(bb[2]-bb[0])*(bb[3]-b
   inner=()=>OSM.buildings.filter(b=>{if(b===q||b.p.length<3||(b.n&&AT.some(t=>t.osm===b.n)))return false;const v=bbox(b.p);if(v[2]<bb[0]||v[0]>bb[2]||v[3]<bb[1]||v[1]>bb[3]||(v[2]-v[0])*(v[3]-v[1])<60)return false;return b.p.some(([x,y])=>ptIn(x,y,q.p)||edgeD(x,y)<1.5)}).map(b=>[b.p,b.h*k]),
   show=f=>{const I=inner(),h0=Math.min(hh,9*OSM.S);q._dh=I.length?Math.min(16*OSM.S,Math.max(h0,...I.map(b=>b[1]))):h0;return[{y:bb[3],f:(c,e)=>f(c,e,I)}]}; /* _dh: the height drawn, for what it hides (render.js occ) */
  if(land==='cl'){const f=dlCarsLand(q,bb,hh);if(f)return f}
+ {const sm=OSM.places.spacemtn;if(sm&&!n&&ptIn(sm[0],sm[1],q.p)){q._dh=Math.min(hh,9*OSM.S);return[{y:bb[1],f:(c,e)=>dlShowBox(c,e,q.p,hh,hs)},{y:sm[1]+sm[2]*.95,f:(c,e)=>spaceDome(c,e,sm[0],sm[1],sm[2])}]}} /* Space Mountain: its white cone (a building part in the data) on the low base building round it */
  if(n==='Millennium Falcon')return false; /* drawn as the ship (falcon(), map-art.js) */
  if(n==='Grizzly Peak'&&OSM.places.grizzlypk)return false;
  if(n==='Big Thunder Mountain Show Building')return false; /* inside the rocks */

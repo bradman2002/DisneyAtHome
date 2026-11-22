@@ -59,18 +59,18 @@
  </nav>
 </div>
 <!-- Classic scripts in dependency order (no build step; works from any static web host). -->
-<!-- Which resort: Walt Disney World (park-osm.js) or the Disneyland Resort (park-osm-dl.js). ?resort=dl or ?resort=wdw picks one and
-     it is remembered; the picker at the top of the page switches by reloading with the other one. -->
-<script>var RESORT=(function(){var r='wdw';try{var q=new URLSearchParams(location.search).get('resort');if(q==='dl'||q==='wdw'){localStorage.setItem('dah-resort',q);r=q}else r=localStorage.getItem('dah-resort')==='dl'?'dl':'wdw'}catch(e){}return r})();
-document.write('<script src="js/'+(RESORT==='dl'?'park-osm-dl.js':'park-osm.js')+'"><\/script>')</script>
+<!-- Walt Disney World. The Disneyland Resort is its own page, disneyland.html, made from this one by tools/make_disneyland_page.py
+     (run it after changing this file). An old ?resort=dl link is sent there. -->
+<script>var RESORT='wdw';try{if(new URLSearchParams(location.search).get('resort')==='dl')location.replace('disneyland.html')}catch(e){}</script>
+<script src="js/park-osm.js"></script>
 <script src="js/sim.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/choreo.js"></script>
 <script src="js/choreo-minnie.js"></script>
-<script>if(RESORT==='dl')document.write('<script src="js/choreo-believe.js"><\/script>')</script>
+<!--DL:believe-->
 <script src="js/choreo-luminous.js"></script>
 <script src="js/map-art.js"></script>
-<script>if(RESORT==='dl')document.write('<script src="js/map-art-dl.js"><\/script>')</script>
+<!--DL:mapart-->
 <script src="js/street.js"></script>
 <script src="js/characters.js"></script>
 <script src="js/parade.js"></script>

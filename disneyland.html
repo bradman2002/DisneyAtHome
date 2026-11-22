@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DisneyAtHome · Disneyland</title>
+<!-- installable as an app: home-screen icon, opens full screen without the browser's bars (manifest.webmanifest, sw.js) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DisneyAtHome">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,700;6..12,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+ <header id="bar">
+  <button id="fBtn" class="link">Filter</button>
+  <div class="ttl"><div class="resortPick" role="group" aria-label="Resort"><button type="button" data-resort="wdw">Walt Disney World</button><button type="button" data-resort="dl">Disneyland</button></div><button id="layerBtn" aria-haspopup="menu" aria-expanded="false"><span id="layerName">Wait Times</span><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+   <div id="layerMenu" role="menu" hidden></div></div>
+  <button id="lBtn" class="link">Show List</button>
+ </header>
+ <main id="stage">
+  <canvas id="cv" aria-label="Map of Magic Kingdom"></canvas>
+  <div id="ride" hidden><canvas id="rideCv" aria-label="View from the monorail's front cab"></canvas><div id="rideFrame" aria-hidden="true"></div>
+   <div id="rideHud"><div class="rideCard"><b id="rideTtl"></b><span id="rideSt"></span></div><button id="rideLeave">Leave the monorail</button></div></div>
+  <div id="views" role="group" aria-label="View"><button id="vMap" class="on">Map</button><button id="vStreet">Main Street</button></div>
+  <div id="fsBar" role="toolbar" aria-label="Full screen controls">
+   <button id="fsList" class="fsOnly" aria-label="Wait times list"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+   <button id="fsShows" class="fsOnly" aria-label="Entertainment"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" fill="currentColor"/></svg></button>
+   <button id="tvBtn" aria-label="TV mode" title="TV mode: runs by itself (T)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+   <button id="fsBtn" aria-label="Full screen" title="Full screen (F)"><svg viewBox="0 0 24 24" class="enter"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="exit"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+  <div id="tv" hidden><div id="tvCap"></div><div id="tvClock"><b id="tvTime"></b><span id="tvDate"></span><span id="tvNote"></span></div>
+   <div id="tvSide"><div class="tvCard"><h3>Coming up</h3><div id="tvUp"></div></div><div class="tvCard"><h3>Wait times</h3><div id="tvList"></div><div id="tvFoot"></div></div></div></div>
+  <a id="osmc" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Map data © OpenStreetMap contributors</a>
+  <div id="sndHint" hidden>🔈 Click anywhere for sound</div><div id="svb"></div><div id="toast" role="status" aria-live="polite"></div>
+  <div id="time">
+   <div class="row1"><button id="bp" class="ic" aria-label="Pause"></button>
+    <div class="clock"><b id="ck">9:00 AM</b><span id="ph">Morning</span></div>
+    <button id="bm" class="sm" aria-label="Back 15 minutes">−15</button><button id="bf" class="sm" aria-label="Forward 15 minutes">+15</button>
+    <button id="spd" class="sm chip" aria-label="Simulation speed"><span id="spdv">1×</span></button><button id="liveBtn" class="sm chip" hidden>Go live</button></div>
+   <input type="range" id="ts" min="0" max="1425" step="15" aria-label="Time of day">
+  </div>
+  <aside id="sheet" aria-label="Details"><div class="grip" aria-hidden="true"></div><div class="shHead"><h2 id="shTitle"></h2><button id="shClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div><div id="shBody"></div></aside>
+ </main>
+ <nav id="nav" aria-label="Sections">
+  <button data-s="home" aria-label="Today in the park"><svg viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="currentColor"/></svg></button>
+  <button data-s="map" class="on" aria-label="Map"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" fill="currentColor"/></svg></button>
+  <button data-s="shows" aria-label="Entertainment"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5v9M7.5 12h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  <button data-s="search" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></button>
+  <button data-s="menu" aria-label="Sound and settings"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+ </nav>
+</div>
+<!-- Classic scripts in dependency order (no build step; works from any static web host). -->
+<!-- The Disneyland Resort: made from index.html by tools/make_disneyland_page.py, so don't edit this file; change index.html. -->
+<script>var RESORT='dl'</script>
+<script src="js/park-osm-dl.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/choreo.js"></script>
+<script src="js/choreo-minnie.js"></script>
+<script src="js/choreo-believe.js"></script>
+<script src="js/choreo-luminous.js"></script>
+<script src="js/map-art.js"></script>
+<script src="js/map-art-dl.js"></script>
+<script src="js/street.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/parade.js"></script>
+<script src="js/pageant.js"></script>
+<script src="js/luminous.js"></script>
+<script src="js/treeoflife.js"></script>
+<script src="js/ride.js"></script>
+<script src="js/choreo-fantasmic.js"></script>
+<script src="js/fantasmic.js"></script>
+<script src="js/worldofcolor.js"></script>
+<script src="js/carsland.js"></script>
+<script src="js/live.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/tv.js"></script>
+</body>
+</html>

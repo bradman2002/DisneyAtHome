@@ -232,9 +232,17 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - OpenStreetMap attribution must stay visible on the map (ODbL).
 
 - Disneyland Resort (owner, 21 Nov 2026: "I want a selector at the top that I can change to disneyland. Lets get started with
-  disneyland now"). One engine, two resorts: `index.html` reads `?resort=` (remembered in localStorage `dah-resort`) and
-  `document.write`s either `js/park-osm.js` or `js/park-osm-dl.js`; the `#resortSel` select in the header (`.resortPick`) reloads
-  with the other one. `OSM.resort==='dl'` sets the global `DL` (sim.js). Disneyland Park takes Magic Kingdom's slot (park 0: GATE,
+  disneyland now"). One engine, two resorts, two pages (owner, 21 Nov: "make it a different page ... switching between them is really slow"):
+  `index.html` = Walt Disney World (`RESORT='wdw'`, `js/park-osm.js`; an old `?resort=dl` link is sent to disneyland.html) and
+  `disneyland.html` = the Disneyland Resort, GENERATED from index.html by `tools/make_disneyland_page.py` (run it after any
+  index.html change; it swaps the data file and adds choreo-believe.js and map-art-dl.js at the `<!--DL:...-->` markers). The
+  `.resortPick` pill opens the other page (`RESORT_PAGE` in ui.js); 20 s after start the other page and its data file are
+  prefetched. Start-up cost measured locally: WDW ~0.9 s files + ~3.2 s map paint + ~4.9 s catching the sim up to now; Disneyland
+  ~0.4 + 1.4 + 2.5 s. Then (owner: "Yes, do it" to showing the map first): big forward jumps go through `seekLater(t)` (sim.js):
+  start-up, `liveFollow` and liveTick's forward jumps set `BGSEEK` and `frame()` runs `bgSeekTick(30)` per frame (a time-lapse,
+  target moving with the clock; liveTick only updates the target meanwhile; FF stays on so sounds/shows wait); a normal `seek`
+  cancels it; jumps ≤15 min still seek at once.
+  `OSM.resort==='dl'` sets the global `DL` (sim.js). Disneyland Park takes Magic Kingdom's slot (park 0: GATE,
   hub, castle, Main Street, `routes.rail`, `routes.parade`, `setHours`) and California Adventure takes EPCOT's (park 1: `epgate`,
   `EPR`, `setHoursEP`, `decideEP`, `LIVE.epApi`); `HSL`/`AKL` are empty. Data: `tools/osm_extract_dl.py` reads `dl.osm`
   (git-ignored; api.openstreetmap.org/api/0.6/map in 4 pieces, bbox 33.7985,-117.9295,33.8175,-117.9095) and writes the same
@@ -292,6 +300,8 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   track, Batuu spires in open ground of `lands.gx`, `grizzly` at `places.grizzlypk`, the Cadillac Range fins along the Racers
   building to `places.cadillac`, `palAround`, open-air coaster tracks (`OSM.coasters`; Pixar Pier's high on white posts, ones
   inside buildings or Fantasyland skipped). LANDSTYLE.ms/nos are overridden at DL (Victorian colours; `nosDeco` balconies).
+  Space Mountain's dome is a building:part in the data: the extractor writes `places.spacemtn` [x,y,r] and dlBuilding draws
+  `spaceDome` on it over a low show box for the unnamed building round it.
   The extractor now writes `falcon`, `coasters` ([name, tunnel, pts]) and peak places btmpeak/cadillac/grizzlypk.
   Second pass (owner, 21 Nov: Grand Californian, around Pirates and the Haunted Mansion looked weird, "so many grey buildings",
   "make sure the orientation of everything looks good"; "The ferris wheel looks wrong"): show boxes only for NAMED ride/backstage

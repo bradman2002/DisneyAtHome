@@ -49,13 +49,13 @@ function liveSchedule(on){for(const e of EV){if(!LIVE.shows||!(e.id in LIVE.show
  if(on&&LIVE.epHours)setHoursEP(LIVE.epHours[0],LIVE.epHours[1]);else if(!on)setHoursEP(DL?8:9,DL?22:21);
  if(on&&LIVE.hsHours)setHoursHS(LIVE.hsHours[0],LIVE.hsHours[1]);else if(!on)setHoursHS(9,21);
  if(on&&LIVE.akHours)setHoursAK(LIVE.akHours[0],LIVE.akHours[1]);else if(!on)setHoursAK(8,19)}
-function liveFollow(){if(!LIVE.ok)return;LIVE.on=LIVE.follow=true;liveSchedule(true);const c=parkClock();LIVE.inTick=true;dateStr=c.date;reset(Math.min(7*3600,c.s));seek(c.s,false);LIVE.inTick=false;speed=1;playing=true;sync();liveBadge()}
+function liveFollow(){if(!LIVE.ok)return;LIVE.on=LIVE.follow=true;liveSchedule(true);const c=parkClock();LIVE.inTick=true;dateStr=c.date;reset(Math.min(7*3600,c.s));seekLater(c.s);LIVE.inTick=false;speed=1;playing=true;sync();liveBadge()}
 function liveUnfollow(){if(!LIVE.follow)return;LIVE.follow=false;LIVENOW=false;CROWDX=1;liveSchedule(false);liveBadge()}
 // called every frame: keep the clock on the real time, and say whether the live numbers apply right now
-function liveTick(){if(!LIVE.follow){LIVENOW=false;return}const c=parkClock();LIVE.inTick=true;
+function liveTick(){if(!LIVE.follow){LIVENOW=false;return}const c=parkClock();if(BGSEEK){BGSEEK.to=Math.max(BGSEEK.to,c.s);LIVENOW=LIVE.ok&&Date.now()-LIVE.at<25*60e3;CROWDX=LIVENOW?LIVE.crowd||1:1;return} /* still catching up */LIVE.inTick=true;
  if(dateStr!==c.date){dateStr=c.date;liveSchedule(true);reset(Math.min(7*3600,c.s));seek(c.s,false)}
  else{const d=c.s-T,music=(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||ewpPlaying()||lumPlaying()||fmPlaying(); // while a show's music is playing it keeps the time
-  if(!music&&Math.abs(d)>3){if(d>0&&d<=120||d<0&&d>-120)T=c.s;else seek(c.s,d<0)}}
+  if(!music&&Math.abs(d)>3){if(d>0&&d<=120||d<0&&d>-120)T=c.s;else if(d>0)seekLater(c.s);else seek(c.s,true)}}
  LIVE.inTick=false;if(speed!==1||!playing){speed=1;playing=true;sync()}
  LIVENOW=LIVE.ok&&Date.now()-LIVE.at<25*60e3;CROWDX=LIVENOW?LIVE.crowd||1:1}
 // any jump in time that isn't ours means the viewer has taken the clock back

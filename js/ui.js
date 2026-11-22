@@ -173,9 +173,14 @@ document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 if(matchMedia('(pointer:coarse)').matches){const h=$('#sndHint');if(h)h.textContent='🔈 Tap anywhere for sound'}
 try{const s=+localStorage.getItem('mk-speed');if(SPEEDS.includes(s))speed=s}catch(e){} // starts at 1× (real time) unless you chose another speed before
 for(const e of EV)if(!Array.isArray(e.t))e.t=e.ts.map(hm).filter(x=>x!==null).sort((a,b)=>a-b);relTimes();
-/* the resort picker at the top: switching reloads the page with the other resort's map (index.html reads ?resort and remembers it) */
-{for(const b of document.querySelectorAll('.resortPick button')){const r=b.dataset.resort,on=r===(DL?'dl':'wdw');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.onclick=()=>{if(on)return;const u=new URL(location.href);u.searchParams.set('resort',r);location.href=u.toString()}}
+/* the resort picker at the top: each resort is its own page (index.html = Walt Disney World, disneyland.html = the Disneyland
+   Resort), so switching just opens the other page. Once this one has settled, the other resort's page and its big map-data file
+   are fetched quietly in the background, so the switch doesn't wait on the download (on a hosted copy; the local server sends
+   no-cache). */
+const RESORT_PAGE={wdw:'index.html',dl:'disneyland.html'};
+{for(const b of document.querySelectorAll('.resortPick button')){const r=b.dataset.resort,on=r===(DL?'dl':'wdw');b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.onclick=()=>{if(on)return;const u=new URL(RESORT_PAGE[r],location.href);for(const[k,v]of new URLSearchParams(location.search))if(k!=='resort')u.searchParams.set(k,v);location.href=u.toString()}}
+ setTimeout(()=>{for(const f of DL?['index.html','js/park-osm.js']:['disneyland.html','js/park-osm-dl.js','js/map-art-dl.js','js/choreo-believe.js']){const l=document.createElement('link');l.rel='prefetch';l.href=f;document.head.appendChild(l)}},20000);
  document.title=DL?'DisneyAtHome · Disneyland':'DisneyAtHome';const cvv=$('#cv');if(cvv&&DL)cvv.setAttribute('aria-label','Map of the Disneyland Resort');const vw=$('#views');if(vw&&DL)vw.style.display='none'}
-loadCastleImage().then(()=>{buildMap();resize();reset(7*3600);seek(9*3600-900,false);sync();ui(true);liveInit();soundAuto();
+loadCastleImage().then(()=>{buildMap();resize();reset(7*3600);seekLater(9*3600-900);sync();ui(true);liveInit();soundAuto();
  let last=performance.now(),uit=0;
  (function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;frame(dt);uit+=dt;if(uit>.25){uit=0;ui(false)}requestAnimationFrame(loop)})(last)});

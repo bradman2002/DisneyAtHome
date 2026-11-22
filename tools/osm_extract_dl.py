@@ -359,6 +359,12 @@ for wid,w in WAYS.items():
 cc=[pts(w['ids']) for w in WAYS.values() if w['t'].get('name')=='Carthay Circle' and w['t'].get('highway')]
 if cc: q_=max(cc,key=len);PLACES['carthaycircle']=R1((sum(v[0] for v in q_)/len(q_),sum(v[1] for v in q_)/len(q_)))
 print('pal wheel',PLACES.get('palwheel'),'carthay circle',PLACES.get('carthaycircle'))
+# Space Mountain's dome is a building:part in the data (not exported as a building): its centre and radius, for the white cone
+for wid,w in WAYS.items():
+    if w['t'].get('name')=='Space Mountain' and w['t'].get('building:part') and len(w['ids'])>3:
+        p=pts(w['ids'])[:-1];xs=[q[0] for q in p];ys=[q[1] for q in p]
+        PLACES['spacemtn']=[round((min(xs)+max(xs))/2,1),round((min(ys)+max(ys))/2,1),round((max(xs)-min(xs)+max(ys)-min(ys))/4,1)];break
+print('space mountain dome',PLACES.get('spacemtn'))
 out['monoLines']=[[R1(q) for q in simplify(p,.5)] for p in LINES['mono']]
 for k,v in KEYS.items(): print('key',k,v)
 data={'W':W,'H':H,'S':S,'resort':'dl','areas':out['areas'],'buildings':out['buildings'],'lines':out['lines'],'paths':out['paths'],'trees':out['trees'],'lamps':out['lamps'],

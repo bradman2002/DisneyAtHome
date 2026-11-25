@@ -128,3 +128,12 @@ body.riding #bar,body.riding #nav{display:none}body.riding #app{grid-template-ro
 @keyframes bootSpin{to{transform:rotate(360deg)}}#bootMsg{font-size:14px;color:var(--mu);font-weight:600}
 /* the map credit on narrow screens: one small line, never wrapping across the map */
 @media(max-width:760px){#osmc{font-size:9.5px;padding:1px 6px;white-space:nowrap;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis}#osmc .lg{display:none}}
+/* Under the phone's status bar: as a home-screen app the page fills the whole screen, including the status area (on top in
+   portrait, a rail down one side when the phone is held sideways or on the Duo's cover screen). The map runs right to the edge;
+   the bars and floating buttons keep clear of the status items, and a dark band behind them keeps the white status text readable. */
+:root{--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px)}
+#bar{padding-left:max(16px,var(--sl));padding-right:max(16px,var(--sr));background:linear-gradient(#1e2b4f 0 env(safe-area-inset-top,0px),#fff 0)}
+#nav{padding-left:max(8px,var(--sl));padding-right:max(8px,var(--sr))}
+#views,#time{margin-left:var(--sl)}#time{max-width:calc(100% - 24px - var(--sl) - var(--sr))}
+#fsBar,#osmc{margin-right:var(--sr)}
+#sbL,#sbR{position:fixed;top:0;bottom:0;pointer-events:none;z-index:40;background:rgba(15,25,45,.55)}#sbL{left:0;width:var(--sl)}#sbR{right:0;width:var(--sr)}

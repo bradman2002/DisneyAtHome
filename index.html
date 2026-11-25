@@ -67,6 +67,14 @@
 <script>var RESORT='wdw';try{if(new URLSearchParams(location.search).get('resort')==='dl')location.replace('disneyland.html')}catch(e){}</script>
 <!-- The scripts, in dependency order (classic scripts sharing globals). They are added only after the loading screen has been
      drawn: plain <script src> tags here would hold back the page's first picture until every one of them had run. -->
+<script>/* Sound only while the app is on screen. Every sound player the site makes is remembered here (Audio is wrapped before
+   any script runs); when the page is hidden (another app, the home screen, the phone locked, the tab switched or closed) they
+   are all paused and the effects engine is suspended, and when it comes back the ones that were playing carry on. */
+(function(){var A0=window.Audio,all=new Set(),held=[];window.Audio=function(src){var a=src===undefined?new A0():new A0(src);all.add(a);return a};window.Audio.prototype=A0.prototype;
+ function hide(){held=[];all.forEach(function(a){if(!a.paused){held.push(a);a.pause()}});try{if(typeof AU!=='undefined'&&AU.ctx&&AU.ctx.state==='running')AU.ctx.suspend()}catch(e){}}
+ function show(){try{if(typeof AU!=='undefined'&&AU.ctx)AU.ctx.resume()}catch(e){}var h=held;held=[];h.forEach(function(a){a.play().catch(function(){})})}
+ document.addEventListener('visibilitychange',function(){document.hidden?hide():show()});addEventListener('pagehide',hide);addEventListener('blur',function(){if(document.hidden)hide()});
+ window.APP_HIDDEN=function(){return document.hidden}})();</script>
 <script>var BOOT_JS=[
  'js/park-osm.js',
  'js/sim.js',

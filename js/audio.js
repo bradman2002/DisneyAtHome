@@ -30,7 +30,7 @@ async function auInit(){if(AU.ctx){AU.ctx.resume();return}if(AU.loading)return;A
  for(const k in LOOPDEF){const n=LOOPSRC[k]||k,b=AU.buf[n];if(!b)continue;const s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.loop=true;
   const lp=LOOP_POINTS[n];if(lp){s.loopStart=lp[0];s.loopEnd=lp[1]}g.gain.value=0;s.connect(g).connect(AU.g[LOOPDEF[k]]);
   s.start(0,lp?lp[0]+Math.random()*(lp[1]-lp[0]):0);AU.L[k]={s,g}}
- AU.ready=true;AU.loading=false;AU.lt=T;auSync();setInterval(auTick,500);
+ AU.ready=true;AU.loading=false;AU.lt=T;auSync();setInterval(()=>{if(!document.hidden)auTick()},500);
  st(AU.failed.length===SOUND_FILES.length?'Sounds unavailable':'Audio on');
  if(AU.failed.length)toast(AU.failed.length===SOUND_FILES.length?(location.protocol==='file:'?'Sounds can’t load from a file opened directly. Run a local web server (see README).':'Sound files not found in the audio/ folder.'):`${AU.failed.length} sound effect(s) couldn’t load (${AU.failed.join(', ')}). Reload the page to try again.`)}
 /* Set a music player's volume. iPhones and iPads ignore the volume of web audio players (they play at full volume or not
@@ -132,7 +132,7 @@ function areaTick(){if(!AU.ready)return;const t=areaTargets(),show=showOn(),
    setVol(a,v);if(a.paused)a.play().catch(()=>{})}
   else if(a&&!a.paused){setVol(a,0);a.pause();AM.off[k]=Date.now()}
   else if(a&&!AUDKEEP.on&&Date.now()-(AM.off[k]||0)>60e3){AM.pos[k]=a.currentTime;a.dataset.gone=1;if(a.src.startsWith('blob:'))URL.revokeObjectURL(a.src);a.removeAttribute('src');a.load();delete AM.el[k]}}} /* silent for a minute: let it go */
-setInterval(areaTick,120);
+setInterval(()=>{if(!document.hidden)areaTick()},120); /* nothing restarts the music while the app is off screen (index.html pauses it all) */
 /* ===== YOUR AUDIO, KEPT IN THIS BROWSER =====
    The Disney music is never put on the website itself (it is Disney's, and a public site would be giving it away). Instead,
    "Load audio folder…" in the ☰ menu reads your own audio folder once on each device and keeps the files in this
@@ -251,4 +251,4 @@ function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=showOn(),
  else if(RA.cur&&RA.cur===top){RA.lvl+=(t[top]*base-RA.lvl)*(top==='monorail'?.15:.06);if(a.paused&&a.readyState>0)a.play().catch(()=>{});RA.heard[top]=Date.now()}
  if(RA.cur)setVol(a,RA.lvl);
  rideLevel+=((top?t[top]:0)-rideLevel)*.06} /* how much the land music should step aside */
-setInterval(rideTick,120);
+setInterval(()=>{if(!document.hidden)rideTick()},120);

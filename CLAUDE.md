@@ -451,6 +451,9 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   parapet. Trees use the map's kinds: crowns = trunk + 3-4 leafy noise point sprites (seed attribute `q`), pines = 2 stacked
   cones, palms = trunk + 7 drooping fronds; any tree within ~r+2 of a beam (grid of beam samples) is dropped. Ground texture
   gets world-space noise.
+- Sound only on screen (owner, 25 Nov: "Sometimes the audio will keep playing even after closing it"): an inline script in
+  index.html wraps `Audio` (a registry of every player) and on visibilitychange-hidden/pagehide pauses all playing ones and
+  suspends `AU.ctx`; on return resumes the ones it paused. auTick/areaTick/rideTick intervals skip while `document.hidden`.
 - Status-bar area (owner, 25 Nov, Duo cover screen held sideways: "can it not fill the screen on the right?"): the home-screen app
   uses `apple-mobile-web-app-status-bar-style` black-translucent, so the page runs under the status bar/side rail. `--sl/--sr`
   (safe-area insets) pad #bar/#nav and push #views/#time/#fsBar/#osmc clear; #sbL/#sbR darken the side rails and #bar's top

@@ -93,13 +93,14 @@ function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(
    The files are long (25 to 60 minutes) and simply loop; each keeps its place while it is silent. A missing file is
    skipped. */
 const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3',hs:'audio/area-hs.mp3',ak:'audio/area-ak.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT; hs: Hollywood Studios (the Hollywood Boulevard loop for now), heard anywhere over that park; ak: Animal Kingdom (the Tree of Life loop), heard anywhere over it during its own hours */
+AREA.gx='audio/area-gx.mp3'; /* Galaxy's Edge, at both resorts */
 if(DL){AREA.dca='audio/area-dca.mp3';AREA.cl='audio/route-66.mp3'} /* California Adventure: the owner's Buena Vista Street loop, for the whole park for now */
 /* Disneyland's lands play the Magic Kingdom loop that fits: the same-named lands their own, New Orleans Square Liberty Square's
    (the Haunted Mansion's riverfront), Bayou Country Frontierland's and Toontown Fantasyland's. Galaxy's Edge has none, so it
    stays quiet (it still counts as a land, so the neighbours' music fades out as you go in) */
 /* a land whose music is a playlist instead of one loop: the songs play in turn (Cars Land: Route 66, then Sh-Boom) */
 const AREA_PL=DL?{cl:[['audio/route-66.mp3','route66'],['audio/sh-boom.mp3','shboom']]}:{};
-const DLAREA={ms:'ms',adv:'adv',fr:'fr',bc:'fr',nos:'lib',fan:'fan',tt:'fan',tom:'tom',gx:null};
+const DLAREA={ms:'ms',adv:'adv',fr:'fr',bc:'fr',nos:'lib',fan:'fan',tt:'fan',tom:'tom',gx:'gx'};
 const AM={el:{},vol:{},bad:{},pos:{},off:{}};
 function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(typeof AKR!=='undefined'&&AKR&&!SV.on&&cam.x>AKR[0]-250&&cam.x<AKR[2]+250&&cam.y>AKR[1]-250&&cam.y<AKR[3]+250){if(T>=AOPEN*3600-1800&&T<=ACLOSE*3600+900)t.ak=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Animal Kingdom: one loop for the whole park, on its own hours (it closes earlier) */
@@ -109,7 +110,7 @@ function areaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(T<OPEN*3600-1800||T>CLOSE*3600+900)return t;
  if(SV.on){t.ms=1;return t}
  if(typeof EPCOT!=='undefined'&&EPCOT&&cam.x>EPR[0]-250&&cam.x<EPR[2]+250&&cam.y>EPR[1]-250&&cam.y<EPR[3]+250){t.ep=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over EPCOT: its one loop, fading as you zoom out */
- if(typeof HSR!=='undefined'&&HSR&&cam.x>HSR[0]-250&&cam.x<HSR[2]+250&&cam.y>HSR[1]-250&&cam.y<HSR[3]+250){t.hs=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Hollywood Studios: one loop for the whole park, like EPCOT */
+ if(typeof HSR!=='undefined'&&HSR&&cam.x>HSR[0]-250&&cam.x<HSR[2]+250&&cam.y>HSR[1]-250&&cam.y<HSR[3]+250){const z=Math.max(0,Math.min(1,(cam.m-.3)/.45)),g=Math.max(0,Math.min(1,1-(Math.hypot(cam.x-5070,cam.y-7875)-70)/60));t.gx=z*g;t.hs=z*(1-g);return t} /* over Hollywood Studios: one loop for the whole park, except Galaxy's Edge (around Oga's Cantina), which plays its own */
  /* nearness of each land's centre to the middle of the screen; the nearest dominates, and everything fades as you zoom out */
  const zoom=Math.max(0,Math.min(1,(cam.m-.55)/.9)),w={};let sum=0,top=0;
  if(DL){for(const lk in DLAREA){const L=LANDS[lk];if(!L)continue;let d=Math.hypot(cam.x-L[1],cam.y-L[2]);if(lk==='ms'&&LANDS.hub)d=Math.min(d,Math.hypot(cam.x-LANDS.hub[1],cam.y-LANDS.hub[2])*.8);

@@ -49,7 +49,7 @@ at the real times when Live is on (otherwise 9 PM) and can be started from Enter
 Cars Land lights its neon at sunset, one sign after another down Route 66, to Sh-Boom (`audio/sh-boom.mp3`), and plays
 Route 66 and Sh-Boom (`audio/route-66.mp3`, `audio/sh-boom.mp3`) as its music the rest of the time. Area music: Disneyland's lands play the Magic Kingdom loops of the same name (Main Street, Adventureland, Frontierland,
 Fantasyland, Tomorrowland), New Orleans Square plays Liberty Square's, Bayou Country Frontierland's and Toontown Fantasyland's;
-Galaxy's Edge is quiet. All of California Adventure plays `audio/area-dca.mp3` (your Buena Vista Street loop) for now.
+Galaxy's Edge plays `audio/area-gx.mp3` at both Disneyland and Hollywood Studios (the rest of Hollywood Studios keeps its one loop). All of California Adventure plays `audio/area-dca.mp3` (your Buena Vista Street loop) for now.
 Disneyland's landmarks are drawn to look like the real ones (`js/map-art-dl.js`): the Haunted Mansion, "it's a small world",
 the French Quarter, Big Thunder's rocks, Batuu's spires and the Millennium Falcon, Grizzly Peak, the Cadillac Range, Carthay Circle,
 the Guardians' fortress, the Pal-A-Round and the Incredicoaster; the big show buildings are plain boxes, and Main Street has

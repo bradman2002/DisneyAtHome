@@ -360,6 +360,26 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - audio/area-dca.mp3 (owner's, git-ignored) was cut to 95 MB / 66 min (owner: "Trim area dca to not be over 100mb", GitHub's
   file limit) at an MP3 frame boundary, with its Info header's frame and byte counts fixed.
 
+- Galaxy's Edge music (owner, 25 Nov, their own file, cut to 95 MB / 66 min at a frame boundary with the Info header fixed):
+  `AREA.gx` = audio/area-gx.mp3 at both resorts. Disneyland: `DLAREA.gx`. Hollywood Studios: within about 70 units of
+  (5070,7875) (round Oga's Cantina) it fades from `area-hs` to `area-gx` over 60 units (areaTargets, audio.js).
+- Faster first paint (owner, 25 Nov: "Try that new approach, make sure it still loads the rest after the first is loaded"):
+  the first `paintMap` makes the whole map's no-tree mask in its own quick pass (`maskAll`, map-art.js) and then draws only
+  its own rectangle (it used to draw all four parks onto the first canvas). Tree placement still uses the whole-map water
+  and forest lists. The first park's layer is split (buildMap): the park itself (railroad box plus the entrance) paints
+  before the map appears; the land round it follows in up to four strips (3-unit overlap) with the other parks, via
+  `rest()`. `fade` fades only a park's outer edges (`L.r`), not the seams between its pieces. WDW first paint went from about
+  2.0 s to 1.2 s on the Mac; Disneyland is about 0.7 s.
+- Map data: `tools/dedupe_points.py` dropped repeated points (43% of all points at WDW, left by clipping in the extractors):
+  park-osm.js 9.7 MB to 5.9 MB, park-osm-dl.js 3.3 MB to 2.2 MB, with no change on screen. Never touches `nodes` (indexed).
+  Run it again after either extractor.
+- Disneyland polish (25 Nov): `LANDSTYLE.hl` cream/rose/mint art-deco fronts with pale studio roofs (was slate grey);
+  `LANDSTYLE.av` brick and concrete with metal/rust roofs; open shade canopies (`q.k==='roof'`, e.g. the Fantasyland
+  Theatre's) are pale fabric (dlBuilding). A show box for the courtyard dark-ride building behind the castle was tried
+  and dropped: it read as a plain grey slab, which the owner has disliked.
+- Duo: the Screen line (☰ menu) is only on GitHub Pages once the owner pushes from GitHub Desktop; ui.js was still
+  uncommitted there on 25 Nov, which is why the owner didn't see it.
+
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each

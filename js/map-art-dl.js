@@ -137,6 +137,7 @@ function dlBuilding(q,bb,land,hh,hs){const n=q.n||'',area=(bb[2]-bb[0])*(bb[3]-b
  if(/^Disney's Grand Californian Hotel/.test(n))return(c,e)=>grandCal(c,e,q,hh);
  const ride=n&&(AT.some(t=>t.osm===n)||/show building|warehouse|receiving|costuming|building \w$|offices|parade building|diorama/i.test(n)||/^(warehouse|industrial|commercial)$/.test(q.k||''));
  if(!q.c&&area>1500&&ride&&q.k!=='hotel'&&q.k!=='parking'&&land!=='ms'&&land!=='bv'&&dlInPark(cx_,cy_))return show((c,e,I)=>dlShowBox(c,e,q.p,hh,hs,I)); /* the big ride and backstage buildings behind the façades (unnamed big outlines are façade blocks, like the French Quarter's) */
+ if(q.k==='roof'&&!q.c&&dlInPark(cx_,cy_))return(c,e)=>{const h=Math.min(hh,3.4);extrude(c,e,q.p,h,'#e9e2d2','#f4efe4',{noWin:true,ridge:false,noGlow:true})}; /* open shade canopies (the Fantasyland Theatre's): pale fabric, not painted roofs */
  return null}
 /* the landmarks that aren't one building: rock spires, mountains, the Pal-A-Round and the coaster tracks */
 function dlLandmarks(c,e,B,vis,S2){B.c=c;const P=OSM.places;

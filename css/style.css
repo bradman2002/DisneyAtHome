@@ -126,3 +126,5 @@ body.riding #bar,body.riding #nav{display:none}body.riding #app{grid-template-ro
 .bootCard{text-align:center;color:var(--tx);font-weight:700}.bootLogo{font-size:26px;font-weight:800;letter-spacing:.01em;margin-bottom:18px}
 .bootSpin{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;border:3px solid rgba(26,143,214,.2);border-top-color:var(--link);animation:bootSpin .9s linear infinite}
 @keyframes bootSpin{to{transform:rotate(360deg)}}#bootMsg{font-size:14px;color:var(--mu);font-weight:600}
+/* the map credit on narrow screens: one small line, never wrapping across the map */
+@media(max-width:760px){#osmc{font-size:9.5px;padding:1px 6px;white-space:nowrap;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis}#osmc .lg{display:none}}

@@ -261,7 +261,7 @@ for wid,w in WAYS.items():
     rw=t.get('railway');hw=t.get('highway');wwy=t.get('waterway')
     if rw=='narrow_gauge': LINES['rail'].append(p)
     elif rw=='monorail': LINES['monoIn' if t.get('tunnel')=='yes' else 'mono'].append(p)
-    elif hw in ROAD and t.get('tunnel')!='yes' and t.get('covered')!='yes' and t.get('area')!='yes' and t.get('service') not in('parking_aisle','driveway'):
+    elif hw in ROAD and t.get('tunnel')!='yes' and t.get('covered')!='yes' and t.get('area')!='yes' and (t.get('service') not in('parking_aisle','driveway') or t.get('bus') in('yes','designated') or t.get('psv') in('yes','designated')):  # bus lanes (e.g. the Magic Kingdom bus station's bays) are driveways tagged for buses
         LINES['road'+str(ROAD[hw])].append(p)
     elif rw=='light_rail': LINES['pm'].append(p)
     elif rw=='tram': LINES['tram'].append(p)

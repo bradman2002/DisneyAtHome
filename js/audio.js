@@ -186,7 +186,7 @@ const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirat
  'The Twilight Zone Tower of Terror':'tot','Star Wars: Rise of the Resistance':'rotr',"Mickey and Minnie's Runaway Railway":'railway','Star Tours: The Adventures Continue':'startours',
  'Indiana Jones Epic Stunt Spectacular!':'indy',"Jim Henson's Muppet*Vision 3-D":'muppets',
  'Spaceship Earth':'spaceship','Guardians Of The Galaxy: Cosmic Rewind':'cosmic','Test Track':'testtrack','Mission: SPACE':'missionspace','Remy’s Ratatouille Adventure':'remy',
- 'Gran Fiesta Tour Starring The Three Caballeros':'fiesta','The Seas with Nemo & Friends':'seas','Rock ’n’ Roller Coaster Starring The Muppets':'rnrc','TRON Lightcycle / Run':'tron'};
+ 'Gran Fiesta Tour Starring The Three Caballeros':'fiesta','The Seas with Nemo & Friends':'seas','Rock ’n’ Roller Coaster Starring The Muppets':'rnrc','TRON Lightcycle / Run':'tron','Jungle Cruise':'jungle'};
 if(DL)Object.assign(RIDEAUD,{'"It\'s a Small World"':'smallworld',"Soarin' Around the World":'soarin'}); /* Disneyland's versions of the same rides (spelled differently in its map data) share the recordings */
 const RA={bad:{},heard:{}};let rideLevel=0;
 const rideAt=a=>a&&RIDEAUD[a.osm];

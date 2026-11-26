@@ -370,6 +370,10 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   before the map appears; the land round it follows in up to four strips (3-unit overlap) with the other parks, via
   `rest()`. `fade` fades only a park's outer edges (`L.r`), not the seams between its pieces. WDW first paint went from about
   2.0 s to 1.2 s on the Mac; Disneyland is about 0.7 s.
+- Bus lanes (owner, 25 Nov: "Magic Kingdom bus depot has a road issue"): the bus station's bays are `highway=service`
+  `service=driveway` tagged `bus=yes`, which the extractor dropped with all driveways, so buses drove over grass. Driveways
+  tagged bus/psv are now kept as road3. Only `lines` was swapped into park-osm.js (a full rerun renumbers Animal Kingdom's
+  walk graph, because the graph is built from unordered sets).
 - Map data: `tools/dedupe_points.py` dropped repeated points (43% of all points at WDW, left by clipping in the extractors):
   park-osm.js 9.7 MB to 5.9 MB, park-osm-dl.js 3.3 MB to 2.2 MB, with no change on screen. Never touches `nodes` (indexed).
   Run it again after either extractor.
@@ -404,7 +408,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   (plain lettering, not the logo), `courtyardFountain`, brick for the building holding PizzeRizzo. Ride audio keys added in
   `RIDEAUD`: soarin, tot, rotr, railway, startours, indy, muppets (the owner's files, git-ignored).
   Later the same day: spaceship, cosmic, testtrack, missionspace, remy, fiesta (EPCOT). 19 Nov: seas (The Seas with Nemo &
-  Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track). 20 Nov: tron (TRON Lightcycle / Run).
+  Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track). 20 Nov: tron (TRON Lightcycle / Run). 25 Nov: jungle (Jungle Cruise; the owner's 2026 Jingle Cruise POV with the first 1:30 cut at a frame boundary, 10:31).
 - Animal Kingdom (owner, 19 Nov 2026: "Time for animal kingdom and all the land in between", "add the resorts as well"):
   `ak.osm` (git-ignored; api.openstreetmap.org/api/0.6/map in 34 pieces: a west strip 28.3330,-81.6125,28.4240,-81.5900 and a
   south strip 28.3330,-81.5900,28.3495,-81.5090) is read last. The map grew west, so the extractor shifts everything right by

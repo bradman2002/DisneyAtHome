@@ -446,6 +446,10 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   the Resistance played over Galaxy's Edge's music whenever the map looked at the land (owner: "The star wars land area music seems
   to almost always just play the rise ride audio").
 
+- Cavalcade music (owner, 26 Nov: gave "Disney Adventure Friends Cavalcade Soundtrack!.mp3", 2:45): `audio/cavalcade.mp3`, the `caval`
+  PARADES entry's file with `keepDur:true`, so the procession keeps its 9 minutes and the song loops (st % duration) instead of the
+  event taking the track's length. COMMITTED to git (owner: "Do not ignore this in git"), unlike the other Disney audio.
+
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each

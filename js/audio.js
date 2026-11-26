@@ -142,7 +142,7 @@ setInterval(()=>{if(!document.hidden)areaTick()},120); /* nothing restarts the m
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
    name: happily-ever-after.mp3, minnies-christmas-fireworks.mp3, let-the-magic-begin.mp3, kiss-goodnight.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
    electrical-water-pageant.mp3, luminous.mp3, fantasmic.mp3, tree-of-life.mp3, and at Disneyland believe-in-holiday-magic.mp3,
-   a-christmas-fantasy-parade.mp3, fantasmic-disneyland.mp3, world-of-color.mp3, route-66.mp3 and sh-boom.mp3 (Cars Land), area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
+   a-christmas-fantasy-parade.mp3, fantasmic-disneyland.mp3, world-of-color.mp3, route-66.mp3 and sh-boom.mp3 (Cars Land), cavalcade.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 function pickAudioFolder(){const i=document.createElement('input');i.type='file';i.multiple=true;i.webkitdirectory=true;i.onchange=()=>loadAudioFiles([...i.files]);i.click()}

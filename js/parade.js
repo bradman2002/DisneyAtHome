@@ -13,7 +13,7 @@ const CAV_UNITS=[['cavcar',0],['pals',15],['royals',33],['pooh',50]]; // a caval
 const PARADES=[{id:'parade',n:'Festival of Fantasy',file:'audio/festival-of-fantasy.mp3',units:PARADE_UNITS,len:300},
  {id:'boo',n:'Boo to You Halloween',file:'audio/boo-to-you.mp3',units:BOO_UNITS,len:282},
  {id:'xmas',n:'Once Upon a Christmastime',file:'audio/once-upon-a-christmastime.mp3',units:XMAS_UNITS,len:270},
- {id:'caval',n:'Adventure Friends Cavalcade',file:null,units:CAV_UNITS,len:62}]; // (no soundtrack: it steps along to the drum cadence)
+ {id:'caval',n:'Adventure Friends Cavalcade',file:'audio/cavalcade.mp3',units:CAV_UNITS,len:62,keepDur:true}]; /* its song (2:45, the owner's file) loops for the whole procession, as in the park, rather than setting its length */
 const parOf=id=>PARADES.find(p=>p.id===id),isParade=id=>!!parOf(id);
 const paradeEv=id=>EV.find(e=>e.id===(id||'parade'));
 const liveParade=()=>PARADES.find(p=>{const e=paradeEv(p.id);return e&&e.ph==='live'});
@@ -215,7 +215,7 @@ function paradeStreetItems(){const out=[];for(const u of paradeUnits()){if(u.y<P
 if(DL)for(const P of PARADES){if(P.id==='xmas'){P.n='A Christmas Fantasy';P.file='audio/a-christmas-fantasy-parade.mp3';P.key='dlxmas'}else P.file=null}
 for(const P of PARADES){const A=P.a={audio:new Audio(),ready:false,name:P.file||'',auto:true,liveKey:null,src:P.file?'folder':'none'},a=A.audio;if(!P.file)continue;a.preload='auto';
  a.addEventListener('canplay',()=>{A.ready=true;parBadge()});
- a.addEventListener('loadedmetadata',()=>{const d=a.duration,ev=paradeEv(P.id);if(!d||!isFinite(d)||!ev)return;if(!ev.userDur)ev.dur=Math.round(d/6)/10;a.loop=ev.dur*60>d+30;parBadge()});
+ a.addEventListener('loadedmetadata',()=>{const d=a.duration,ev=paradeEv(P.id);if(!d||!isFinite(d)||!ev)return;if(!ev.userDur&&!P.keepDur)ev.dur=Math.round(d/6)/10;a.loop=ev.dur*60>d+30;parBadge()});
  a.addEventListener('error',()=>{if(A.src==='folder'){A.src='none';A.name='';A.ready=false;parBadge();parLoadSaved(P)}});
  loadTrack(a,P.file)}
 const PAR=PARADES[0].a; // Festival of Fantasy's soundtrack state (kept under its old name)

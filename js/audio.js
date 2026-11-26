@@ -8,7 +8,7 @@ const SOUND_CREDITS=[
  ['Ship’s bell (ferry departures/arrivals)','Nigel K, Ship’s Bells, CC0'],
  ['Applause (built by layering real hand-clap recordings)','Owlish sound pack, CC0'],
  ['“The Star-Spangled Banner” (Flag Retreat)','United States Navy Band, public domain (US government work), via Wikimedia Commons']];
-const AU={ctx:null,mute:false,ready:false,loading:false,v:{master:.8,music:.55,crowd:.08,amb:.05,trans:.7,show:.8},buf:{},L:{},lt:0,last:{}};
+const AU={ctx:null,mute:false,ready:false,loading:false,v:{master:.8,music:.55,crowd:.08,amb:.05,trans:.3,show:.8},buf:{},L:{},lt:0,last:{}};
 const LOOPDEF={crowd:'crowd',crowdEv:'crowd',birds:'amb',crickets:'amb',falls:'amb',jungle:'amb',river:'amb',lap:'amb',flag:'amb',chimes:'amb',creek:'amb',hum:'amb',lake:'amb',engine:'trans',fwbed:'show'};
 const LOOPSRC={crowdEv:'crowd'};
 /* Sound files live in the audio/ folder next to index.html. Loop points (seconds) mark the seamless part of each bed. */
@@ -186,7 +186,7 @@ const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirat
  'The Twilight Zone Tower of Terror':'tot','Star Wars: Rise of the Resistance':'rotr',"Mickey and Minnie's Runaway Railway":'railway','Star Tours: The Adventures Continue':'startours',
  'Indiana Jones Epic Stunt Spectacular!':'indy',"Jim Henson's Muppet*Vision 3-D":'muppets',
  'Spaceship Earth':'spaceship','Guardians Of The Galaxy: Cosmic Rewind':'cosmic','Test Track':'testtrack','Mission: SPACE':'missionspace','Remy’s Ratatouille Adventure':'remy',
- 'Gran Fiesta Tour Starring The Three Caballeros':'fiesta','The Seas with Nemo & Friends':'seas','Rock ’n’ Roller Coaster Starring The Muppets':'rnrc','TRON Lightcycle / Run':'tron','Jungle Cruise':'jungle'};
+ 'Gran Fiesta Tour Starring The Three Caballeros':'fiesta','The Seas with Nemo & Friends':'seas','Rock ’n’ Roller Coaster Starring The Muppets':'rnrc','TRON Lightcycle / Run':'tron','Jungle Cruise':'jungle',"Buzz Lightyear's Space Ranger Spin":'buzz'};
 if(DL)Object.assign(RIDEAUD,{'"It\'s a Small World"':'smallworld',"Soarin' Around the World":'soarin'}); /* Disneyland's versions of the same rides (spelled differently in its map data) share the recordings */
 const RA={bad:{},heard:{}};let rideLevel=0;
 const rideAt=a=>a&&RIDEAUD[a.osm];

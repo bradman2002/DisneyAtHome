@@ -76,9 +76,9 @@ function frame(rdt){
  cx.globalCompositeOperation='multiply';const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t),col=mix(mix([255,255,255],[255,214,170],gf),[60,74,135],nf);
  cx.fillStyle=`rgb(${col.map(Math.round)})`;cx.fillRect(0,0,W,H);
  cx.globalCompositeOperation='lighter';const la=Math.min(1,nf*1.3+gf*.15);
- if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}for(const L of MAP.tiles)if(tv(L))cx.drawImage(L.glow,L.x,L.y,L.w,L.h);for(const L of MAP.layers)if(L.glow)cx.drawImage(L.glow,L.x,L.y,L.w,L.h);cx.restore();for(const d of dv)cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.globalAlpha=la*.32;if(!OCC.R)occBuild();for(const[x,y]of OCC.L||MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
+ if(la>.02){cx.globalAlpha=la;const dv=MAP.detail.filter(vis);cx.save();if(dv.length){cx.beginPath();cx.rect(0,0,W,H);for(const d of dv)cx.rect(d.x,d.y,d.w,d.h);cx.clip('evenodd')}for(const L of MAP.tiles)if(tv(L))cx.drawImage(L.glow,L.x,L.y,L.w,L.h);for(const L of MAP.layers)if(L.glow)cx.drawImage(L.glow,L.x,L.y,L.w,L.h);cx.restore();{const done=[];for(let i=dv.length-1;i>=0;i--){const d=dv[i];cx.save();for(const o of done){cx.beginPath();cx.rect(d.x-1,d.y-1,d.w+2,d.h+2);cx.rect(o.x,o.y,o.w,o.h);cx.clip('evenodd')}cx.drawImage(d.glow,d.x,d.y,d.w,d.h);cx.restore();done.push(d)}} /* close-up layers overlap (the park's and a sharper patch round the castle): each spot takes the light of the one drawn on top only, or the lights add up and the castle glares */cx.globalAlpha=la*.32;if(!OCC.R)occBuild();for(const[x,y]of OCC.L||MAP.lamps)cx.drawImage(GLOW,x-4,y-7,8,8);
   // castle uplighting
-  cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-100,uy-130,200,150)}
+  cx.globalAlpha=la*.55;const[ux,uy]=MAP.castleAt,g=cx.createRadialGradient(ux,uy-10,4,ux,uy-40,82);g.addColorStop(0,'rgba(170,140,255,.9)');g.addColorStop(1,'rgba(120,120,255,0)');cx.fillStyle=g;cx.fillRect(ux-83,uy-123,166,166)} /* the whole outer circle (centre uy-40, radius 82), so no square edge shows */
  sseNight(now,la,z);cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
  drawPageant(now,1);lumDraw(now);fmDraw(now);if(DL){wocDraw(now);clDraw(now)}tolDraw(now);drawSkyliner(true);for(const b of RBOAT)drawRiverboat(b,true);dlSnow(now);dsBalloon(z); // the water pageant's lights, and Luminous on World Showcase Lagoon
  {const g=geyserNow();if(g>0&&nf>.3){const[x0,y0]=P_.geyser;cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf)*g*.55;const lg=cx.createLinearGradient(0,y0,0,y0-30);lg.addColorStop(0,'rgba(255,210,150,1)');lg.addColorStop(1,'rgba(255,210,150,0)');cx.fillStyle=lg;cx.fillRect(x0-3.5,y0-30,7,30);cx.restore()}} /* the geyser is floodlit at night */
@@ -106,8 +106,16 @@ const RBOAT=(()=>{if(!DL||!OSM.routes.riverboat||OSM.routes.riverboat.length<4)r
  const dk=POS['Mark Twain Riverboat']?POS['Mark Twain Riverboat'].c:p[0];let k=0,bd=1e18;p.forEach((q,i)=>{const d=(q[0]-dk[0])**2+(q[1]-dk[1])**2;if(d<bd){bd=d;k=i}});p=p.slice(k).concat(p.slice(0,k+1)); /* start and end at the landing */
  const P=mkPath(p);return[{k:'twain',a:AT.find(a=>a.osm==='Mark Twain Riverboat'),P,off:0},{k:'col',a:AT.find(a=>a.osm==='Sailing Ship Columbia'),P,off:.5}].filter(b=>b.a)})();
 const RB_SAIL=720,RB_DOCK=180;
+/* the Columbia moored in Fowler's Harbor: lying along the harbor's long axis (its water outline), bow toward its mouth on the river */
+let COLDOCK;function colDock(){if(COLDOCK!==undefined)return COLDOCK;const f=P_.fowler;if(!f)return COLDOCK=null;
+ const H=OSM.areas.filter(a=>a.k==='water'&&a.o.length>2&&ptIn(f[0],f[1],a.o)).sort((p,q)=>p.o.length-q.o.length)[0];let an=-Math.PI/2,x=f[0],y=f[1];
+ if(H){let mx=0,my=0;for(const q of H.o){mx+=q[0];my+=q[1]}mx/=H.o.length;my/=H.o.length;let sxx=0,syy=0,sxy=0;for(const q of H.o){const dx=q[0]-mx,dy=q[1]-my;sxx+=dx*dx;syy+=dy*dy;sxy+=dx*dy}
+  an=.5*Math.atan2(2*sxy,sxx-syy);const ux=Math.cos(an),uy=Math.sin(an);let lo=1e9,hi=-1e9,pl,ph;for(const q of H.o){const t=(q[0]-mx)*ux+(q[1]-my)*uy;if(t<lo){lo=t;pl=q}if(t>hi){hi=t;ph=q}}
+  const O=OSM.areas.filter(a=>a.k==='water'&&a!==H&&a.o.length>2),gap=e=>{let m=1e9;for(const a of O){if(ptIn(e[0],e[1],a.o))return 0;for(const q of a.o)m=Math.min(m,Math.hypot(q[0]-e[0],q[1]-e[1]))}return m}; /* the mouth is the end that meets the river */
+  if(gap(pl)<gap(ph))an+=Math.PI;x=mx+ux*(lo+hi)/2;y=my+uy*(lo+hi)/2}
+ return COLDOCK={x,y,an,mv:0}}
 function rbPos(b){{const fo=typeof fmBoatPos==='function'&&fmBoatPos(b);if(fo)return fo}const run=LIVENOW&&b.a.live?b.a.live.st==='OPERATING':aStat(b.a)!=='Closed',cyc=RB_SAIL+RB_DOCK;
- if(!run){if(b.k==='col'){const f=P_.fowler;return f?{x:f[0],y:f[1],an:-Math.PI/2,mv:0}:null}const q=b.P.at(0),q2=b.P.at(6);return{x:q[0],y:q[1],an:Math.atan2(q2[1]-q[1],q2[0]-q[0]),mv:0}}
+ if(!run){if(b.k==='col')return colDock();const q=b.P.at(0),q2=b.P.at(6);return{x:q[0],y:q[1],an:Math.atan2(q2[1]-q[1],q2[0]-q[0]),mv:0}}
  const t=((T+b.off*cyc)%cyc+cyc)%cyc;if(t>=RB_SAIL){const q=b.P.at(0),q2=b.P.at(6);return{x:q[0],y:q[1],an:Math.atan2(q2[1]-q[1],q2[0]-q[0]),mv:0}}
  const u=t/RB_SAIL,e=u<.06?u*u/.12:u>.94?1-(1-u)*(1-u)/.12:u-.03, /* ease away from the landing and back into it */d=e/(1-.06)*b.P.L;const q=b.P.at(Math.min(b.P.L-.01,d));return{x:q[0],y:q[1],an:q[2],mv:1}}
 /* draw one riverboat; lit=true draws only its lights (after the night tint) */

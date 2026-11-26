@@ -150,7 +150,7 @@ Railway), `ride-startours.mp3` (Star Tours), `ride-indy.mp3` (Indiana Jones Epic
 (Muppet*Vision 3D); EPCOT has `ride-lwtl.mp3` (Living with the Land), `ride-soarin.mp3` (Soarin'),
 `ride-spaceship.mp3` (Spaceship Earth), `ride-cosmic.mp3` (Cosmic Rewind), `ride-testtrack.mp3` (Test Track), `ride-missionspace.mp3`
 (Mission: SPACE), `ride-remy.mp3` (Remy's Ratatouille Adventure), `ride-fiesta.mp3` (Gran Fiesta Tour) and `ride-seas.mp3` (The Seas with
-Nemo & Friends); Hollywood Studios also has `ride-rnrc.mp3` (Rock 'n' Roller Coaster), and Magic Kingdom `ride-tron.mp3` (TRON Lightcycle / Run) and `ride-jungle.mp3` (Jungle Cruise; the owner's Jingle Cruise ride-through with its first 1:30 cut).
+Nemo & Friends); Hollywood Studios also has `ride-rnrc.mp3` (Rock 'n' Roller Coaster), and Magic Kingdom `ride-tron.mp3` (TRON Lightcycle / Run) `ride-buzz.mp3` (Buzz Lightyear's Space Ranger Spin) and `ride-jungle.mp3` (Jungle Cruise; the owner's Jingle Cruise ride-through with its first 1:30 cut).
 **Ride the monorail.** Tap a Resort or Express line train and press **Ride in the front cab**: the map gives way to the view
 out of the lead car's front window, a 3D scene built from the map data around the Seven Seas Lagoon (the ground, every
 building in its land or resort colours, Space Mountain, the Contemporary's A-frame with the Grand Canyon Concourse inside it, the castle,

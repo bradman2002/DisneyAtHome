@@ -266,7 +266,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   audio, area music over DCA. Riverboats (owner, 21 Nov:
   "Riverboats"; "We dont have to do mainstreet view"): `RBOAT`/`rbPos`/`drawRiverboat` in render.js, the Mark Twain and the Columbia on
   `routes.riverboat` started at Frontierland Landing, 12 min sail + 3 min docked, Columbia half a trip behind; pure function of the
-  clock while the ride isn't Closed (live status when Live); otherwise docked (Columbia in Fowler's Harbor, `P_.fowler`); lights
+  clock while the ride isn't Closed (live status when Live); otherwise docked (Columbia in Fowler's Harbor, `colDock()`: along the harbor's water outline's long axis, bow toward the end that meets the river; owner, 25 Nov: it was "orientated wrong", pointing due north); lights
   in the night pass; `hitMap` opens the ride. Next: parades, fireworks, Fantasmic!, World of Color (no Main Street view wanted).
   DL holiday shows (owner, 21 Nov: "Add the Disneyland fireworks and parades", picked the holiday ones, audio later): EV `fire`
   = Believe… In Holiday Magic (`FW.shows.believe`, file audio/believe-in-holiday-magic.mp3, IDB key 'believe', `blvUse`/`blvPick`;
@@ -374,6 +374,48 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `service=driveway` tagged `bus=yes`, which the extractor dropped with all driveways, so buses drove over grass. Driveways
   tagged bus/psv are now kept as road3. Only `lines` was swapped into park-osm.js (a full rerun renumbers Animal Kingdom's
   walk graph, because the graph is built from unordered sets).
+- Night glare (owner, 25 Nov: "The castles both get super bright at night when you zoom in"): close-up layers overlap (the park's
+  and a sharper `d.tmp` patch), and their glow canvases were all added with 'lighter', so the castle's glow copy doubled. render.js
+  now draws each spot's glow from the topmost close-up only (reverse order, each clipped outside those already drawn). The castle
+  uplight rectangle also covers its whole gradient circle now (it showed a square edge, plainest at Disneyland).
+- Walt Disney World buildings less generic (owner, 25 Nov: "Make the disney world buildings look less generic as well now. Start
+  with magic kingdom area"): `js/map-art-wdw.js` (after map-art.js in BOOT_JS, loaded at both resorts but does nothing at DL).
+  `wdwBuilding(q,bb,land,hh,hs)` is called in paintMap like dlBuilding, for buildings inside the Magic Kingdom's railroad in lib/fan/
+  fr/adv/tom (Main Street keeps its storefronts). Façade decos per land (`MKFRONT`): libDeco (white cornice, corner boards, shutters),
+  fanDeco (half-timbering), frDeco (board-and-batten, porch roof, false front), advDeco (plinth, terracotta band, lintels), tomDeco
+  (blue bands, fins). Big fan/lib/fr/adv roofs are split into rows of gabled roofs along the footprint's long axis (`wdwRoofs`);
+  Tomorrowland roofs get a blue trim, seams and finned spires (`tomRoof`). Landmarks: `hauntedManorWDW` (brick manor with a tower on
+  the part of the outline within 19 units of the entrance, go-away green show building behind), `smallWorldWDW` (show box + a short
+  white/pastel façade on the wall nearest the entrance), `hallOfPresidents` (brick, cupola with clock), `beOurGuest` (stone, battlements,
+  slate-capped towers at the back), `ericsCastle` (rockwork + sandy towers), `cambodianTemple`, the Tiki Room's thatch. At WDW it
+  overrides LANDSTYLE.fan/tom/lib (muted Fantasyland roofs, pale metal Tomorrowland roofs).
+  EPCOT (owner, 25 Nov: "Yes, EPCOT next"): `epBuilding` for `ep_*` lands (The Land, Test Track, Spaceship Earth, Mexico, Imagination and
+  greenhouses stay in map-art.js). Pavilion decos `EPFRONT` (canada stone courses, uk/germany half-timber, france iron balconies + mansard
+  band, morocco green tile + arches, japan posts, italy, china red columns + gold band, norway planks, usa colonial); roofs over 400 sq
+  units split (`wdwRoofs`). Landmarks by name: `pagoda` (Goju-no-to), `torii`, `campanile` (Saint Mark's), `staveChurch`, `templeOfHeaven`
+  on the China Pavilion, `cupola` on the American Adventure, `eiffel` behind Impressions de France and `minaret` by Spice Road Table
+  (`behind()`: open ground on the side away from `EPLAGOON()`, the water the torii stands in; both are painted at y+40 so the trees and
+  shops round them don't cover them), Mission: SPACE's red planet by its entrance, Cosmic Rewind's blue show building. LANDSTYLE.ep_japan
+  roofs are grey-blue at WDW.
+  Hollywood Studios (owner, 25 Nov: "Yes, Studios next"): `hsBuilding` for HSL_ART lands (the Tower, Muppet*Vision, PizzeRizzo,
+  Runaway Railway, Rock 'n' Roller Coaster, Smugglers Run, Rise, Fantasmic and Theater of the Stars keep map-art.js). `HSFRONT`: decoDeco
+  (hb/sb/el: pilasters, speed lines, stepped parapet, neon line), studioDeco (ac soundstages: ribs, stage door; cream walls, pale roofs),
+  brickDeco (ga), toyDeco (ts: big bordered toy-block squares), batuuDeco (sw: streaks, round windows; domes on roofs). Boulevard roofs
+  split flat in pale tones (`wdwFlatRoofs`). Toy Story Mania and Star Tours are go-away green show boxes. Landmarks: `atat` at Star Tours'
+  entrance (x1.7, painted after the box), `gertie` on Echo Lake (faces the nearest water), `steamer` (Min and Bill's).
+  Animal Kingdom (owner, 25 Nov: "Yes, Animal Kingdom"): `akBuilding` for AKL_ART lands (Tree of Life, Everest's show building, roofs,
+  the train station and the backstage animal houses stay as they were). `AKFRONT`: harambeDeco (stained plaster, carved door), anandapurDeco
+  (stains, painted band), discoveryDeco (painted boards, bright eave band, medallions), pandoraDeco (vines). Harambe Theatre and some
+  Harambe/Discovery Island roofs are `thatch`; other big roofs split. Asia buildings carry `prayerFlags`; Pandora buildings and Flight of
+  Passage's rock show building get `bioGlow` (cyan/magenta spots on the glow layer); the Rainforest Cafe is rockwork with plants and a
+  waterfall.
+  Resorts (owner, 25 Nov: "Yes, the resorts"): hotels that fell to LANDSTYLE.none get `resortBuilding` via `wdwResort(x,y)` (`WDWRES`,
+  centres from their named buildings): riv (Riviera, terracotta + shutters), pop (Pop Century: white, coloured stair towers, decade band),
+  aoa (Art of Animation, bold colours), porm (Port Orleans Riverside mansions: white columns), porb (Alligator Bayou: plank lodges, tin),
+  pofq (French Quarter pastels, iron balconies, mixed slate/tin), ssrt (Saratoga Treehouse Villas: wood), okw (Old Key West pastel
+  clapboard, pale tin), ssr (Saratoga Springs: clapboard, green roofs), cbr (Caribbean Beach: bright walls, red/teal/gold tin). `RESSTYLE`
+  holds each one's walls, roofs, deco and flat/gabled split. Hotels already styled elsewhere (Crescent Lake, monorail resorts, Wilderness
+  Lodge, AKL, Coronado Springs `csr`, All-Stars) are untouched. Not done: non-Disney hotels round the edges stay plain.
 - Map data: `tools/dedupe_points.py` dropped repeated points (43% of all points at WDW, left by clipping in the extractors):
   park-osm.js 9.7 MB to 5.9 MB, park-osm-dl.js 3.3 MB to 2.2 MB, with no change on screen. Never touches `nodes` (indexed).
   Run it again after either extractor.
@@ -408,7 +450,7 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   (plain lettering, not the logo), `courtyardFountain`, brick for the building holding PizzeRizzo. Ride audio keys added in
   `RIDEAUD`: soarin, tot, rotr, railway, startours, indy, muppets (the owner's files, git-ignored).
   Later the same day: spaceship, cosmic, testtrack, missionspace, remy, fiesta (EPCOT). 19 Nov: seas (The Seas with Nemo &
-  Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track). 20 Nov: tron (TRON Lightcycle / Run). 25 Nov: jungle (Jungle Cruise; the owner's 2026 Jingle Cruise POV with the first 1:30 cut at a frame boundary, 10:31).
+  Friends) and rnrc (Rock ’n’ Roller Coaster; the owner's choice of track). 20 Nov: tron (TRON Lightcycle / Run). 25 Nov: jungle (Jungle Cruise; the owner's 2026 Jingle Cruise POV with the first 1:30 cut at a frame boundary, 10:31). Also buzz (Buzz Lightyear's Space Ranger Spin, the owner's full ride audio).
 - Animal Kingdom (owner, 19 Nov 2026: "Time for animal kingdom and all the land in between", "add the resorts as well"):
   `ak.osm` (git-ignored; api.openstreetmap.org/api/0.6/map in 34 pieces: a west strip 28.3330,-81.6125,28.4240,-81.5900 and a
   south strip 28.3330,-81.5900,28.3495,-81.5090) is read last. The map grew west, so the extractor shifts everything right by

@@ -253,6 +253,18 @@ function drawSafariAnimals(){if(!SAFAN.length)return;const z=zf(),hw=cw/2/z+30,h
   c.save();c.translate(x,y);c.scale(sc*f,sc);if(a.k!=='hippo'&&a.k!=='croc'){c.fillStyle='rgba(30,30,20,.22)';c.beginPath();c.ellipse(0,0,2.6,.7,0,0,6.283);c.fill()}safAnimal(c,a.k,g);c.restore()}}
 /* the Friendship boats pass under the bridges: every walkway, road or bridge deck the boats' routes cross (away from their
    docks) is worked out once and repainted over the boats, matching the map's own colours */
+/* Walkways that cross the Tomorrowland Speedway go over it on footbridges, but the map paints the track over them, so the
+   cars seemed to drive across the path (owner, 26 Nov 2026). The crossings are found once; each one's piece of walkway is
+   repainted over the track (with a shadow and edge so it reads as a bridge) and the cars are hidden while under it. */
+let RACEX=null;
+function raceBridges(){if(RACEX)return RACEX;RACEX=[];if(!RACEP||!RACEP.L)return RACEX;const smp=[];for(let d=0;d<RACEP.L;d+=1)smp.push(RACEP.at(d));const rb=bbox(smp.map(q=>[q[0],q[1]]));
+ const X=(a,b,c_,d_)=>{const r=[b[0]-a[0],b[1]-a[1]],s_=[d_[0]-c_[0],d_[1]-c_[1]],den=r[0]*s_[1]-r[1]*s_[0];if(!den)return null;const t=((c_[0]-a[0])*s_[1]-(c_[1]-a[1])*s_[0])/den,u=((c_[0]-a[0])*r[1]-(c_[1]-a[1])*r[0])/den;return t>=0&&t<=1&&u>=0&&u<=1?[a[0]+t*r[0],a[1]+t*r[1]]:null};
+ for(const q of OSM.paths){if(q.a)continue;const pl=q.p;for(let i=0;i<pl.length-1;i++){const a=pl[i],b=pl[i+1];if(Math.max(a[0],b[0])<rb[0]-5||Math.min(a[0],b[0])>rb[2]+5||Math.max(a[1],b[1])<rb[1]-5||Math.min(a[1],b[1])>rb[3]+5)continue;
+   for(let j=0;j<smp.length-1;j++){const h=X(a,b,smp[j],smp[j+1]);if(!h)continue;const L=Math.hypot(b[0]-a[0],b[1]-a[1]),ux=(b[0]-a[0])/L,uy=(b[1]-a[1])/L,d0=Math.min(12,Math.hypot(h[0]-a[0],h[1]-a[1])),d1=Math.min(12,Math.hypot(b[0]-h[0],b[1]-h[1]));
+    RACEX.push({h,a:[h[0]-ux*d0,h[1]-uy*d0],b:[h[0]+ux*d1,h[1]+uy*d1],w:q.w,col:q.q?'#e3d6c8':'#ede1d6'});break}}}
+ return RACEX}
+function raceBridgeDraw(RX){if(!RX.length)return;const c=cx;c.save();c.lineCap='butt';for(const q of RX){c.strokeStyle='rgba(30,30,40,.25)';c.lineWidth=q.w+1.6;c.beginPath();c.moveTo(q.a[0]+.8,q.a[1]+1.2);c.lineTo(q.b[0]+.8,q.b[1]+1.2);c.stroke();
+  c.strokeStyle='#b9a68d';c.lineWidth=q.w+1.2;c.beginPath();c.moveTo(...q.a);c.lineTo(...q.b);c.stroke();c.strokeStyle=q.col;c.lineWidth=q.w;c.beginPath();c.moveTo(...q.a);c.lineTo(...q.b);c.stroke()}c.restore()}
 let FSX=null;
 function fsBridges(){if(!FSX){FSX={p:[],a:[]};const RW={road1:8.5,road2:6.5,road3:3.8};
   for(const R of BOATR.filter(R=>R.fs)){const smp=[];for(let d=0;d<R.p.L;d+=3)smp.push(R.p.at(d));const rb=bbox(smp.map(q=>[q[0],q[1]])),dock=(x,y)=>R.st.some(d=>{const q=R.p.at(Math.min(d,R.p.L-.01));return Math.hypot(q[0]-x,q[1]-y)<30});
@@ -286,7 +298,8 @@ function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600
   cx.fillStyle='#f0c040';cx.fillRect(a.x-.6,a.y-12,1.2,12);for(let i=0;i<8;i++){cx.fillStyle=i%2?'#e84a6a':'#fff';cx.beginPath();cx.moveTo(a.x,a.y-15);cx.arc(a.x,a.y-12,7,Math.PI+i/8*Math.PI,Math.PI+(i+1)/8*Math.PI);cx.fill()}}
  // PeopleMover trains and Speedway cars on their real tracks
  for(let i=0;i<6;i++){const[x,y,an]=PMP.at(((t*9+i*PMP.L/6)%PMP.L));if(SMB&&SMCTX.isPointInPath(SMB,x,y))continue; /* indoors through Space Mountain */cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e8eef5';cx.fillRect(-3,-1.3,6,2.6);cx.fillStyle='#4f84b2';cx.fillRect(-3,-.3,6,.7);cx.restore()}
- if(open)for(let i=0;i<6;i++){const[x,y,an]=RACEP.at(((t*14+i*RACEP.L/6)%RACEP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle=['#e84a3c','#f2c14e','#4f84b2','#3fa060','#ff8fc8','#fff'][i];cx.fillRect(-1.6,-1,3.2,2);cx.restore()}
+ const RX=raceBridges();if(open)for(let i=0;i<6;i++){const[x,y,an]=RACEP.at(((t*14+i*RACEP.L/6)%RACEP.L));if(RX.some(q=>Math.hypot(q.h[0]-x,q.h[1]-y)<q.w/2+2.2))continue; /* under a footbridge */cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle=['#e84a3c','#f2c14e','#4f84b2','#3fa060','#ff8fc8','#fff'][i];cx.fillRect(-1.6,-1,3.2,2);cx.restore()}
+ raceBridgeDraw(RX);
  // Jungle Cruise launches circling the river
  if(open&&JCP)for(let i=0;i<3;i++){const[x,y,an]=JCP.at(((t*4+i*JCP.L/3)%JCP.L));cx.save();cx.translate(x,y);cx.rotate(an);cx.fillStyle='#e9dcc0';cx.fillRect(-4,-1.8,8,3.6);cx.fillStyle='#3f7a4f';cx.fillRect(-4,-2.6,8,1.2);cx.restore()}
  // horse-drawn streetcar on Main Street (daytime)

@@ -96,6 +96,7 @@ function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(
    skipped. */
 const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3',hs:'audio/area-hs.mp3',ak:'audio/area-ak.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT; hs: Hollywood Studios (the Hollywood Boulevard loop for now), heard anywhere over that park; ak: Animal Kingdom (the Tree of Life loop), heard anywhere over it during its own hours */
 AREA.gx='audio/area-gx.mp3'; /* Galaxy's Edge, at both resorts */
+AREA.resort='audio/area-resort.mp3'; /* resort background music for the wide views (owner, 26 Nov 2026: "When the tv mode is doing the resort pano, I still want music"), see areaTargets */
 if(DL){AREA.dca='audio/area-dca.mp3';AREA.cl='audio/route-66.mp3'} /* California Adventure: the owner's Buena Vista Street loop, for the whole park for now */
 /* Disneyland's lands play the Magic Kingdom loop that fits: the same-named lands their own, New Orleans Square Liberty Square's
    (the Haunted Mansion's riverfront), Bayou Country Frontierland's and Toontown Fantasyland's. Galaxy's Edge has none, so it
@@ -104,7 +105,16 @@ if(DL){AREA.dca='audio/area-dca.mp3';AREA.cl='audio/route-66.mp3'} /* California
 const AREA_PL=DL?{cl:[['audio/route-66.mp3','route66'],['audio/sh-boom.mp3','shboom']]}:{};
 const DLAREA={ms:'ms',adv:'adv',fr:'fr',bc:'fr',nos:'lib',fan:'fan',tt:'fan',tom:'tom',gx:'gx'};
 const AM={el:{},vol:{},bad:{},pos:{},off:{}};
-function areaTargets(){const t={};for(const k in AREA)t[k]=0;
+/* Park music fades as the map zooms out, plays only over the parks and only in their hours, so TV mode's wide resort views were
+   silent. Whatever the parks leave unfilled goes to the resort loop (audio/area-resort.mp3, any hour): it crossfades in as the
+   camera pulls out or moves over the lakes and hotels, and gives way as it closes in on a park. Without that file, the loop of the
+   park nearest the middle of the screen fills in instead, a little quieter. */
+function areaTargets(){const t=parkAreaTargets();let s=0;for(const k in t)if(k!=='resort')s+=t[k];const r=Math.max(0,Math.min(1,(.6-s)/.6));t.resort=0; /* only once the parks' music is mostly gone, so the two don't play over each other */
+ if(r>.01&&!SV.on){if(!AM.bad.resort)t.resort=r*.85;else{const k=nearPark();if(k&&!AM.bad[k])t[k]=(t[k]||0)+r*.7}}
+ return t}
+function nearPark(){const R=[[typeof MKR!=='undefined'&&MKR,'ms'],[typeof EPR!=='undefined'&&EPR,DL?'dca':'ep'],[typeof HSR!=='undefined'&&HSR,'hs'],[typeof AKR!=='undefined'&&AKR,'ak']];let b=null,bd=1e18;
+ for(const[Rg,k]of R){if(!Rg||!AREA[k])continue;const x=(Rg[0]+Rg[2])/2,y=(Rg[1]+Rg[3])/2,d=Math.hypot(cam.x-x,cam.y-y);if(d<bd){bd=d;b=k}}return b}
+function parkAreaTargets(){const t={};for(const k in AREA)t[k]=0;
  if(typeof AKR!=='undefined'&&AKR&&!SV.on&&cam.x>AKR[0]-250&&cam.x<AKR[2]+250&&cam.y>AKR[1]-250&&cam.y<AKR[3]+250){if(T>=AOPEN*3600-1800&&T<=ACLOSE*3600+900)t.ak=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Animal Kingdom: one loop for the whole park, on its own hours (it closes earlier) */
  if(DL&&OSM.dca&&ptIn(cam.x,cam.y,OSM.dca)){if(!SV.on&&T>=EOPEN*3600-1800&&T<=ECLOSE*3600+900){const z=Math.max(0,Math.min(1,(cam.m-.3)/.45)),L=OSM.lands.cl;let w=0;
    if(L){if(ptIn(cam.x,cam.y,L))w=1;else{let m=1e9;for(let i=0;i<L.length;i++){const a=L[i],b=L[(i+1)%L.length],dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy||1,u=Math.max(0,Math.min(1,((cam.x-a[0])*dx+(cam.y-a[1])*dy)/l2));m=Math.min(m,Math.hypot(cam.x-a[0]-dx*u,cam.y-a[1]-dy*u))}w=Math.max(0,1-m/45)}}
@@ -142,7 +152,7 @@ setInterval(()=>{if(!document.hidden)areaTick()},120); /* nothing restarts the m
    browser's storage (IndexedDB), so a hosted copy of the site (GitHub Pages) plays them from then on. Files are matched by
    name: happily-ever-after.mp3, minnies-christmas-fireworks.mp3, let-the-magic-begin.mp3, kiss-goodnight.mp3, festival-of-fantasy.mp3, boo-to-you.mp3, once-upon-a-christmastime.mp3,
    electrical-water-pageant.mp3, luminous.mp3, fantasmic.mp3, tree-of-life.mp3, and at Disneyland believe-in-holiday-magic.mp3,
-   a-christmas-fantasy-parade.mp3, fantasmic-disneyland.mp3, world-of-color.mp3, route-66.mp3 and sh-boom.mp3 (Cars Land), cavalcade.mp3, area-*.mp3 and ride-*.mp3. Anything else in the folder is ignored. */
+   a-christmas-fantasy-parade.mp3, fantasmic-disneyland.mp3, world-of-color.mp3, route-66.mp3 and sh-boom.mp3 (Cars Land), cavalcade.mp3, area-*.mp3 (area-resort.mp3: the wide views) and ride-*.mp3. Anything else in the folder is ignored. */
 async function areaSaved(k){try{const db=await IDB();return await new Promise(res=>{const r=db.transaction('files').objectStore('files').get('area-'+k);r.onsuccess=()=>res(r.result&&r.result.blob);r.onerror=()=>res(null)})}catch(e){return null}}
 async function saveFile(key,f){const db=await IDB();await new Promise((res,rej)=>{const t=db.transaction('files','readwrite');t.objectStore('files').put({blob:f,name:f.name},key);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
 function pickAudioFolder(){const i=document.createElement('input');i.type='file';i.multiple=true;i.webkitdirectory=true;i.onchange=()=>loadAudioFiles([...i.files]);i.click()}

@@ -450,6 +450,20 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   PARADES entry's file with `keepDur:true`, so the procession keeps its 9 minutes and the song loops (st % duration) instead of the
   event taking the track's length. COMMITTED to git (owner: "Do not ignore this in git"), unlike the other Disney audio.
 
+- Speedway footbridges (owner, 26 Nov: "The Tomorrowland speedway cars go over the pathway"): the map paints the race track over the
+  walkways that cross it. `raceBridges()` (render.js) finds where OSM.paths cross `RACEP` once (two crossings), `raceBridgeDraw` repaints
+  up to 12 units of walkway each side over the track with a shadow and edge, and Speedway cars within w/2+2.2 of a crossing are hidden.
+
+- Resort music for wide views (owner, 26 Nov: "When the tv mode is doing the resort pano, I still want music" → chose a resort loop):
+  `areaTargets` now wraps `parkAreaTargets` (the old function). r = clamp((.6 - sum of park targets)/.6); `AREA.resort` =
+  audio/area-resort.mp3 (owner's "WDW Today Channel (Full Loop)" resort TV audio, cut to 95 MB / 66 min at a frame boundary; git-ignored like the other area loops) gets r*.85 at any hour (not in Main Street view); if that file
+  is missing (AM.bad.resort), the loop of `nearPark()` (region centre nearest the camera: ms, ep/dca, hs, ak) gets r*.7 instead.
+
+- The American Adventure (owner, 26 Nov: "Make the American pavilion look better"): `americanAdventure` (map-art-wdw.js) splits the outline
+  32 units back from its lagoon-side edge (toward the ride's entrance): the front is the Georgian brick mansion (H 13, libDeco + white
+  string course, hipped slate roof over its box with white cornice and ridge balustrade, dormers on the lit slope, brick chimneys, the
+  cupola at 1.35x, two US flags on the lagoon side painted before the house); the rest is a go-away green show box (7).
+
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each

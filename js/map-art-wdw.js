@@ -222,7 +222,7 @@ function epBuilding(q,bb,land,hh,hs){const n=q.n||'',cx=(bb[0]+bb[2])/2,cy=(bb[1
  if(n==='Torii Gate')return(c,e)=>torii(c,cx,cy);
  if(/^Saint Mark/.test(n))return(c,e)=>campanile(c,e,cx,cy);
  if(n==='Stave Church Gallery')return(c,e)=>staveChurch(c,e,cx,bb[3]-1,Math.max(2.5,(bb[2]-bb[0])*.4));
- if(n==='The American Adventure'){return(c,e)=>{extrude(c,e,q.p,hh,'#a0503f','#4f545c',{win:'#3a4a5a',ridge:false,deco:libDeco});wdwRoofs(c,q.p,hh,hs,['#4f545c','#5b6b7a'],'#55606c');const[x,y]=wdwCen(q.p);cupola(c,e,x,y-hh)}}
+ if(n==='The American Adventure')return americanAdventure(q,bb,hs);
  if(n==='China Pavilion'){const st=LANDSTYLE.ep_china,[mx,my]=wdwCen(q.p);return(c,e)=>{extrude(c,e,q.p,hh,st[0][0],'#2f6b5a',{deco:chinaDeco,ridge:false});wdwRoofs(c,q.p,hh,hs,['#2f6b5a','#2a5a4c','#3a7a64'],'#2f6b5a');templeOfHeaven(c,e,mx,my-hh+2,10)}}
  if(n==='Mission: SPACE'){const a=AT.find(x=>x.osm===n);return(c,e)=>{extrude(c,e,q.p,hh,'#e9e4ee','#c9c3d4',{noWin:true,ridge:false,deco:tomDeco});if(!a)return;const[mx,my]=wdwCen(q.p);let dx=a.dx-mx,dy=a.dy-my;const L=Math.hypot(dx,dy)||1,x=a.dx-dx/L*6,y=a.dy-dy/L*6,R=11;
    const g=c.createRadialGradient(x-R*.35,y-R-R*.35,R*.2,x,y-R,R);g.addColorStop(0,'#f08a4a');g.addColorStop(.7,'#c4502a');g.addColorStop(1,'#8a3420');c.fillStyle=g;c.beginPath();c.arc(x,y-R,R,0,7);c.fill();
@@ -397,3 +397,33 @@ function otherBuilding(q,bb,hh,hs){const k=q.k||'',n=q.n||'';
  else{wall=['#e8e0d0','#ddd5c4','#efe8da','#d8d2c6'][hs%4];roof=['#cfd2d4','#c4c8cb','#d8d6d0'][(hs>>>3)%3];deco=stuccoDeco;flat=true}
  return(c,e)=>{extrude(c,e,q.p,hh,wall,roof,{ridge:!flat,deco,noWin:!hotel&&!house&&!shop&&A>1500});
   if(flat){parapet(c,q.p,hh);if(A>500)roofUnits(c,q.p,hh,hs)}else if(tile&&A>250)wdwRoofs(c,q.p,hh,hs,['#b5603a','#a8502f','#c4673f'],roof)}}
+
+/* The American Adventure (owner, 26 Nov 2026: "Make the American pavilion look better"): a Georgian red-brick mansion along the
+   lagoon side of the outline (where its entrance is), with white trim, a hipped slate roof edged by a white balustrade, dormers,
+   brick chimneys and its white cupola on the ridge; the big show building behind it (the rest of the outline) is go-away green and
+   lower, so from the map's viewpoint the mansion's upper floor and roof rise over it, as in aerial photos. */
+function americanAdventure(q,bb,hs){const a=AT.find(x=>x.osm==='The American Adventure'),L0=EPLAGOON(),[mx,my]=wdwCen(q.p);
+ let dx=(a?a.dx:L0[0])-mx,dy=(a?a.dy:L0[1])-my;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L; /* toward the entrance and the lagoon */
+ let far=-1e9;for(const p of q.p)far=Math.max(far,(p[0]-mx)*dx+(p[1]-my)*dy);const cut=far-32;
+ const house=wdwHalf(q.p,mx,my,dx,dy,cut),show=wdwHalf(q.p,mx,my,-dx,-dy,-cut);if(house.length<3)return null;
+ const H=13,SH=7,hb=bbox(house);
+ const draw=(c,e)=>{
+  /* flagpoles flanking the house on the lagoon side, with the Stars and Stripes */
+  for(const s_ of[-1,1]){const fx=mx+dx*(far+6)-dy*s_*((hb[2]-hb[0])*.35),fy=my+dy*(far+6)+dx*s_*((hb[2]-hb[0])*.35);c.strokeStyle='#d8d8d8';c.lineWidth=.3;c.beginPath();c.moveTo(fx,fy);c.lineTo(fx,fy-16);c.stroke();
+   c.fillStyle='#b22234';c.fillRect(fx,fy-16,4.2,2.4);c.fillStyle='#fff';for(let i=1;i<6;i+=2)c.fillRect(fx,fy-16+i*.4,4.2,.4);c.fillStyle='#3c3b6e';c.fillRect(fx,fy-16,1.8,1.3)}
+  extrude(c,e,house,H,'#a24e3c','#4f5560',{win:'#2f3f52',ridge:false,deco:(c,p,q2,L2,h)=>{libDeco(c,p,q2,L2,h);wdwBand(c,p,q2,h*.5-.15,h*.5+.15,'#f2ede2')}});
+  /* hipped roof over the house's box: ridge along its long side */
+  const x0=hb[0]+.5,x1=hb[2]-.5,y0=hb[1]+.5,y1=hb[3]-.5,wide=(x1-x0)>=(y1-y0),R=6,P=(x,y,h)=>[x,y-h];
+  let planes;if(wide){const d=(y1-y0)/2,ym=(y0+y1)/2;planes=[[[P(x0,y0,H),P(x1,y0,H),P(x1-d,ym,H+R),P(x0+d,ym,H+R)],-.18],[[P(x0,y0,H),P(x0+d,ym,H+R),P(x0,y1,H)],-.08],[[P(x1,y0,H),P(x1-d,ym,H+R),P(x1,y1,H)],-.25],[[P(x0,y1,H),P(x1,y1,H),P(x1-d,ym,H+R),P(x0+d,ym,H+R)],.1]]}
+  else{const d=(x1-x0)/2,xm=(x0+x1)/2;planes=[[[P(x0,y0,H),P(x1,y0,H),P(xm,y0+d,H+R)],-.18],[[P(x0,y0,H),P(xm,y0+d,H+R),P(xm,y1-d,H+R),P(x0,y1,H)],-.02],[[P(x1,y0,H),P(xm,y0+d,H+R),P(xm,y1-d,H+R),P(x1,y1,H)],-.25],[[P(x0,y1,H),P(x1,y1,H),P(xm,y1-d,H+R)],.1]]}
+  for(const[pts,k]of planes)poly4(c,pts,tone('#565d68',k));
+  c.strokeStyle='#f6f2e8';c.lineWidth=.6;c.beginPath();c.moveTo(...P(x0,y0,H));c.lineTo(...P(x1,y0,H));c.lineTo(...P(x1,y1,H));c.lineTo(...P(x0,y1,H));c.closePath();c.stroke(); /* white cornice */
+  /* the balustrade along the ridge, dormers on the lit (south) slope, chimneys */
+  const rx0=wide?x0+(y1-y0)/2:(x0+x1)/2,rx1=wide?x1-(y1-y0)/2:(x0+x1)/2,ry0=wide?(y0+y1)/2:y0+(x1-x0)/2,ry1=wide?(y0+y1)/2:y1-(x1-x0)/2;
+  c.strokeStyle='#f6f2e8';c.lineWidth=.45;c.beginPath();c.moveTo(rx0,ry0-H-R-.8);c.lineTo(rx1,ry1-H-R-.8);c.stroke();c.lineWidth=.15;c.beginPath();for(let t=0;t<=1.001;t+=.04){const x=rx0+(rx1-rx0)*t,y=ry0+(ry1-ry0)*t-H-R;c.moveTo(x,y);c.lineTo(x,y-.8)}c.stroke();
+  if(wide){const n=Math.max(3,Math.round((x1-x0)/8));for(let i=0;i<n;i++){const x=x0+(x1-x0)*(i+.5)/n,yy=y1-(y1-y0)*.28,h=H+R*.45;if(Math.abs(x-(x0+x1)/2)<4)continue;c.fillStyle='#f4efe4';c.fillRect(x-1,yy-h-1.6,2,1.6);poly4(c,[[x-1.2,yy-h-1.6],[x+1.2,yy-h-1.6],[x,yy-h-2.7]],'#565d68');c.fillStyle='#2f3f52';c.fillRect(x-.45,yy-h-1.3,.9,1);if(e){e.fillStyle='rgba(255,210,140,.7)';e.fillRect(x-.45,yy-h-1.3,.9,1)}}}
+  for(const t of[.12,.88]){const x=wide?x0+(x1-x0)*t:(x0+x1)/2,y=wide?(y0+y1)/2:y0+(y1-y0)*t;c.fillStyle='#8f4232';c.fillRect(x-.8,y-H-R-1.5,1.6,3);c.fillStyle='#6a3226';c.fillRect(x-.8,y-H-R-1.7,1.6,.4)}
+  /* the cupola, bigger than the Hall of Presidents' */
+  const cx_=(rx0+rx1)/2,cy_=(ry0+ry1)/2;for(const k of[c,e])if(k){k.save();k.translate(cx_,cy_-H-R+1);k.scale(1.35,1.35)}cupola(c,e,0,0);for(const k of[c,e])if(k)k.restore();
+};
+ return[{y:hb[3],f:draw},{y:show.length>2?bbox(show)[3]:bb[3],f:(c,e)=>{if(show.length>2)wdwShowBox(c,show,SH,hs)}}]}

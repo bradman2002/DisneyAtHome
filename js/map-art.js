@@ -259,16 +259,23 @@ function tent(c,x,y,r,h,col){c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.el
    with ribs running from the top down to the rim, a pale band round the foot and its little blue lights along the bottom */
 /* the dome's outline as drawn (round base seen at a slant, then the cone): shared by the dome, the PeopleMover beam's cut-out
    and the hidden PeopleMover cars, so the track runs right up to the dome and disappears exactly at its edge */
-function domePath(p,x,y,R){const Hc=R*1.35;p.ellipse(x,y,R,R*.95,0,0,Math.PI);p.quadraticCurveTo(x-R*.4,y-Hc*.5,x,y-Hc);p.quadraticCurveTo(x+R*.4,y-Hc*.5,x+R,y);p.closePath()}
+function domePath(p,x,y,R){const Hc=R*.95,t=R*.09;p.ellipse(x,y,R,R*.95,0,0,Math.PI);p.quadraticCurveTo(x-R*.52,y-Hc*.2,x-t,y-Hc);p.lineTo(x+t,y-Hc);p.quadraticCurveTo(x+R*.52,y-Hc*.2,x+R,y);p.closePath()}
 const SMDOME=()=>{const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(!q)return null;const b=bbox(q.p);return[(b[0]+b[2])/2,(b[1]+b[3])/2,(b[2]-b[0])/2]};
-function spaceDome(c,e,x,y,R){const Hc=R*1.35,ry=R*.95,A=(t)=>[x+R*Math.cos(t),y+ry*Math.sin(t)];
- c.fillStyle='rgba(30,50,20,.22)';c.beginPath();c.ellipse(x+R*.38,y+ry*.3,R*1.1,ry*1.08,0,0,7);c.fill();
- const g=c.createLinearGradient(x-R,0,x+R,0);g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#eef1f5');g.addColorStop(1,'#aeb8c6');
+/* Space Mountain (owner, 26 Nov 2026: "Space mountain looks wonky"; it was a tall witch's hat with a dark disc beside it): a broad,
+   fairly low white cone (about 300 ft across, 183 ft tall), its sides flaring out a little at the foot, white ribs running from the
+   rim to a small flat top with a short spire, and the ring of white fins standing round its base */
+function spaceDome(c,e,x,y,R,again){const Hc=R*.95,ry=R*.95,t=R*.09,A=(a)=>[x+R*Math.cos(a),y+ry*Math.sin(a)];
+ if(!again){c.fillStyle='rgba(30,50,20,.14)';c.beginPath();c.ellipse(x+R*.22,y+ry*.16,R*1.06,ry*1.02,0,0,7);c.fill()} /* soft shadow toward the lower right, like the other buildings' */
+ c.fillStyle='#d9dde2';c.beginPath();c.ellipse(x,y,R*1.04,ry*1.04,0,0,7);c.fill();c.strokeStyle='rgba(120,130,140,.35)';c.lineWidth=Math.max(.3,R*.01);c.stroke(); /* its round concrete plinth: the whole footprint, so no bare ground shows behind the lower cone */
+ const g=c.createLinearGradient(x-R,0,x+R,0);g.addColorStop(0,'#ffffff');g.addColorStop(.45,'#f1f4f8');g.addColorStop(1,'#b4bdca');
  c.fillStyle=g;c.beginPath();domePath(c,x,y,R);c.fill();
- c.strokeStyle='rgba(150,160,175,.75)';c.lineWidth=Math.max(.3,R*.013);for(let k=1;k<18;k++){const[px,py]=A(k/18*Math.PI);c.beginPath();c.moveTo(px,py);c.quadraticCurveTo(x+(px-x)*.42,y-Hc*.5+(py-y)*.45,x,y-Hc);c.stroke()}
- c.strokeStyle='#cfd5de';c.lineWidth=R*.07;c.beginPath();c.ellipse(x,y-R*.02,R*.985,ry*.97,0,.05,Math.PI-.05);c.stroke();
- c.fillStyle='#e9edf2';c.beginPath();c.arc(x,y-Hc,R*.035,0,7);c.fill();
- e.fillStyle='rgba(140,200,255,.8)';for(let k=2;k<18;k+=2){const[px,py]=A(k/18*Math.PI);e.fillRect(px-.4,py-1.6,.8,1.6)}}
+ c.strokeStyle='rgba(150,160,175,.7)';c.lineWidth=Math.max(.3,R*.012);for(let k=1;k<24;k++){const a=k/24*Math.PI,[px,py]=A(a),tx=x+t*Math.cos(a)*1.0;c.beginPath();c.moveTo(px,py);c.quadraticCurveTo(x+(px-x)*.52,y-Hc*.2+(py-y)*.3,tx,y-Hc);c.stroke()}
+ c.fillStyle='#e9edf2';c.beginPath();c.ellipse(x,y-Hc,t,t*.4,0,0,7);c.fill(); /* the flat top */
+ c.strokeStyle='#d6dbe2';c.lineWidth=Math.max(.4,R*.02);c.beginPath();c.moveTo(x,y-Hc);c.lineTo(x,y-Hc-R*.22);c.stroke(); /* its spire */
+ for(let k=0;k<=12;k++){const a=k/12*Math.PI,[px,py]=A(a),ox=Math.cos(a),oy=Math.sin(a)*.95,f=R*.07,h=R*.16; /* the fins at the foot */
+  c.fillStyle=ox<-.2?'#ffffff':ox>.4?'#c5ccd6':'#e6eaf0';c.beginPath();c.moveTo(px-oy*f*.25,py+ox*f*.25*.95);c.lineTo(px+ox*f,py+oy*f);c.lineTo(px+ox*f*.2,py+oy*f*.2-h);c.lineTo(px+oy*f*.25,py-ox*f*.25*.95);c.closePath();c.fill()}
+ c.strokeStyle='#cfd5de';c.lineWidth=R*.05;c.beginPath();c.ellipse(x,y-R*.02,R*.985,ry*.97,0,.05,Math.PI-.05);c.stroke();
+ e.fillStyle='rgba(140,200,255,.8)';for(let k=2;k<24;k+=2){const[px,py]=A(k/24*Math.PI);e.fillRect(px-.4,py-1.6,.8,1.6)}e.fillStyle='rgba(200,230,255,.9)';e.beginPath();e.arc(x,y-Hc-R*.22,R*.025+.3,0,7);e.fill()}
 /* Test Track as it looks now: a round show building with dark walls and a white roof in pie-slice panels, and its outdoor
    track (OSM.routes.testtrack) on white stilts - round the building's rim and out to the loop over a round pad with a blue
    disc painted on it. The track is painted in short pieces so the building hides the part behind it */
@@ -966,7 +973,7 @@ function paintMap(rx,ry,rw,rh,mss){
  /* elevated tracks over everything: PeopleMover and monorail beams */
  const beam=(p,w,col)=>{c.strokeStyle='rgba(30,40,40,.18)';c.lineWidth=w+2;c.save();c.translate(2,2);pathOf(c,p);c.stroke();c.restore();c.strokeStyle=tone(col,-.25);c.lineWidth=w+.8;pathOf(c,p);c.stroke();c.strokeStyle=col;c.lineWidth=w;pathOf(c,p);c.stroke()};
  {const d=SMDOME();c.save();if(d){c.beginPath();c.rect(-1e5,-1e5,3e5,3e5);domePath(c,d[0],d[1],d[2]*.97);c.clip('evenodd')}beam(OSM.routes.pm,2.4,'#dfe5ec');c.restore()} /* the PeopleMover runs right up to Space Mountain and goes indoors at the dome's edge */
- {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p);if(vis(bb)){MAP.nulE=MAP.nulE||document.createElement('canvas').getContext('2d');spaceDome(c,MAP.nulE,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2)}}} /* the PeopleMover runs into Space Mountain, so the dome is painted again over its beam */
+ {const q=OSM.buildings.find(q=>q.n==='Space Mountain');if(q){const bb=bbox(q.p);if(vis(bb)){MAP.nulE=MAP.nulE||document.createElement('canvas').getContext('2d');spaceDome(c,MAP.nulE,(bb[0]+bb[2])/2,(bb[1]+bb[3])/2,(bb[2]-bb[0])/2,true)}}} /* (again: no second shadow, which had darkened the trees round it) */ /* the PeopleMover runs into Space Mountain, so the dome is painted again over its beam */
 for(const p of OSM.monoLines)beam(p,2.6,'#f1f3f6');if(DL&&typeof dlMonoThrough==='function')dlMonoThrough(c,e,vis);skylinerArt(c,e,vis);late.forEach(f=>f());
  MAP.lamps=OSM.lamps; /* (painted above, in depth order) */
  return{base,glow}}

@@ -16,7 +16,7 @@ const tvRand=(a,b)=>a+Math.random()*(b-a);
 // the regular rotation of shots
 function tvShots(){const land=k=>({k:'map',n:LANDS[k][0],x:LANDS[k][1],y:LANDS[k][2],m:2.5,dur:34,layer:'wait',drift:3}),place=k=>({k:'map',n:RESORTS[k].n.replace('Disney’s ',''),x:RESORTS[k].c[0],y:RESORTS[k].c[1]-10,m:1.8,dur:28,layer:'transport',drift:2});
  const tag=(p,L)=>L.filter(Boolean).map(s=>(s.p=p,s)),
-  ride=(o,n,m)=>{const a=AT.find(x=>x.osm===o);return a&&{k:'map',n:n+(a.pk===1?' · EPCOT':a.pk===2?' · Hollywood Studios':a.pk===3?' · Animal Kingdom':''),x:a.x,y:a.y+6,m:m||3.2,dur:40,layer:'wait',drift:1.2}}; /* a close-up on one ride (null if the map doesn't have it) */
+  ride=(o,n,m)=>{const a=AT.find(x=>x.osm===o);return a&&{k:'map',a:a.i,n:n+(a.pk===1?' · EPCOT':a.pk===2?' · Hollywood Studios':a.pk===3?' · Animal Kingdom':''),x:a.x,y:a.y+6,m:m||3.2,dur:40,layer:'wait',drift:1.2}}; /* a close-up on one ride (null if the map doesn't have it) */
  if(DL)return tvShotsDL(land,place,tag,ride);
  return[{k:'map',n:'Magic Kingdom',x:P_.hub[0],y:P_.hub[1]-45,m:1.02,dur:42,layer:'wait',zoom:1.06},land('fan'),{k:'mono',n:'Monorail',dur:38},land('tom'),{k:'street',n:'Main Street, U.S.A.',dur:40},land('adv'),
   ...(EPCOT?tag('ep',[{k:'map',n:'EPCOT',x:(EPR[0]+EPR[2])/2,y:(EPR[1]+EPR[3])/2,m:fitM(EPR)*1.15,dur:34,layer:'wait',zoom:1.05},{k:'map',n:'Spaceship Earth · EPCOT',x:EPCOT.sse[0],y:EPCOT.sse[1]-10,m:3.2,dur:30,layer:'wait',drift:1.5},{k:'map',n:'World Showcase · EPCOT',x:EPCOT.c[0],y:EPCOT.c[1]+40,m:1.7,dur:34,layer:'wait',drift:2},{k:'map',n:'World Discovery · EPCOT',x:LANDS.wd?LANDS.wd[1]:EPCOT.sse[0],y:LANDS.wd?LANDS.wd[2]+40:EPCOT.sse[1],m:2.4,dur:30,layer:'wait',drift:2},
@@ -73,9 +73,17 @@ function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;
   else if(s.k==='follow'){follow=s.f;cam.tm=s.m}
   else{cam.tx=s.x;cam.ty=s.y;cam.tm=s.m||fitM(MKR);const a=Math.random()*6.283;s.vx=Math.cos(a)*(s.drift||0);s.vy=Math.sin(a)*(s.drift||0)*.6}}
  {const to=s.k==='street'?null:follow?vehPos(follow):[cam.tx,cam.ty];if(to&&Math.hypot(to[0]-cam.x,to[1]-cam.y)>1500){cam.x=cam.tx=to[0];cam.y=cam.ty=to[1];cam.m=cam.tm}} /* a shot in the other park (across the blank land between them) is a cut, not a long glide */
- const c=$('#tvCap');c.textContent=s.n;c.classList.remove('in');void c.offsetWidth;c.classList.add('in');sync()}
+ TV.ride=s.a!=null?s.a:null;tvRideCard();
+ const c=$('#tvCap');c.textContent=s.n;c.classList.remove('in');void c.offsetWidth;if(TV.ride==null)c.classList.add('in');sync()} /* on a ride's shot the ride card says it instead of the caption */
+/* the ride card (owner, 26 Nov 2026: "With the tv mode, when it goes to a ride have it display the ride somewhere"): bottom left for the
+   whole of a ride's shot: its name, land and park, the wait right now (or Closed / Temporarily down) and whether its own audio is playing */
+function tvRideCard(){const r=$('#tvRide');if(!r)return;const a=TV.on&&TV.ride!=null?AT.find(x=>x.i===TV.ride):null;if(!a){r.hidden=true;r.classList.remove('in');return}
+ const st=aStat(a),open=st!=='Closed'&&st!=='Down'&&!/down|refurb/i.test(st),park=['Magic Kingdom','EPCOT','Hollywood Studios','Animal Kingdom'][a.pk||0],pn=DL?['Disneyland Park','Disney California Adventure'][a.pk||0]:park,
+  ln=LANDNAME[a.l]||'',w=open?`<b class="${wc(a.wt)}">${a.wt}<small>min wait</small></b>`:`<b class="x">${/down/i.test(st)?'Temporarily down':'Closed'}</b>`,au=typeof RA!=='undefined'&&RA.cur&&rideAt(a)===RA.cur&&RA.lvl>.02;
+ const h=`<div class="rn">${esc(a.n)}</div><div class="rl">${esc([ln,pn].filter(Boolean).join(' · '))}</div><div class="rw">${w}${au?'<span class="ra">♪ On-ride audio</span>':''}</div>`;
+ if(r.dataset.h!==h){r.innerHTML=h;r.dataset.h=h}if(r.hidden){r.hidden=false;r.classList.remove('in');void r.offsetWidth;r.classList.add('in')}}
 /* called every frame while TV mode is on */
-function tvTick(rdt){const now=performance.now();
+function tvTick(rdt){const now=performance.now();if(now-(TV.rcAt||0)>1000){TV.rcAt=now;tvRideCard()} /* keep the ride card's wait and audio note current */
  // which clock: the real one while the park is open (or about to be), a replay of the day otherwise
  if(LIVE.ok){const h=parkClock().s/3600,[o,cl]=LIVE.hours||[OPEN,CLOSE],shut=h<o-.75||h>cl+.5;
   if(!shut){if(TV.replay||!LIVE.follow){TV.replay=false;liveFollow()}}
@@ -101,7 +109,7 @@ function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
 async function tvWake(){try{if(TV.on&&navigator.wakeLock&&document.visibilityState==='visible')TV.lock=await navigator.wakeLock.request('screen')}catch(e){}} // keep the screen from sleeping
 function tvStart(){if(TV.on)return;unlockRide(); /* the tap that starts TV mode also unlocks ride audio on iPhone */TV.on=true;document.body.classList.add('tv');$('#tv').hidden=false;if(!document.body.classList.contains('fs'))toggleFS();TV.shot=null;TV.key='';TV.uiAt=0;TV.user={layer:VIEW.layer,speed};
  if(!LIVE.ok){speed=1;playing=true}if(!AU.ready)auInit();tvWake();sync()}
-function tvStop(){if(!TV.on)return;TV.on=false;document.body.classList.remove('tv');$('#tv').hidden=true;follow=null;if(SV.on)setView(false);VIEW.layer=TV.user.layer;if(TV.replay||!LIVE.follow){speed=TV.user.speed}TV.replay=false;
+function tvStop(){if(!TV.on)return;TV.on=false;TV.ride=null;tvRideCard();document.body.classList.remove('tv');$('#tv').hidden=true;follow=null;if(SV.on)setView(false);VIEW.layer=TV.user.layer;if(TV.replay||!LIVE.follow){speed=TV.user.speed}TV.replay=false;
  if(TV.lock){try{TV.lock.release()}catch(e){}TV.lock=null}if(document.body.classList.contains('fs'))toggleFS();sync()}
 document.addEventListener('visibilitychange',tvWake);
 document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName)||e.metaKey||e.ctrlKey)return;if(e.key==='t'||e.key==='T')TV.on?tvStop():tvStart();else if(e.key==='Escape'&&TV.on)tvStop()});

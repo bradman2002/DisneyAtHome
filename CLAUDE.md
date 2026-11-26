@@ -464,6 +464,20 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   string course, hipped slate roof over its box with white cornice and ridge balustrade, dormers on the lit slope, brick chimneys, the
   cupola at 1.35x, two US flags on the lagoon side painted before the house); the rest is a go-away green show box (7).
 
+- World Showcase second pass + Hall of Presidents (owner, 26 Nov: "Go through the rest of the epcot countries and make any look better that
+  look off. Hall of presidents look weird as well"): `georgianHall(q,bb,hs,o)` is the American Adventure drawing made general (o.name ride for
+  the entrance side, o.depth, o.cup, o.flags, o.back:'brick'); the Hall of Presidents uses it (depth 26, brick theatre behind, no flags).
+  Norway Pavilion = `frontVillage` (26 units of town along the lagoon with mixed walls and split roofs, show box behind); China's
+  Temple of Heaven stands at `frontSpot` (10 in from the lagoon edge, R 13) painted after the pavilion; Germany's split roofs mix red tile,
+  slate and copper (`wdwRoofs` with base null); Saint Mark's campanile x1.45 and painted late; Japan Pavilion gets `heronCastle` (x1.8) at
+  `backSpot` painted after the pavilion; Canada Far and Wide = `rockies` (rock base, snow-capped peaks, waterfall, pines); Le Cellier and
+  the unnamed outline beside it = `chateau` (stone, copper pyramid roof, turrets). Mexico, Morocco, France and the UK were left as they were.
+
+- TV ride card (owner, 26 Nov: "With the tv mode, when it goes to a ride have it display the ride somewhere"): `ride()` shots carry `a`
+  (the attraction's i); tvNext sets `TV.ride` and calls `tvRideCard()` (tv.js), which fills `#tvRide` (index.html, top-left where the
+  caption sits; the caption isn't shown on ride shots): name, LANDNAME · park, wait in the board's colours or Closed / Temporarily down,
+  and "♪ On-ride audio" while RA.cur is that ride's track. Refreshed once a second from tvTick; hidden on other shots and in tvStop.
+
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each
@@ -516,7 +530,9 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   track `OSM.routes.testtrack` (OSM way 'Test Track' roller_coaster=track) on white stilts via `ttTrack` in short painter-order
   pieces, `ttPad` (round pad, blue disc) inside the loop; `TTSKIP` drops the map's unnamed duplicate building and the 'roof'
   over the whole track.
-- Space Mountain: `spaceDome` is one cone rising from its round base; the PeopleMover beam is clipped out of its footprint
+- Space Mountain: `spaceDome` is a broad cone (height .95R, sides flaring at the foot via `domePath`, which SMB/the beam clip share), a pale
+  round plinth over the whole footprint, ribs to a small flat top with a spire, a ring of fins at the base; the second call (after the
+  PeopleMover beams) passes `again` so the shadow isn't painted twice (owner, 26 Nov: "Space mountain looks wonky"). Older note: the PeopleMover beam is clipped out of its footprint
   (it runs indoors) and its cars hidden there (`SMB` in render.js).
 - Tree of Life jump (20 Nov): `tolTimes`/`tolJump`/`tolLook` in treeoflife.js; an Entertainment card (`#tolJump`) built in
   ui.js before the EV cards.

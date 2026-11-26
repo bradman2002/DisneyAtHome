@@ -69,7 +69,16 @@ html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}#app{
 @keyframes tvdrift{from{transform:translate(0,0)}to{transform:translate(9px,7px)}}
 #tvCap,#tvClock,.tvCard{background:rgba(18,24,48,.64);color:#fff;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 #tvCap{position:absolute;left:28px;top:24px;font-weight:800;font-size:20px;padding:8px 16px;border-radius:14px;opacity:0}
-#tvCap.in{animation:tvcap 10s ease both}@keyframes tvcap{0%{opacity:0;transform:translateY(-6px)}6%,82%{opacity:1;transform:none}100%{opacity:0}}
+#tvCap.in{animation:tvcap 10s ease both}
+#tvRide{position:absolute;left:28px;top:24px;max-width:min(520px,60vw);background:rgba(18,24,48,.7);color:#fff;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-radius:18px;padding:14px 20px 16px}
+#tvRide.in{animation:tvride .6s ease both}@keyframes tvride{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+#tvRide .rn{font-weight:800;font-size:28px;line-height:1.15}
+#tvRide .rl{font-size:15px;opacity:.75;margin-top:3px}
+#tvRide .rw{display:flex;align-items:baseline;gap:14px;margin-top:10px}
+#tvRide .rw b{font-size:26px;font-weight:800}#tvRide .rw b small{font-size:14px;font-weight:600;margin-left:5px;opacity:.85}
+#tvRide .rw b.g{color:#7be08a}#tvRide .rw b.y{color:#ffd65a}#tvRide .rw b.o{color:#ffa64d}#tvRide .rw b.r{color:#ff6b6b}#tvRide .rw b.x{color:#c9cfdb;font-size:20px}
+#tvRide .ra{font-size:14px;opacity:.85}
+@media(max-width:760px){#tvRide{left:8px;top:8px;padding:8px 12px}#tvRide .rn{font-size:17px}#tvRide .rl{font-size:12px}#tvRide .rw b{font-size:17px}}@keyframes tvcap{0%{opacity:0;transform:translateY(-6px)}6%,82%{opacity:1;transform:none}100%{opacity:0}}
 #tvClock{position:absolute;left:28px;bottom:24px;padding:12px 18px;border-radius:18px;display:flex;flex-direction:column}
 #tvTime{font-size:44px;font-weight:800;line-height:1}#tvDate{font-size:15px;opacity:.92;margin-top:5px}#tvNote{font-size:13px;opacity:.8;margin-top:2px}#tv.live #tvNote::before{content:'● ';color:#ff5a5a}
 #tvSide{position:absolute;right:28px;bottom:24px;width:310px;display:flex;flex-direction:column;gap:10px}

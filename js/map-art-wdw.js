@@ -108,7 +108,7 @@ function wdwRoofs(c,poly,hh,seed,pal,base){const top=poly.map(([x,y])=>[x,y-hh])
  let sxx=0,syy=0,sxy=0;for(const[x,y]of top){sxx+=(x-mx)**2;syy+=(y-my)**2;sxy+=(x-mx)*(y-my)}const an=.5*Math.atan2(2*sxy,sxx-syy),ux=Math.cos(an),uy=Math.sin(an); /* the footprint's long axis */
  let lo=1e9,hi=-1e9,wl=1e9,wh=-1e9;for(const[x,y]of top){const u=(x-mx)*ux+(y-my)*uy,v=-(x-mx)*uy+(y-my)*ux;lo=Math.min(lo,u);hi=Math.max(hi,u);wl=Math.min(wl,v);wh=Math.max(wh,v)}
  c.save();pathOf(c,top,1);c.clip();c.translate(mx,my);c.rotate(an); /* strips across the long axis, each a little house with its ridge along the short axis */
- let u=lo;while(u<hi){const w=6+R2()*5,col=R2()<.22?pal[(R2()*pal.length)|0]:tone(base,(R2()-.5)*.22);
+ let u=lo;while(u<hi){const w=6+R2()*5,col=base==null?tone(pal[(R2()*pal.length)|0],(R2()-.5)*.12):R2()<.22?pal[(R2()*pal.length)|0]:tone(base,(R2()-.5)*.22);
   c.fillStyle=tone(col,.15);c.fillRect(u,wl-1,w,(wh-wl)/2+1);c.fillStyle=tone(col,-.12);c.fillRect(u,(wl+wh)/2,w,(wh-wl)/2+1);
   c.fillStyle='rgba(255,255,255,.28)';c.fillRect(u,(wl+wh)/2-.2,w,.4);c.fillStyle='rgba(0,0,0,.2)';c.fillRect(u+w-.35,wl-1,.35,wh-wl+2);
   if(R2()<.3){const cu=u+w*(.3+R2()*.4),cv=wl+(wh-wl)*(.2+R2()*.25);c.fillStyle='#8a5a48';c.fillRect(cu-.5,cv-.5,1,1.4);c.fillStyle='rgba(0,0,0,.25)';c.fillRect(cu-.5,cv-.7,1,.3)} /* a chimney */
@@ -143,7 +143,7 @@ function wdwBuilding(q,bb,land,hh,hs){if(DL)return null;const cx=(bb[0]+bb[2])/2
  const n=q.n||'',a=n&&AT.find(x=>x.osm===n);
  if(n==='The Haunted Mansion'&&a){const f=hauntedManorWDW(q,bb,hh,hs,a);if(f)return f}
  if(n==='"it\'s a small world"'&&a)return smallWorldWDW(q,bb,hh,hs,a);
- if(n==='The Hall of Presidents')return hallOfPresidents(q,bb,hh);
+ if(n==='The Hall of Presidents'){const f=georgianHall(q,bb,hs,{name:n,depth:26,cup:1.2,back:'brick'});if(f)return f} /* owner, 26 Nov 2026: it "look[ed] weird" (one huge flat slate roof): now the brick hall on the plaza side with its hipped roof and cupola, its theatre behind */
  if(n==='Be Our Guest Restaurant')return beOurGuest(q,bb,hh);
  if(/^Under the Sea/.test(n))return ericsCastle(q,bb,hh,hs,a);
  if(n==='Cambodian Temple')return cambodianTemple(q,bb);
@@ -220,20 +220,26 @@ function epBuilding(q,bb,land,hh,hs){const n=q.n||'',cx=(bb[0]+bb[2])/2,cy=(bb[1
  if(/^(The Land|Test Track|Spaceship Earth|Mexico Pavilion|Imagination Pavilion|Project Tomorrow)/.test(n)||q.k==='greenhouse')return null;
  if(n==='Goju-no-to Pagoda')return(c,e)=>pagoda(c,e,cx,bb[3]-(bb[3]-bb[1])*.3,Math.max(3.5,(bb[2]-bb[0])*.5));
  if(n==='Torii Gate')return(c,e)=>torii(c,cx,cy);
- if(/^Saint Mark/.test(n))return(c,e)=>campanile(c,e,cx,cy);
+ if(/^Saint Mark/.test(n))return[{y:cy+30,f:(c,e)=>{for(const k of[c,e])if(k){k.save();k.translate(cx,cy);k.scale(1.45,1.45)}campanile(c,e,0,0);for(const k of[c,e])if(k)k.restore()}}]; /* 1.45x (it reads at the real ~30 m) and painted after its neighbours */
  if(n==='Stave Church Gallery')return(c,e)=>staveChurch(c,e,cx,bb[3]-1,Math.max(2.5,(bb[2]-bb[0])*.4));
  if(n==='The American Adventure')return americanAdventure(q,bb,hs);
- if(n==='China Pavilion'){const st=LANDSTYLE.ep_china,[mx,my]=wdwCen(q.p);return(c,e)=>{extrude(c,e,q.p,hh,st[0][0],'#2f6b5a',{deco:chinaDeco,ridge:false});wdwRoofs(c,q.p,hh,hs,['#2f6b5a','#2a5a4c','#3a7a64'],'#2f6b5a');templeOfHeaven(c,e,mx,my-hh+2,10)}}
+ if(n==='China Pavilion'){const st=LANDSTYLE.ep_china,T_=frontSpot(q.p,10);return[{y:bb[3],f:(c,e)=>{extrude(c,e,q.p,hh,st[0][0],'#2f6b5a',{deco:chinaDeco,ridge:false});wdwRoofs(c,q.p,hh,hs,['#2f6b5a','#2a5a4c','#3a7a64'],'#2f6b5a')}},{y:Math.max(bb[3],T_[1]+14),f:(c,e)=>templeOfHeaven(c,e,T_[0],T_[1],13)}]} /* the Temple of Heaven stands on the ground at the pavilion's lagoon side, on its white terrace, not on a roof */
  if(n==='Mission: SPACE'){const a=AT.find(x=>x.osm===n);return(c,e)=>{extrude(c,e,q.p,hh,'#e9e4ee','#c9c3d4',{noWin:true,ridge:false,deco:tomDeco});if(!a)return;const[mx,my]=wdwCen(q.p);let dx=a.dx-mx,dy=a.dy-my;const L=Math.hypot(dx,dy)||1,x=a.dx-dx/L*6,y=a.dy-dy/L*6,R=11;
    const g=c.createRadialGradient(x-R*.35,y-R-R*.35,R*.2,x,y-R,R);g.addColorStop(0,'#f08a4a');g.addColorStop(.7,'#c4502a');g.addColorStop(1,'#8a3420');c.fillStyle=g;c.beginPath();c.arc(x,y-R,R,0,7);c.fill();
    c.strokeStyle='rgba(120,40,20,.35)';c.lineWidth=.4;for(const k of[-.3,.15,.5]){c.beginPath();c.ellipse(x,y-R+k*R,R*Math.sqrt(1-k*k),R*.2,0,0,Math.PI);c.stroke()}
    c.strokeStyle='#cfd5de';c.lineWidth=.9;c.beginPath();c.ellipse(x,y-R,R*1.5,R*.35,-.2,0,7);c.stroke();if(e){e.fillStyle='rgba(255,140,80,.35)';e.beginPath();e.arc(x,y-R,R*.8,0,7);e.fill()}}}
  if(n==='Guardians Of The Galaxy: Cosmic Rewind')return(c,e)=>extrude(c,null,q.p,Math.min(hh,14*OSM.S),'#2f5f86','#3b6f96',{noWin:true,ridge:false,deco:(c,p,q2,L,h)=>{wdwBand(c,p,q2,h*.7,h*.7+.5,'#d9b04a');wdwBand(c,p,q2,h*.35,h*.35+.3,'#6fb0d8')}});
+ if(n==='Norway Pavilion')return frontVillage(q,bb,hs,land,26,['#a5523a','#d9b25a','#efe6d6','#8a4a35','#c9a46a'],['#3c4a3a','#4a3a2e','#5a4a3a','#2f3a30']); /* the town (Akershus, the timber houses) along the lagoon, Frozen Ever After's show building behind */
+ if(n==='Japan Pavilion'){const f=epGeneric(q,bb,land,hh,hs),K=backSpot(q.p,18);return[{y:bb[3],f},{y:Math.max(bb[3]+1,K[1]+20),f:(c,e)=>{for(const k of[c,e])if(k){k.save();k.translate(K[0],K[1]);k.scale(1.8,1.8)}heronCastle(c,e,0,0);for(const k of[c,e])if(k)k.restore()}}]} /* the White Heron Castle's keep at the back */
+ if(n==='Canada Far and Wide')return(c,e)=>rockies(c,e,q.p,hs);
+ if(land==='ep_canada'&&(n==='Le Cellier Steakhouse'||(!n&&Math.hypot((bb[0]+bb[2])/2-6081,(bb[1]+bb[3])/2-5869)<6)))return(c,e)=>chateau(c,e,q.p,hh); /* Hotel du Canada (Le Cellier is in its cellar) */
+ return epGeneric(q,bb,land,hh,hs)}
+function epGeneric(q,bb,land,hh,hs){const n=q.n||'';
  const fr=EPFRONT[land];if(!fr||q.k==='roof'||q.k==='trailer')return null;
  const st=LANDSTYLE[land];let A=0;for(let i=0;i<q.p.length;i++){const u=q.p[i],v=q.p[(i+1)%q.p.length];A+=u[0]*v[1]-v[0]*u[1]}A=Math.abs(A/2);
  const wall=st[0][hs%st[0].length],roof=q.c&&/^#/.test(q.c)?q.c:st[1][(hs>>>4)%st[1].length],split=A>400,
   extra=/Impressions de France/.test(n)?'eiffel':n==='Spice Road Table'?'minaret':null;
- const draw=(c,e)=>{extrude(c,e,q.p,hh,wall,roof,{noWin:A>1500,ridge:!split,deco:fr});if(split)wdwRoofs(c,q.p,hh,hs,st[1],roof);
+ const draw=(c,e)=>{extrude(c,e,q.p,hh,wall,roof,{noWin:A>1500,ridge:!split,deco:fr});if(split)land==='ep_germany'?wdwRoofs(c,q.p,hh,hs,['#9b3d2b','#7a3a2a','#5a5e66','#a8523a','#6a5a4a','#4f6a5a'],null):wdwRoofs(c,q.p,hh,hs,st[1],roof); /* Germany's village: red tile, slate and copper roofs side by side */
   };
  if(!extra)return draw;const P=behind(q.p,extra==='eiffel'?5:2.5); /* the tower is far taller than the trees and shops round it: painted after them (later in the depth order) so they cover no more than its foot */
  return[{y:bb[3],f:draw},{y:P[1]+40,f:(c,e)=>extra==='eiffel'?eiffel(c,e,P[0],P[1],34):minaret(c,e,P[0],P[1])}]}
@@ -402,14 +408,16 @@ function otherBuilding(q,bb,hh,hs){const k=q.k||'',n=q.n||'';
    lagoon side of the outline (where its entrance is), with white trim, a hipped slate roof edged by a white balustrade, dormers,
    brick chimneys and its white cupola on the ridge; the big show building behind it (the rest of the outline) is go-away green and
    lower, so from the map's viewpoint the mansion's upper floor and roof rise over it, as in aerial photos. */
-function americanAdventure(q,bb,hs){const a=AT.find(x=>x.osm==='The American Adventure'),L0=EPLAGOON(),[mx,my]=wdwCen(q.p);
+function americanAdventure(q,bb,hs){return georgianHall(q,bb,hs,{name:'The American Adventure',flags:true})}
+/* a Georgian brick hall: the house on the entrance side of the outline, the show building behind (o.name: its ride, for the entrance; o.depth: how deep the house is; o.cup: cupola size; o.flags) */
+function georgianHall(q,bb,hs,o){const a=AT.find(x=>x.osm===o.name),L0=a?[a.dx,a.dy]:EPLAGOON(),[mx,my]=wdwCen(q.p);
  let dx=(a?a.dx:L0[0])-mx,dy=(a?a.dy:L0[1])-my;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L; /* toward the entrance and the lagoon */
- let far=-1e9;for(const p of q.p)far=Math.max(far,(p[0]-mx)*dx+(p[1]-my)*dy);const cut=far-32;
+ let far=-1e9;for(const p of q.p)far=Math.max(far,(p[0]-mx)*dx+(p[1]-my)*dy);const cut=far-(o.depth||32);
  const house=wdwHalf(q.p,mx,my,dx,dy,cut),show=wdwHalf(q.p,mx,my,-dx,-dy,-cut);if(house.length<3)return null;
  const H=13,SH=7,hb=bbox(house);
  const draw=(c,e)=>{
   /* flagpoles flanking the house on the lagoon side, with the Stars and Stripes */
-  for(const s_ of[-1,1]){const fx=mx+dx*(far+6)-dy*s_*((hb[2]-hb[0])*.35),fy=my+dy*(far+6)+dx*s_*((hb[2]-hb[0])*.35);c.strokeStyle='#d8d8d8';c.lineWidth=.3;c.beginPath();c.moveTo(fx,fy);c.lineTo(fx,fy-16);c.stroke();
+  if(o.flags)for(const s_ of[-1,1]){const fx=mx+dx*(far+6)-dy*s_*((hb[2]-hb[0])*.35),fy=my+dy*(far+6)+dx*s_*((hb[2]-hb[0])*.35);c.strokeStyle='#d8d8d8';c.lineWidth=.3;c.beginPath();c.moveTo(fx,fy);c.lineTo(fx,fy-16);c.stroke();
    c.fillStyle='#b22234';c.fillRect(fx,fy-16,4.2,2.4);c.fillStyle='#fff';for(let i=1;i<6;i+=2)c.fillRect(fx,fy-16+i*.4,4.2,.4);c.fillStyle='#3c3b6e';c.fillRect(fx,fy-16,1.8,1.3)}
   extrude(c,e,house,H,'#a24e3c','#4f5560',{win:'#2f3f52',ridge:false,deco:(c,p,q2,L2,h)=>{libDeco(c,p,q2,L2,h);wdwBand(c,p,q2,h*.5-.15,h*.5+.15,'#f2ede2')}});
   /* hipped roof over the house's box: ridge along its long side */
@@ -424,6 +432,34 @@ function americanAdventure(q,bb,hs){const a=AT.find(x=>x.osm==='The American Adv
   if(wide){const n=Math.max(3,Math.round((x1-x0)/8));for(let i=0;i<n;i++){const x=x0+(x1-x0)*(i+.5)/n,yy=y1-(y1-y0)*.28,h=H+R*.45;if(Math.abs(x-(x0+x1)/2)<4)continue;c.fillStyle='#f4efe4';c.fillRect(x-1,yy-h-1.6,2,1.6);poly4(c,[[x-1.2,yy-h-1.6],[x+1.2,yy-h-1.6],[x,yy-h-2.7]],'#565d68');c.fillStyle='#2f3f52';c.fillRect(x-.45,yy-h-1.3,.9,1);if(e){e.fillStyle='rgba(255,210,140,.7)';e.fillRect(x-.45,yy-h-1.3,.9,1)}}}
   for(const t of[.12,.88]){const x=wide?x0+(x1-x0)*t:(x0+x1)/2,y=wide?(y0+y1)/2:y0+(y1-y0)*t;c.fillStyle='#8f4232';c.fillRect(x-.8,y-H-R-1.5,1.6,3);c.fillStyle='#6a3226';c.fillRect(x-.8,y-H-R-1.7,1.6,.4)}
   /* the cupola, bigger than the Hall of Presidents' */
-  const cx_=(rx0+rx1)/2,cy_=(ry0+ry1)/2;for(const k of[c,e])if(k){k.save();k.translate(cx_,cy_-H-R+1);k.scale(1.35,1.35)}cupola(c,e,0,0);for(const k of[c,e])if(k)k.restore();
+  const cx_=(rx0+rx1)/2,cy_=(ry0+ry1)/2;for(const k of[c,e])if(k){k.save();k.translate(cx_,cy_-H-R+1);k.scale(o.cup||1.35,o.cup||1.35)}cupola(c,e,0,0);for(const k of[c,e])if(k)k.restore();
 };
- return[{y:hb[3],f:draw},{y:show.length>2?bbox(show)[3]:bb[3],f:(c,e)=>{if(show.length>2)wdwShowBox(c,show,SH,hs)}}]}
+ return[{y:hb[3],f:draw},{y:show.length>2?bbox(show)[3]:bb[3],f:(c,e)=>{if(show.length>2){if(o.back==='brick')extrude(c,e,show,9,'#9a4a3a','#7a7e84',{win:'#2f3f52',ridge:false,deco:libDeco});else wdwShowBox(c,show,SH,hs)}}}]}
+
+/* ---- World Showcase second pass (owner, 26 Nov 2026: "Go through the rest of the epcot countries and make any look better that look off") ---- */
+/* a spot inside a footprint, d units in from its edge on the lagoon side / on the side away from the lagoon */
+function frontSpot(P,d){const L0=EPLAGOON(),[mx,my]=wdwCen(P);let dx=L0[0]-mx,dy=L0[1]-my;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;let t=0;while(t<200&&ptIn(mx+dx*t,my+dy*t,P))t+=.5;t=Math.max(0,t-d);return[mx+dx*t,my+dy*t]}
+function backSpot(P,d){const L0=EPLAGOON(),[mx,my]=wdwCen(P);let dx=mx-L0[0],dy=my-L0[1];const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;let t=0;while(t<200&&ptIn(mx+dx*t,my+dy*t,P))t+=.5;t=Math.max(0,t-d);return[mx+dx*t,my+dy*t]}
+/* a pavilion whose map outline takes in its ride's show building: the town along the lagoon (d units deep), the show box behind */
+function frontVillage(q,bb,hs,land,d,walls,roofs){const L0=EPLAGOON(),[mx,my]=wdwCen(q.p);let dx=L0[0]-mx,dy=L0[1]-my;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
+ let far=-1e9;for(const p of q.p)far=Math.max(far,(p[0]-mx)*dx+(p[1]-my)*dy);const cut=far-d,front=wdwHalf(q.p,mx,my,dx,dy,cut),back=wdwHalf(q.p,mx,my,-dx,-dy,-cut);if(front.length<3)return null;
+ const fb=bbox(front),H=10,fr=EPFRONT[land];
+ return[{y:fb[3],f:(c,e)=>{extrude(c,e,front,H,walls[hs%walls.length],roofs[0],{ridge:false,deco:fr});wdwRoofs(c,front,H,hs,roofs,null)}},
+  {y:back.length>2?bbox(back)[3]:bb[3],f:(c,e)=>{if(back.length>2)wdwShowBox(c,back,8,hs)}}]}
+/* the White Heron Castle (Shirasagi-jo): a stone base, then white storeys under grey-blue curved roofs, gold ridge fish on top */
+function heronCastle(c,e,x,y){c.fillStyle='#8f8a80';c.beginPath();c.moveTo(x-9,y);c.lineTo(x+9,y);c.lineTo(x+7,y-5);c.lineTo(x-7,y-5);c.fill();c.fillStyle='rgba(0,0,0,.15)';c.fillRect(x+2,y-5,5,5);
+ let yb=y-5;for(let i=0;i<4;i++){const w=7.5-i*1.5,h=3.2,rw=w+2;c.fillStyle='#f6f3ec';c.fillRect(x-w,yb-h,w*2,h);c.fillStyle='rgba(0,0,0,.12)';c.fillRect(x+w*.35,yb-h,w*.65,h);
+  c.fillStyle='#3a4048';for(let k=-1;k<=1;k+=2)c.fillRect(x+k*w*.5-.3,yb-h*.7,.6,.9);if(e){e.fillStyle='rgba(255,210,140,.5)';e.fillRect(x-w*.6,yb-h*.7,w*1.2,.8)}
+  yb-=h;c.fillStyle='#5a6472';c.beginPath();c.moveTo(x-rw-.6,yb+.7);c.quadraticCurveTo(x-rw*.5,yb-.4,x-w*.6,yb-1.8);c.lineTo(x+w*.6,yb-1.8);c.quadraticCurveTo(x+rw*.5,yb-.4,x+rw+.6,yb+.7);c.lineTo(x+rw*.7,yb+.2);c.lineTo(x-rw*.7,yb+.2);c.closePath();c.fill();
+  if(i%2===0){c.fillStyle='#f6f3ec';c.beginPath();c.moveTo(x-1.4,yb-.3);c.lineTo(x+1.4,yb-.3);c.lineTo(x,yb-1.9);c.fill()} /* gable */
+  yb-=1.8}
+ c.fillStyle='#d9b04a';c.fillRect(x-2.2,yb-.6,.8,.8);c.fillRect(x+1.4,yb-.6,.8,.8)}
+/* the Canadian Rockies over Canada Far and Wide's theatre: grey rock rising to snow-capped peaks, pines at the foot, a waterfall */
+function rockies(c,e,P,hs){const bb=bbox(P),r=seeded(hs),w=bb[2]-bb[0];extrude(c,null,P,6,'#8a8078','#7d756c',{noWin:true,ridge:false,deco:(c,p,q2,L,h)=>stain(c,p,q2,L,h,'rgba(50,45,40,.25)')});
+ const peaks=[[.25,24],[.5,34],[.75,27],[.4,20]];for(const[t,h]of peaks){const x=bb[0]+w*t,y=bb[1]+(bb[3]-bb[1])*.45,b=w*.24;c.fillStyle='#8f857a';c.beginPath();c.moveTo(x-b,y);c.lineTo(x-b*.15,y-h);c.lineTo(x+b*.1,y-h+1);c.lineTo(x+b,y);c.fill();
+  c.fillStyle='#6f665d';c.beginPath();c.moveTo(x+b*.1,y-h+1);c.lineTo(x+b,y);c.lineTo(x+b*.15,y);c.fill();c.fillStyle='#f4f6f8';c.beginPath();c.moveTo(x-b*.15,y-h);c.lineTo(x-b*.32,y-h+h*.22);c.lineTo(x-b*.05,y-h+h*.16);c.lineTo(x+b*.1,y-h+1);c.lineTo(x+b*.18,y-h+h*.2);c.lineTo(x+b*.05,y-h+h*.24);c.fill()}
+ const wx=bb[0]+w*.58,wy=bb[3]-2;c.fillStyle='rgba(225,240,250,.9)';c.fillRect(wx-1.1,wy-22,2.2,22);c.fillStyle='rgba(255,255,255,.7)';c.fillRect(wx-.4,wy-22,.5,22);c.fillStyle='#8fd0e0';c.beginPath();c.ellipse(wx,wy+.5,3.2,1.2,0,0,7);c.fill();
+ for(let i=0;i<9;i++){const x=bb[0]+w*(.05+i*.11),y=bb[3]-1-r()*3;c.fillStyle='#2f5a3a';c.beginPath();c.moveTo(x-1.4,y);c.lineTo(x,y-5-r()*2);c.lineTo(x+1.4,y);c.fill()}}
+/* Hotel du Canada: stone walls under steep copper-green château roofs, with turrets at its corners */
+function chateau(c,e,P,hh){const H=Math.max(hh,9);extrude(c,e,P,H,'#b8a890','#4f8a72',{ridge:false,deco:canadaDeco});const top=P.map(([x,y])=>[x,y-H]);wdwPyramid(c,top,6,'#4f8a72');
+ const bb=bbox(P);for(const[x,y]of[[bb[0]+1,bb[3]-1],[bb[2]-1,bb[3]-1]]){c.fillStyle='#b8a890';c.fillRect(x-1.2,y-H-2,2.4,H+2);poly4(c,[[x-1.5,y-H-2],[x+1.5,y-H-2],[x,y-H-8]],'#4f8a72');c.fillStyle='#3a4a5a';c.fillRect(x-.35,y-H*.7,.7,1.2);if(e){e.fillStyle='rgba(255,210,140,.7)';e.fillRect(x-.35,y-H*.7,.7,1.2)}}}

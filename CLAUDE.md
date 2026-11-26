@@ -496,7 +496,15 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   query (tv added if missing). Off with `?stay` or Sound & settings → TV mode checkbox (`mk-tvroam`). `#tvOther` (top of #tvSide) shows
   the other resort's local time, Open till / Opens, its next headline show (`OTHER.shows` regex) and top 3 waits (1 on phones).
 
+- Weather (owner, 26 Nov: "Can we add the current weather to the map somewhere as well"): `WX`/`wxFetch`/`wxShow` at the end of live.js. Open-Meteo
+  (free, no key, CC BY 4.0) every 15 minutes, one request for both resorts (`WX.pts`: this one first). Shown only while Live (`wxOn`): `#wx` after
+  the time of day in the time panel (tooltip with conditions and wind), `#tvWx` on TV mode's clock, and the other resort's in the "Meanwhile at"
+  card. "Weather: Open-Meteo" is added to the map credit line while shown; keep it.
+
 ## Ideas not done yet
+- YouTube chat commands (owner, 26 Nov 2026: tabled). Plan if picked up: a script on the Mac mini reads live chat (`pytchat`, or the official
+  API at about one read per 45 s on the free quota), posts commands to `tools/serve.py` (/cmd), the TV page polls it locally; !parade/!fireworks
+  like Watch, !ride <name>, !park/!disneyland, !waits; cooldowns or mods-only, an on-screen credit, `&nochat` to ignore it.
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each
   departure and match the trains' run times to the recording.

@@ -146,7 +146,7 @@ function otherNow(){const now=Date.now(),sc=otherScope(),w=schedOpen(sc.map(([k]
 /* the board card */
 function tvOther(){const box=$('#tvOther');if(!box)return;const O=otherNow();if(!O.fresh){box.hidden=true;return}box.hidden=false;
  const sm=innerWidth<=760||innerHeight<=500,now=Date.now(),row=(a,b,c)=>`<div class="tr"><span>${esc(a)}</span><b${c?` class="${c}"`:''}>${b}</b></div>`;
- let h=`<h3>Meanwhile at ${esc(OTHER.name)}</h3>`+row(otherT(now)+' '+OTHER.tzs+' in '+OTHER.city,O.w.open?(O.w.until?'Open till '+otherT(O.w.until):'Open'):O.w.next<Infinity?'Opens '+otherT(O.w.next):'Closed');
+ let h=`<h3>Meanwhile at ${esc(OTHER.name)}</h3>`+row(otherT(now)+' '+OTHER.tzs+(WX.there&&Date.now()-WX.at<36e5?` · ${WX.there.i} ${WX.there.t}°`:''),O.w.open?(O.w.until?'Open till '+otherT(O.w.until):'Open'):O.w.next<Infinity?'Opens '+otherT(O.w.next):'Closed');
  if(O.show)h+=row(O.show.n,O.show.on?'Now':otherT(O.show.t)+(sm?'':' '+OTHER.tzs));
  if(O.w.open)for(const[n,v]of O.rides.slice(0,sm?1:3))h+=row(n,`${v}<small>min</small>`,wc(v));
  if(box.dataset.h!==h){box.innerHTML=h;box.dataset.h=h}}

@@ -30,7 +30,7 @@ html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}#app{
 #toast{position:absolute;left:50%;top:60px;transform:translate(-50%,-8px);opacity:0;pointer-events:none;background:#fff;padding:10px 16px;border-radius:14px;box-shadow:0 6px 24px rgba(20,32,70,.22);transition:.25s;max-width:90%;text-align:center;font-weight:600;z-index:8}#toast.on{opacity:1;transform:translate(-50%,0)}
 /* time card */
 #time{position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.97);border-radius:18px;box-shadow:var(--sh);padding:8px 12px 6px;width:min(360px,calc(100% - 24px))}
-#time .row1{display:flex;align-items:center;gap:6px}.clock{display:flex;flex-direction:column;line-height:1.1;margin-right:auto;padding-left:4px}#ck{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}#ph{font-size:12px;color:var(--mu)}
+#time .row1{display:flex;align-items:center;gap:6px}.clock{display:flex;flex-direction:column;line-height:1.1;margin-right:auto;padding-left:4px}#ck{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}#ph{font-size:12px;color:var(--mu)}.phl{font-size:12px;color:var(--mu);white-space:nowrap}#wx{margin-left:6px;cursor:default}#tvWx{font-size:14px;opacity:.92;margin-top:3px}
 .ic{width:38px;height:38px;border-radius:50%;border:0;background:var(--tx);color:#fff;display:grid;place-items:center}.ic svg{width:20px}
 .sm{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 10px;font-weight:700;font-size:13px}.chip{border-color:var(--link);color:var(--link);min-width:48px}
 #ts{width:100%;accent-color:var(--tx);margin:6px 0 2px}
@@ -89,7 +89,7 @@ html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}#app{
 body.tv #time,body.tv #views,body.tv #fsBar .fsOnly{display:none}body.tv #osmc{top:auto;bottom:5px;right:auto;left:50%;transform:translateX(-50%);opacity:.7;white-space:nowrap}
 @media(max-width:760px),(max-height:500px){ /* phones, upright or sideways: one small board in the corner, the clock opposite */
  #tvSide{width:158px;right:8px;bottom:8px;gap:6px}.tvCard{padding:6px 9px;border-radius:12px}.tvCard h3{font-size:9px;margin-bottom:2px}.tvCard .tr{font-size:11px;padding:1px 0;gap:6px}.tvCard .tr b small{font-size:9px}#tvFoot{display:none}
- #tvClock{left:8px;bottom:8px;padding:6px 10px;border-radius:12px}#tvTime{font-size:22px}#tvDate{font-size:10px;margin-top:2px}#tvNote{font-size:10px}#tvCap{left:8px;top:8px;font-size:13px;padding:5px 10px}}
+ #tvClock{left:8px;bottom:8px;padding:6px 10px;border-radius:12px}#tvTime{font-size:22px}#tvDate{font-size:10px;margin-top:2px}#tvNote{font-size:10px}#tvWx{font-size:10px;margin-top:1px}#tvCap{left:8px;top:8px;font-size:13px;padding:5px 10px}}
 /* full-screen mode: the park fills the screen; a small floating toolbar; controls fade when idle */
 #fsBar{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:5}
 #fsBar button{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.95);color:var(--tx);box-shadow:var(--sh);display:grid;place-items:center}#fsBar svg{width:20px;height:20px}
@@ -113,7 +113,7 @@ body.fs.idle #osmc{opacity:.55}
 @media(max-width:760px) and (max-height:760px){
  #bar{padding:calc(5px + env(safe-area-inset-top,0px)) 12px 5px}.resortPick{margin-bottom:1px}.resortPick button{padding:2px 8px;font-size:10.5px}#layerBtn{font-size:17px;gap:6px;padding:2px}#layerBtn svg{width:22px;height:22px}.link{font-size:14px}
  #nav{padding:2px 6px calc(2px + env(safe-area-inset-bottom,0px))}#nav button{padding:5px 0}#nav button svg{width:24px;height:24px}
- #time{left:8px;bottom:8px;padding:5px 10px 3px;border-radius:14px;width:min(420px,calc(100% - 16px))}#ck{font-size:16px}#ph{font-size:11px}
+ #time{left:8px;bottom:8px;padding:5px 10px 3px;border-radius:14px;width:min(420px,calc(100% - 16px))}#ck{font-size:16px}#ph,.phl{font-size:11px}
  #time .ic{width:34px;height:34px}#time .sm{height:30px;min-width:40px;padding:0 8px;font-size:13px}#ts{margin:2px 0 0}
  #views{top:8px;left:8px}#views button{padding:5px 11px;font-size:12px}
  #fsBar{bottom:104px;right:8px}#fsBar button{width:36px;height:36px}#osmc{top:44px}

@@ -60,8 +60,23 @@ function liveTick(){if(!LIVE.follow){LIVENOW=false;return}const c=parkClock();if
  LIVENOW=LIVE.ok&&Date.now()-LIVE.at<25*60e3;CROWDX=LIVENOW?LIVE.crowd||1:1}
 // any jump in time that isn't ours means the viewer has taken the clock back
 {const seek0=seek;seek=function(t,force){if(!LIVE.inTick&&!CATCHUP)liveUnfollow();return seek0(t,force)}}
-function liveBadge(){const b=$('#liveBtn');if(!b)return;b.hidden=!LIVE.ok;b.classList.toggle('on',LIVE.follow);b.textContent=LIVE.follow?'● Live':'Go live';b.title=LIVE.follow?'Showing the real park right now. Live data: ThemeParks.wiki':'Jump to the real time and real wait times';
- const o=$('#osmc');if(o)o.innerHTML='<span class="lg">Map data </span>© OpenStreetMap contributors'+(LIVE.follow?' · <span class="lg">Live data: </span>ThemeParks.wiki':'')} /* on narrow screens the "Map data"/"Live data" words drop (CSS) so it stays one small line */
+function liveBadge(){if(typeof WX!=='undefined'&&!liveBadge.in){liveBadge.in=1;try{wxShow()}finally{liveBadge.in=0}return}const b=$('#liveBtn');if(!b)return;b.hidden=!LIVE.ok;b.classList.toggle('on',LIVE.follow);b.textContent=LIVE.follow?'● Live':'Go live';b.title=LIVE.follow?'Showing the real park right now. Live data: ThemeParks.wiki':'Jump to the real time and real wait times';
+ const o=$('#osmc');if(o)o.innerHTML='<span class="lg">Map data </span>© OpenStreetMap contributors'+(LIVE.follow?' · <span class="lg">Live data: </span>ThemeParks.wiki':'')+(typeof wxOn==='function'&&wxOn()?' · <span class="lg">Weather: </span>Open-Meteo':'')} /* on narrow screens the "Map data"/"Live data" words drop (CSS) so it stays one small line */
 const liveText=a=>a.ph!==undefined?'Placeholder wait (this show closed in 2024)':LIVENOW&&a.live?`Live from the park${a.live.at?' · updated '+new Date(a.live.at).toLocaleTimeString('en-US',{timeZone:TZ,hour:'numeric',minute:'2-digit'}):''}`:'Simulated estimate';
 // start: fetch now and every five minutes; go live as soon as there is data (add ?sim to the address to stay simulated)
-function liveInit(){const want=!/[?&]sim\b/.test(location.search);liveFetch().then(()=>{if(want&&LIVE.ok)liveFollow()});setInterval(liveFetch,5*60e3)}
+function liveInit(){const want=!/[?&]sim\b/.test(location.search);liveFetch().then(()=>{if(want&&LIVE.ok)liveFollow()});setInterval(liveFetch,5*60e3);wxFetch();setInterval(wxFetch,15*60e3)}
+
+/* ===== Weather (owner, 26 Nov 2026: "Can we add the current weather to the map somewhere as well") =====
+   The current weather at the resort (and at the other one, for TV mode's "Meanwhile at" card) from Open-Meteo (free, no key, CC BY 4.0:
+   credited next to the map data while shown), every 15 minutes. Shown only while the clock is on the real time (Live), since it
+   wouldn't match a replayed or scrubbed hour. */
+var WX={at:0,here:null,there:null,pts:DL?[[33.8105,-117.9190],[28.3850,-81.5640]]:[[28.3850,-81.5640],[33.8105,-117.9190]]};
+const WXN=[[0,'Clear'],[1,'Mostly clear'],[2,'Partly cloudy'],[3,'Cloudy'],[45,'Fog'],[48,'Fog'],[51,'Drizzle'],[53,'Drizzle'],[55,'Drizzle'],[56,'Freezing drizzle'],[57,'Freezing drizzle'],[61,'Light rain'],[63,'Rain'],[65,'Heavy rain'],[66,'Freezing rain'],[67,'Freezing rain'],[71,'Light snow'],[73,'Snow'],[75,'Heavy snow'],[77,'Snow'],[80,'Showers'],[81,'Showers'],[82,'Heavy showers'],[85,'Snow showers'],[86,'Snow showers'],[95,'Thunderstorms'],[96,'Thunderstorms'],[99,'Thunderstorms']];
+function wxIcon(c,day){return c===0?(day?'☀️':'🌙'):c<=2?(day?'🌤️':'☁️'):c===3?'☁️':c<=48?'🌫️':c<=57?'🌦️':c<=67?'🌧️':c<=77?'🌨️':c<=82?'🌦️':c<=86?'🌨️':'⛈️'}
+async function wxFetch(){if(document.hidden&&WX.at)return;try{const q=WX.pts,u='https://api.open-meteo.com/v1/forecast?latitude='+q.map(p=>p[0]).join(',')+'&longitude='+q.map(p=>p[1]).join(',')+'&current=temperature_2m,weather_code,is_day,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph';
+  const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw r.status;let j=await r.json();if(!Array.isArray(j))j=[j];
+  const one=x=>{const c=x&&x.current;if(!c)return null;const code=c.weather_code;return{t:Math.round(c.temperature_2m),code,day:!!c.is_day,wind:Math.round(c.wind_speed_10m),n:(WXN.find(w=>w[0]===code)||[0,''])[1],i:wxIcon(code,!!c.is_day)}};
+  WX.here=one(j[0]);WX.there=one(j[1]);WX.at=Date.now()}catch(e){}wxShow()}
+const wxOn=()=>WX.here&&LIVE.follow&&Date.now()-WX.at<60*60e3; /* real time and a reading less than an hour old */
+function wxShow(){const on=wxOn(),w=WX.here,el=$('#wx');if(el){el.hidden=!on;if(on){el.textContent=`${w.i} ${w.t}°`;el.title=`${w.n}, ${w.t}°F, wind ${w.wind} mph · Weather: Open-Meteo.com`}}
+ const tv=$('#tvWx');if(tv){tv.hidden=!on;if(on)tv.textContent=`${w.i} ${w.t}°F · ${w.n}`}liveBadge()}

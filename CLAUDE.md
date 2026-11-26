@@ -415,7 +415,12 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   pofq (French Quarter pastels, iron balconies, mixed slate/tin), ssrt (Saratoga Treehouse Villas: wood), okw (Old Key West pastel
   clapboard, pale tin), ssr (Saratoga Springs: clapboard, green roofs), cbr (Caribbean Beach: bright walls, red/teal/gold tin). `RESSTYLE`
   holds each one's walls, roofs, deco and flat/gabled split. Hotels already styled elsewhere (Crescent Lake, monorail resorts, Wilderness
-  Lodge, AKL, Coronado Springs `csr`, All-Stars) are untouched. Not done: non-Disney hotels round the edges stay plain.
+  Lodge, AKL, Coronado Springs `csr`, All-Stars) are untouched.
+  Everything else (owner, 26 Nov: "Do the non-Disney hotels too"): `otherBuilding` for LANDSTYLE.none buildings outside WDWRES, by kind and
+  name (`HOTELRE`): hotels/apartments/timeshares = Florida stucco with a white balcony slab per floor, terracotta tile split roofs when
+  low-rise, flat roofs with parapet and rooftop units when A>2500 or hh>18; houses = pastel stucco, tile or shingle; shops/offices/named
+  restaurants = stucco with a coloured sign band, flat roof; remaining unnamed blocks = light stucco, pale flat roofs. Canopies, tents,
+  stations, stands, carports and names starting "Disney" are left as they were.
 - Map data: `tools/dedupe_points.py` dropped repeated points (43% of all points at WDW, left by clipping in the extractors):
   park-osm.js 9.7 MB to 5.9 MB, park-osm-dl.js 3.3 MB to 2.2 MB, with no change on screen. Never touches `nodes` (indexed).
   Run it again after either extractor.
@@ -425,6 +430,13 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   and dropped: it read as a plain grey slab, which the owner has disliked.
 - Duo: the Screen line (☰ menu) is only on GitHub Pages once the owner pushes from GitHub Desktop; ui.js was still
   uncommitted there on 25 Nov, which is why the owner didn't see it.
+
+- YouTube streaming (owner, 26 Nov: "I'd like to just stream it to youtube. I have a server running an ubuntu server vm"): `tools/stream/`
+  (Dockerfile on debian:bookworm-slim with chromium, xvfb, pulseaudio, ffmpeg; `stream.sh`; docker-compose.yml mounts the site read-only;
+  `.env` holds YOUTUBE_KEY and settings, git-ignored; README). Chrome kiosk at `/?tv[=park][&nomusic]` with
+  --autoplay-policy=no-user-gesture-required and SwiftShader GL; ffmpeg x11grab + pulse null-sink monitor to RTMP. `?nomusic` (audio.js
+  `NOMUSIC`) makes `setVol` silence every music player; MUSIC=off is the default because of Content ID. Not run here (no Docker on the Mac).
+  Also fixed: `?tv` never started TV mode once scripts loaded after the load event (tv.js now checks document.readyState).
 
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say

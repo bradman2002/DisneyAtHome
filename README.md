@@ -107,6 +107,12 @@ To put it on a TV:
   `http://<this computer's name>.local:8000/?tv`. The `?tv` starts TV mode by itself. Browsers only allow
   sound and true full screen after one click or button press on the page.
 
+## Streaming it to YouTube
+
+`tools/stream/` has a Docker setup for a server: Chrome shows TV mode on a virtual screen and ffmpeg sends it to YouTube
+Live. Follow `tools/stream/README.md`. It streams with the music off by default (`?nomusic`: sound effects only), because
+YouTube's Content ID catches Disney's music.
+
 ## Folder layout
 
     index.html          the page

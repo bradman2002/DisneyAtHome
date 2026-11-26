@@ -1,0 +1,13 @@
+# DisneyAtHome live stream to YouTube. From this folder:  docker compose up -d --build
+# Settings come from .env in this folder (copy .env.example to .env and put your stream key in it).
+services:
+  stream:
+    build: .
+    container_name: disneyathome-stream
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - ../..:/site:ro        # the site folder (two levels up from here), including your audio/ folder
+    shm_size: 1gb             # Chrome needs more shared memory than Docker's 64 MB default

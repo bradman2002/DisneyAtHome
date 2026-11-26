@@ -135,7 +135,7 @@ if(!DL){ /* Magic Kingdom roofs: Fantasyland's mostly brown and slate shingle wi
  LANDSTYLE.lib=[['#a8503f','#efe8da','#9a4a3a','#e6dccb','#d9c9a8','#5a6f8a'],['#4f545c','#3d4a5c','#5a4a3f','#4a4f58']];}
 
 function wdwBuilding(q,bb,land,hh,hs){if(DL)return null;const cx=(bb[0]+bb[2])/2,cy=(bb[1]+bb[3])/2;
- if(land==='none'){const k=wdwResort(cx,cy);if(k)return resortBuilding(q,bb,k,hh,hs);return null}
+ if(land==='none'){const k=wdwResort(cx,cy);if(k)return resortBuilding(q,bb,k,hh,hs);return otherBuilding(q,bb,hh,hs)}
  if(land.startsWith('ep_'))return epBuilding(q,bb,land,hh,hs);
  if(typeof HSL_ART!=='undefined'&&HSL_ART.has(land))return hsBuilding(q,bb,land,hh,hs);
  if(typeof AKL_ART!=='undefined'&&AKL_ART.has(land))return akBuilding(q,bb,land,hh,hs);
@@ -373,3 +373,27 @@ const RESSTYLE={
 function resortBuilding(q,bb,k,hh,hs){if(q.k==='roof')return null;const S_=RESSTYLE[k];let A=0;for(let i=0;i<q.p.length;i++){const u=q.p[i],v=q.p[(i+1)%q.p.length];A+=u[0]*v[1]-v[0]*u[1]}A=Math.abs(A/2);
  const wall=S_.w[hs%S_.w.length],roof=S_.r[(hs>>>4)%S_.r.length],split=A>350;
  return(c,e)=>{extrude(c,e,q.p,hh,wall,roof,{ridge:!split,deco:S_.deco});if(split){if(S_.flat)wdwFlatRoofs(c,q.p,hh,hs,S_.r);else wdwRoofs(c,q.p,hh,hs,S_.r,roof)}}}
+
+/* ---------------- everything else: the hotels, homes and shops round the parks (owner, 26 Nov 2026: "Do the non-Disney hotels too") ----------------
+   Buildings with no land or resort style used to be plain grey boxes. Now, by kind and name:
+   hotels, apartments and timeshares: Florida stucco (cream, sand, peach, coral, white) with a white balcony slab on every floor,
+   flat roofs with a parapet and rooftop units when big, terracotta tile when small; houses: pastel stucco with tile or shingle roofs;
+   shops, restaurants and offices: stucco with a coloured sign band; the remaining unnamed blocks (backstage buildings, warehouses)
+   light stucco with pale flat roofs instead of grey. Canopies, tents, stations, stands and carports are left as they were. */
+const HOTELRE=/hotel|resort|suites|\binn\b|marriott|hilton|wyndham|hyatt|sheraton|motel|villas|conrad|waldorf|four seasons|signia|gaylord|margaritaville|radisson|holiday inn|baymont|fairfield|clarion|rodeway|quality inn|comfort inn/i;
+function balconyDeco(c,p,q,L,h){if(h<4)return;const fl=Math.max(1,Math.floor(h/3.2));for(let i=1;i<fl;i++){const v=h*i/fl;wdwBand(c,p,q,v-.25,v+.2,'rgba(255,255,255,.85)');wdwLine(c,p,q,v-.3,'rgba(0,0,0,.12)',.15)}wdwBand(c,p,q,h-.6,h,'#fbfaf6')}
+function shopDeco(c,p,q,L,h){if(h<2.5)return;const k=hsh((p[0]*7+p[1]*3)|0),col=['#c0463a','#2f6fb0','#2f8a5a','#d9a040','#6a4a8a'][k%5];wdwBand(c,p,q,h*.62,h*.62+Math.min(1.2,h*.2),col);wdwBand(c,p,q,0,Math.min(1.4,h*.3),'rgba(160,200,220,.55)');wdwBand(c,p,q,h-.4,h,'#f4efe4')}
+function stuccoDeco(c,p,q,L,h){wdwBand(c,p,q,h-.4,h,'rgba(255,255,255,.5)');wdwBand(c,p,q,0,.5,'rgba(90,80,70,.18)')}
+function roofUnits(c,P,hh,seed){const bb=bbox(P),r=seeded(seed);c.fillStyle='rgba(120,125,130,.5)';for(let i=0;i<Math.min(10,(bb[2]-bb[0])*(bb[3]-bb[1])/400);i++){const x=bb[0]+3+r()*(bb[2]-bb[0]-6),y=bb[1]+3+r()*(bb[3]-bb[1]-6);if(ptIn(x,y,P)){c.fillRect(x-1,y-hh-.8,2,1.4);c.fillStyle='rgba(255,255,255,.35)';c.fillRect(x-1,y-hh-.8,2,.3);c.fillStyle='rgba(120,125,130,.5)'}}}
+function parapet(c,P,hh){const top=P.map(([x,y])=>[x,y-hh]);c.save();pathOf(c,top,1);c.clip();c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=1.1;c.stroke();c.strokeStyle='rgba(0,0,0,.12)';c.lineWidth=2.2;c.globalCompositeOperation='multiply';c.stroke();c.restore()}
+function otherBuilding(q,bb,hh,hs){const k=q.k||'',n=q.n||'';
+ if(/^(roof|tent|train_station|grandstand|stadium|carport|parking|transportation|pavilion)$/.test(k)||/^Disney/.test(n))return null;
+ let A=0;for(let i=0;i<q.p.length;i++){const u=q.p[i],v=q.p[(i+1)%q.p.length];A+=u[0]*v[1]-v[0]*u[1]}A=Math.abs(A/2);
+ const hotel=k==='hotel'||k==='apartments'||(n&&HOTELRE.test(n)&&!/Cast|Checkpoint/.test(n)),house=/^(house|detached|residential|stilt_house|bungalow)$/.test(k),shop=/^(retail|commercial|office|supermarket|kiosk)$/.test(k)||(!!n&&!hotel&&!/Building|Storage|Maintenance|Services|Warehouse|Plant|Office|Support|Shop$/.test(n)&&A<3000&&!house);
+ let wall,roof,deco,flat,tile=false;
+ if(hotel){wall=['#efe4cc','#e8d4b0','#f2d4c0','#f6f1e6','#e6c8a8','#dfe6e2'][hs%6];flat=A>2500||hh>18;roof=flat?['#d8dadc','#cfd3d6','#dcd8d0'][(hs>>>3)%3]:['#b5603a','#a8502f','#c4673f','#9a5a40'][(hs>>>3)%4];deco=balconyDeco;tile=!flat} /* low-rise hotels and timeshares: terracotta tile; big or tall ones: flat roofs */
+ else if(house){wall=['#f2e6cc','#e8f0e8','#f6e0d4','#e4ecf2','#f4eedc','#efe2c4'][hs%6];roof=['#b5603a','#8a6a5a','#6a6e74','#a8502f','#7a6a5a'][(hs>>>3)%5];deco=stuccoDeco;flat=false}
+ else if(shop){wall=['#efe4cc','#e8dcc4','#f2ead8','#e6d4b8'][hs%4];roof=['#d4d6d8','#cbcfd2','#d8d4cc'][(hs>>>3)%3];deco=shopDeco;flat=true}
+ else{wall=['#e8e0d0','#ddd5c4','#efe8da','#d8d2c6'][hs%4];roof=['#cfd2d4','#c4c8cb','#d8d6d0'][(hs>>>3)%3];deco=stuccoDeco;flat=true}
+ return(c,e)=>{extrude(c,e,q.p,hh,wall,roof,{ridge:!flat,deco,noWin:!hotel&&!house&&!shop&&A>1500});
+  if(flat){parapet(c,q.p,hh);if(A>500)roofUnits(c,q.p,hh,hs)}else if(tile&&A>250)wdwRoofs(c,q.p,hh,hs,['#b5603a','#a8502f','#c4673f'],roof)}}

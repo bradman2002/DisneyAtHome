@@ -107,4 +107,4 @@ document.addEventListener('visibilitychange',tvWake);
 document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test(e.target.tagName)||e.metaKey||e.ctrlKey)return;if(e.key==='t'||e.key==='T')TV.on?tvStop():tvStart();else if(e.key==='Escape'&&TV.on)tvStop()});
 $('#tvBtn').onclick=()=>TV.on?tvStop():tvStart();
 for(const ev of['fullscreenchange','webkitfullscreenchange'])document.addEventListener(ev,()=>{if(TV.on&&!fsActive())tvStop()}); // leaving full screen leaves TV mode
-if(/[?&]tv\b/.test(location.search))addEventListener('load',()=>setTimeout(tvStart,1500)); // ?tv in the address starts it by itself
+if(/[?&]tv\b/.test(location.search)){const go=()=>setTimeout(tvStart,1500);document.readyState==='complete'?go():addEventListener('load',go)} /* ?tv in the address starts it by itself (the scripts are added after the loading screen, often after the page's load event has already fired) */

@@ -3,6 +3,7 @@
 'use strict';
 /* ===== DisneyAtHome — structure: DATA / GRAPH / STATIC ART / SIM / AUDIO / RENDER / UI.
    A new park = new DATA block (lands, nodes, edges, attractions, venues, events). ===== */
+var TVHOLD=null; /* set by Watch (a parade, the fireworks, the pageant): TV mode keeps the clock where Watch put it until this time (the show's end), then goes back to live time; owner, 26 Nov 2026: "When I click watch the parade it doesnt actually go to it. It just jumps to the current time" */
 const $=s=>document.querySelector(s),W=OSM.W,H=OSM.H,K=12,MKR=OSM.regions?OSM.regions[0]:[0,0,W,H],EPR=OSM.regions&&OSM.regions[1],HSR=OSM.regions&&(OSM.nparks||2)>2?OSM.regions[2]:null,AKR=OSM.regions&&(OSM.nparks||2)>3?OSM.regions[3]:null,MDX=OSM.dx||0; /* HSR: Hollywood Studios; AKR: Animal Kingdom; MDX: how far right the map moved when Animal Kingdom was added (for the few fixed spots below) */ /* MKR: the Magic Kingdom resort area; EPR: Epcot (the map between them is blank for now) */
 let OPEN=9,CLOSE=22,EOPEN=9,ECLOSE=21,HOPEN=9,HCLOSE=21,AOPEN=8,ACLOSE=19,LIVENOW=false,CROWDX=1; /* EOPEN/ECLOSE: EPCOT's hours */ // park hours (live mode sets today's real ones); LIVENOW: real wait times and closures apply right now (see live.js)
  // K = real guests represented by one party on the map; CROWDX scales arrivals (live mode sets it from how busy the real park is)

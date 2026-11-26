@@ -107,7 +107,7 @@ function ui(force){
 const evText=e=>e.on===false?'Turned off':e.ph==='gather'?`Crowds gathering · starts ${fmt(e.key)}`:e.ph==='live'?`On now · ends ${fmt(e.key+e.dur*60)}`:e.ph==='done'?'Just ended · crowds leaving':e.nx!==null?`Next show ${fmt(e.nx)} (in ${Math.round((e.nx-T)/60)} min)`:'No more shows today';
 /* ---------- views, show shortcut ---------- */
 function setView(street){if(DL)street=false; /* the Main Street view is Magic Kingdom's street */SV.on=street;$('#svb').style.display='none';sync()}
-function watchHEA(){const ev=fireEv();if(!ev)return;ev.on=true;const s=ev.t.find(x=>x>=T-60)??ev.t[0];if(!AU.ready)auInit();seek(s-25,s-25<T);HEA.liveKey=null;speed=1;playing=true;
+function watchHEA(){const ev=fireEv();if(!ev)return;ev.on=true;const s=ev.t.find(x=>x>=T-60)??ev.t[0];if(!AU.ready)auInit();seek(s-25,s-25<T);TVHOLD=s+(ev.dur||20)*60+60;HEA.liveKey=null;speed=1;playing=true;
  if(!SV.on){cam.tx=P_.castle[0];cam.ty=P_.castle[1]-20;cam.tm=1.6}closeSheet();sync();if(!HEA.ready)toast(`Add ${DL?'audio/believe-in-holiday-magic.mp3':'audio/happily-ever-after.mp3'} (or load it in Entertainment) to hear the show`);
  HEA.audio.play().then(()=>HEA.audio.pause()).catch(()=>{})}
 /* ---------- controls ---------- */

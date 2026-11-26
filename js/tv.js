@@ -63,7 +63,7 @@ function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;
  else if(key==='welcome')s={k:'map',n:'Let the Magic Begin',x:P_.stage[0],y:P_.stage[1]+18,m:3.3,dur:70,layer:'shows'};
  else if(key==='flag')s={k:'map',n:'Flag Retreat · Town Square',x:P_.townsq[0],y:P_.townsq[1]-4,m:3.4,dur:50,layer:'shows'};
  else if(key==='kiss')s=TV.alt%2?{k:'map',n:'Kiss Goodnight',x:P_.castle[0],y:P_.castle[1]-20,m:2.2,dur:40,layer:'shows'}:{k:'street',n:'Kiss Goodnight',dur:50};
- else if(key.startsWith('parade')){const n=parOf(key.slice(7)).n+' Parade';s=TV.alt%2&&!DL?{k:'street',n,dur:45}:{k:'follow',n,f:{k:'parade'},m:2.7,dur:45,layer:'wait'}}
+ else if(key.startsWith('parade')){const n=parOf(key.slice(7)).n+' Parade';s=TV.alt%2&&!DL&&paradeStreetItems().length?{k:'street',n,dur:45,par:1}:{k:'follow',n,f:{k:'parade'},m:2.7,dur:45,layer:'wait'}} /* the street view only once floats are on Main Street (the parade starts in Frontierland) */
  else if(key==='ewp'&&TV.alt%2===0)s={k:'follow',n:'Electrical Water Pageant',f:{k:'w'},m:2.5,dur:60,layer:'shows'};
  else{const L=TV.list||(TV.list=tvShots());TV.i=(TV.i+1)%L.length;s=L[TV.i]}
  TV.shot=s;TV.until=performance.now()+s.dur*1000;sel=null;follow=null;if(sheet)closeSheet();
@@ -85,17 +85,20 @@ function tvRideCard(){const r=$('#tvRide');if(!r)return;const a=TV.on&&TV.ride!=
 /* called every frame while TV mode is on */
 function tvTick(rdt){const now=performance.now();if(now-(TV.rcAt||0)>1000){TV.rcAt=now;tvRideCard()} /* keep the ride card's wait and audio note current */
  // which clock: the real one while the park is open (or about to be), a replay of the day otherwise
- if(LIVE.ok){const h=parkClock().s/3600,[o,cl]=LIVE.hours||[OPEN,CLOSE],shut=h<o-.75||h>cl+.5;
+ if(TVHOLD!=null&&T>=TVHOLD)TVHOLD=null; /* the watched show is over: back to the normal clock below */
+ TV.held=TVHOLD!=null;
+ if(TV.held){TV.replay=false;playing=true;if(speed!==1){speed=1;sync()}} /* a show you asked to Watch: keep its time (Watch moved the clock there) */
+ else if(LIVE.ok){const h=parkClock().s/3600,[o,cl]=LIVE.hours||[OPEN,CLOSE],shut=h<o-.75||h>cl+.5;
   if(!shut){if(TV.replay||!LIVE.follow){TV.replay=false;liveFollow()}}
   else{if(LIVE.follow)liveUnfollow();TV.replay=true}}
- if(TV.replay||!LIVE.ok){const lo=(OPEN-.5)*3600,hi=(CLOSE+.45)*3600;if(T<lo||T>hi){LIVE.inTick=true;seek(lo,true);LIVE.inTick=false}
+ if(!TV.held&&(TV.replay||!LIVE.ok)){const lo=(OPEN-.5)*3600,hi=(CLOSE+.45)*3600;if(T<lo||T>hi){LIVE.inTick=true;seek(lo,true);LIVE.inTick=false}
   playing=true;const show=!!tvEvent()||(()=>{const f=fireEv();return f&&f.ph==='gather'&&f.key-T<40})();const sp=show?1:30;if(speed!==sp){speed=sp;sync()}} // time-lapse, but every show plays at its real speed
- if(!TV.shot||now>TV.until||tvEvent()!==TV.key)tvNext();
+ if(!TV.shot||now>TV.until||tvEvent()!==TV.key||TV.shot.par&&!paradeStreetItems().length)tvNext(); /* and leave it once the last float has gone by */
  const s=TV.shot;if(s.k==='map'&&s.vx){cam.tx+=s.vx*rdt;cam.ty+=s.vy*rdt} /* a slow pan only: a slow zoom re-scales the whole map a hair every frame, which shimmers */
  if(now-TV.uiAt>500){TV.uiAt=now;tvBoard(now)}}
 function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
  $('#tvTime').textContent=fmt(T);$('#tvDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
- $('#tvNote').textContent=TV.replay?'Park closed · replaying the day':LIVENOW?'Live from '+(TV.park==='all'?RESORT_NAME:TVPARKS[TV.park]):LIVE.follow?'Live time · simulated waits':'Simulated';$('#tv').classList.toggle('live',LIVENOW);
+ $('#tvNote').textContent=TV.held?'Showing it now · back to live time after':TV.replay?'Park closed · replaying the day':LIVENOW?'Live from '+(TV.park==='all'?RESORT_NAME:TVPARKS[TV.park]):LIVE.follow?'Live time · simulated waits':'Simulated';$('#tv').classList.toggle('live',LIVENOW);
  const run=AT.filter(a=>{if(TV.park!=='all'&&(a.pk||0)!==TVPK[TV.park])return false;const st=aStat(a);return st==='Operating'||st==='Last riders'}).sort((a,b)=>b.wt-a.wt),off=AT.filter(a=>TV.park==='all'||(a.pk||0)===TVPK[TV.park]).length-run.length,per=innerWidth<=760||innerHeight<=500?4:7,pages=Math.max(1,Math.ceil(run.length/per));
  if(now-TV.pageAt>9000){TV.pageAt=now;TV.page=(TV.page+1)%pages}if(TV.page>=pages)TV.page=0;
  $('#tvList').innerHTML=run.length?run.slice(TV.page*per,TV.page*per+per).map(a=>`<div class="tr"><span>${esc(a.n)}</span><b class="${wc(a.wt)}">${a.wt}<small>min</small></b></div>`).join(''):'<div class="tr"><span>The park is closed</span></div>';

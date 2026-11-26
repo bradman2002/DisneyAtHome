@@ -478,6 +478,15 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   caption sits; the caption isn't shown on ride shots): name, LANDNAME · park, wait in the board's colours or Closed / Temporarily down,
   and "♪ On-ride audio" while RA.cur is that ride's track. Refreshed once a second from tvTick; hidden on other shots and in tvStop.
 
+- Watch in TV mode (owner, 26 Nov: "When I click watch the parade it doesnt actually go to it. It just jumps to the current time"): TV mode
+  re-followed live time whenever the park was open, undoing Watch's clock jump. `TVHOLD` (var, sim.js) is set by watchParade/watchHEA/
+  watchPageant to the show's end; while T < TVHOLD tvTick keeps that clock (speed 1, no replay time-lapse, note "Showing it now · back to
+  live time after"), then clears it and re-follows live. liveFollow clears it (Go live).
+
+- Parade street shots (owner, 26 Nov: "When a parade is happening, it skips to the main street view too early"): tvNext picks the Main Street
+  view for a parade only while `paradeStreetItems()` has floats on Main Street (the parade starts in Frontierland, about 8 minutes away), and
+  tvTick leaves that shot (`par`) once the last float has gone by. Until then it follows the parade on the map.
+
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each

@@ -122,6 +122,6 @@ function pageantSync(){const s=ewpShow(),a=EWP.audio,near=s?ewpNear():0;
    if(other){if(Math.abs(d)>.6)a.currentTime=Math.max(0,pos)}                 // another show's music is keeping time: just follow
    else syncTrack(EWP,a,d,()=>{a.currentTime=Math.max(0,pos)})}}
  else if(!a.paused)a.pause()}
-function watchPageant(k){if(!EWP.legs)return;EWP.on=true;const s=EWP.shows.find(x=>x.k===k)||EWP.shows.find(x=>x.t>=T-60)||EWP.shows[0];if(!AU.ready)auInit();seek(s.t-20,s.t-20<T);EWP.liveKey=null;speed=1;playing=true;
+function watchPageant(k){if(!EWP.legs)return;EWP.on=true;const s=EWP.shows.find(x=>x.k===k)||EWP.shows.find(x=>x.t>=T-60)||EWP.shows[0];if(!AU.ready)auInit();seek(s.t-20,s.t-20<T);TVHOLD=s.t+20*60;EWP.liveKey=null;speed=1;playing=true;
  if(SV.on)setView(false);const p=EWP.spot[s.k];cam.tx=cam.x=p[0];cam.ty=cam.y=p[1];cam.tm=Math.max(cam.tm,2.4);follow={k:'w'};closeSheet();sync();
  if(!EWP.ready)toast(`Add ${EWP_FILE} (or load it in Entertainment) to hear the pageant`);EWP.audio.play().then(()=>EWP.audio.pause()).catch(()=>{})}

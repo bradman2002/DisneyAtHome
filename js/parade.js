@@ -235,7 +235,7 @@ function paradeSync(){const L=liveParade();for(const P of PARADES){const ev=para
   if(a.paused){a.currentTime=Math.max(0,pos);a.play().catch(()=>{A.blocked=true;parBadge()})}
   else if(dur){let d=a.currentTime-pos;if(d>dur/2)d-=dur;if(d<-dur/2)d+=dur;syncTrack(A,a,d,()=>{a.currentTime=pos})}}
  else if(!a.paused)a.pause()}}
-function watchParade(id){const P=parOf(id)||PARADES[0],ev=paradeEv(P.id);if(!ev)return;ev.on=true;ev.userOn=true;const s=ev.t.find(x=>x>=T-60)??ev.t[0];if(!AU.ready)auInit();seek(s-20,s-20<T);P.a.liveKey=null;speed=1;playing=true;
+function watchParade(id){const P=parOf(id)||PARADES[0],ev=paradeEv(P.id);if(!ev)return;ev.on=true;ev.userOn=true;const s=ev.t.find(x=>x>=T-60)??ev.t[0];if(!AU.ready)auInit();seek(s-20,s-20<T);TVHOLD=s+(ev.dur||20)*60+90;P.a.liveKey=null;speed=1;playing=true;
  if(!SV.on){follow={k:'parade'};cam.tm=Math.max(cam.tm,2.4)}closeSheet();sync();if(!P.a.ready&&P.file)toast(`Add ${P.file} (or load it in Entertainment) to hear the parade`);
  P.a.audio.play().then(()=>P.a.audio.pause()).catch(()=>{})}
 /* ---------- the welcome show's soundtrack ----------

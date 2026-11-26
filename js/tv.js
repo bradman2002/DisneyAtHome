@@ -95,7 +95,7 @@ function tvTick(rdt){const now=performance.now();if(now-(TV.rcAt||0)>1000){TV.rc
   playing=true;const show=!!tvEvent()||(()=>{const f=fireEv();return f&&f.ph==='gather'&&f.key-T<40})();const sp=show?1:30;if(speed!==sp){speed=sp;sync()}} // time-lapse, but every show plays at its real speed
  if(!TV.shot||now>TV.until||tvEvent()!==TV.key||TV.shot.par&&!paradeStreetItems().length)tvNext(); /* and leave it once the last float has gone by */
  const s=TV.shot;if(s.k==='map'&&s.vx){cam.tx+=s.vx*rdt;cam.ty+=s.vy*rdt} /* a slow pan only: a slow zoom re-scales the whole map a hair every frame, which shimmers */
- if(now-TV.uiAt>500){TV.uiAt=now;tvBoard(now)}}
+ if(now-TV.uiAt>500){TV.uiAt=now;tvBoard(now)}if(now-(TV.roamAt||0)>15e3){TV.roamAt=now;tvRoamTick();tvOther()}}
 function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
  $('#tvTime').textContent=fmt(T);$('#tvDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
  $('#tvNote').textContent=TV.held?'Showing it now · back to live time after':TV.replay?'Park closed · replaying the day':LIVENOW?'Live from '+(TV.park==='all'?RESORT_NAME:TVPARKS[TV.park]):LIVE.follow?'Live time · simulated waits':'Simulated';$('#tv').classList.toggle('live',LIVENOW);
@@ -109,8 +109,54 @@ function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
  up.sort((a,b)=>a[0]-b[0]);let show=up.slice(0,innerWidth<=760||innerHeight<=500?1:3);
  if(DL)for(const nm of['Fantasmic!','World of Color']){const x=up.find(u=>u[1]===nm);if(x&&!show.includes(x))show.push(x)} /* Disneyland's nighttime water shows are always on the board (their next showing) */
  show.sort((a,b)=>a[0]-b[0]);$('#tvUp').innerHTML=show.map(([t,n,live])=>`<div class="tr"><span>${esc(n)}</span><b>${live?'Now':fmt(t)}</b></div>`).join('')}
+/* ===== The other resort (owner, 26 Nov 2026: "Let's do 1 for now. Add 5 as well") =====
+   1. Follow the sun: when every park TV mode shows here is closed and the other resort is open, TV mode moves over to that resort's page
+      (Disneyland is 3 hours behind Orlando, so the stream stays live until Disneyland closes, then comes back when Walt Disney World opens).
+      Both pages decide "open" the same way (`schedOpen`: any operating, party or extra-hours window, from 45 min before to 30 min after),
+      so they never bounce back and forth. Off with ?stay in the address or the checkbox in Sound & settings.
+   5. "Meanwhile at …": a card on the board with the other resort's hours, next big show and top waits, from its own ThemeParks.wiki feeds
+      (fetched only while TV mode is on, every five minutes; schedules hourly). */
+const OTHER=DL?{name:'Walt Disney World',page:'index.html',tz:'America/New_York',tzs:'ET',city:'Orlando',
+  parks:[['mk','75ea578a-adc8-4116-a54d-dccb60765ef9'],['ep','47f90d2c-e191-4239-a466-5892ef59a88b'],['hs','288747d1-8b4f-4a64-867e-ea7c9b27bad8'],['ak','1c84a229-8862-4648-9c71-378ddd2c7693']],
+  shows:/happily ever after|festival of fantasy|luminous|fantasmic|christmastime parade|boo.to.you|minnie.*fireworks|cavalcade/i}
+ :{name:'Disneyland',page:'disneyland.html',tz:'America/Los_Angeles',tzs:'PT',city:'Anaheim',
+  parks:[['mk','7340550b-c14d-4def-80bb-acdb51d49a66'],['ep','832fcd51-ea19-4e77-85c7-75d5843b127c']],
+  shows:/fantasmic|believe|world of color|christmas fantasy parade|wondrous journeys|paint the night|better together|magic happens|main street electrical/i};
+Object.assign(OTHER,{live:{},sched:{},at:0,schedAt:0,busy:false});
+TV.roam=!/[?&]stay\b/.test(location.search);try{if(localStorage.getItem('mk-tvroam')==='0')TV.roam=false}catch(e){}
+function tvSetRoam(on){TV.roam=on;try{localStorage.setItem('mk-tvroam',on?'1':'0')}catch(e){}}
+/* is any of these schedules open at time ms (with the margins TV mode uses), and when does it next open / close */
+function schedOpen(scheds,ms){let open=false,until=0,next=Infinity;
+ for(const sc of scheds)for(const e of(sc&&sc.schedule)||[]){if(!/OPERATING|TICKETED_EVENT|EXTRA_HOURS/.test(e.type))continue;const o=Date.parse(e.openingTime),c=Date.parse(e.closingTime);if(!(o<c))continue;
+  if(ms>=o-45*60e3&&ms<=c+30*60e3){open=true;until=Math.max(until,c)}else if(o>ms)next=Math.min(next,o)}
+ return{open,until,next}}
+const otherScope=()=>OTHER.parks.filter(([k])=>TV.park==='all'||!OTHER.parks.some(p=>p[0]===TV.park)||k===TV.park); /* the same park choice over there, if it has that park */
+const selfScheds=()=>[['mk',LIVE.sched],['ep',LIVE.epSched],['hs',OSM.hs&&LIVE.hsSched],['ak',OSM.ak&&LIVE.akSched]].filter(([k,s])=>s&&tvIn(k)).map(([,s])=>s);
+async function otherFetch(){if(!TV.on||OTHER.busy||document.hidden)return;OTHER.busy=true;const get=u=>fetch(u,{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(r.status));
+ try{const sch=Date.now()-OTHER.schedAt>36e5;let ok=false;
+  for(const[k,id]of OTHER.parks){try{OTHER.live[k]=await get('https://api.themeparks.wiki/v1/entity/'+id+'/live');ok=true}catch(e){}if(sch)try{OTHER.sched[k]=await get('https://api.themeparks.wiki/v1/entity/'+id+'/schedule')}catch(e){}}
+  if(sch)OTHER.schedAt=Date.now();if(ok)OTHER.at=Date.now()}finally{OTHER.busy=false}tvOther()}
+setInterval(()=>{if(TV.on&&Date.now()-OTHER.at>5*60e3-5e3)otherFetch()},30e3);
+const otherT=ms=>new Date(ms).toLocaleTimeString('en-US',{timeZone:OTHER.tz,hour:'numeric',minute:'2-digit'}).replace(':00','').replace(' AM',' am').replace(' PM',' pm');
+function otherNow(){const now=Date.now(),sc=otherScope(),w=schedOpen(sc.map(([k])=>OTHER.sched[k]),now);let show=null,rides=[];
+ for(const[k]of sc){const L=OTHER.live[k];for(const x of(L&&L.liveData)||[]){
+  if(x.entityType==='SHOW'&&OTHER.shows.test(x.name))for(const t of x.showtimes||[]){const a=Date.parse(t.startTime),b=Date.parse(t.endTime)||a+20*60e3;if(b>now&&a-now<20*3600e3&&(!show||a<show.t))show={n:x.name.replace(/\s*[-–:]\s*(a |an )?(disney|nighttime|holiday).*$/i,''),t:a,on:a<=now}}
+  if(x.entityType==='ATTRACTION'&&x.status==='OPERATING'){const v=x.queue&&x.queue.STANDBY&&x.queue.STANDBY.waitTime;if(typeof v==='number')rides.push([x.name,v])}}}
+ rides.sort((a,b)=>b[1]-a[1]);return{w,show,rides,fresh:Date.now()-OTHER.at<25*60e3}}
+/* the board card */
+function tvOther(){const box=$('#tvOther');if(!box)return;const O=otherNow();if(!O.fresh){box.hidden=true;return}box.hidden=false;
+ const sm=innerWidth<=760||innerHeight<=500,now=Date.now(),row=(a,b,c)=>`<div class="tr"><span>${esc(a)}</span><b${c?` class="${c}"`:''}>${b}</b></div>`;
+ let h=`<h3>Meanwhile at ${esc(OTHER.name)}</h3>`+row(otherT(now)+' '+OTHER.tzs+' in '+OTHER.city,O.w.open?(O.w.until?'Open till '+otherT(O.w.until):'Open'):O.w.next<Infinity?'Opens '+otherT(O.w.next):'Closed');
+ if(O.show)h+=row(O.show.n,O.show.on?'Now':otherT(O.show.t)+(sm?'':' '+OTHER.tzs));
+ if(O.w.open)for(const[n,v]of O.rides.slice(0,sm?1:3))h+=row(n,`${v}<small>min</small>`,wc(v));
+ if(box.dataset.h!==h){box.innerHTML=h;box.dataset.h=h}}
+/* follow the sun: here closed, there open → go there (the same TV settings) */
+function tvRoamTick(){if(!TV.roam||TV.held||!LIVE.ok||!LIVE.follow&&!TV.replay||performance.now()-TV.since<90e3||TV.going)return;
+ const O=otherNow();if(!O.fresh||!O.w.open)return;const me=selfScheds();if(!me.length||schedOpen(me,Date.now()).open||tvEvent())return;
+ TV.going=true;const c=$('#tvCap');c.textContent=`${TV.park==='all'?RESORT_NAME:TVPARKS[TV.park]} is closed · over to ${OTHER.name}`;c.classList.remove('in');void c.offsetWidth;c.classList.add('in');
+ setTimeout(()=>{const q=new URLSearchParams(location.search);q.delete('resort');if(!q.has('tv'))q.set('tv',TV.park==='all'?'':TV.park);location.href=new URL(OTHER.page+'?'+q.toString().replace(/=(&|$)/g,'$1'),location.href).href},6000)}
 async function tvWake(){try{if(TV.on&&navigator.wakeLock&&document.visibilityState==='visible')TV.lock=await navigator.wakeLock.request('screen')}catch(e){}} // keep the screen from sleeping
-function tvStart(){if(TV.on)return;unlockRide(); /* the tap that starts TV mode also unlocks ride audio on iPhone */TV.on=true;document.body.classList.add('tv');$('#tv').hidden=false;if(!document.body.classList.contains('fs'))toggleFS();TV.shot=null;TV.key='';TV.uiAt=0;TV.user={layer:VIEW.layer,speed};
+function tvStart(){if(TV.on)return;unlockRide(); /* the tap that starts TV mode also unlocks ride audio on iPhone */TV.on=true;document.body.classList.add('tv');$('#tv').hidden=false;if(!document.body.classList.contains('fs'))toggleFS();TV.shot=null;TV.key='';TV.uiAt=0;TV.since=performance.now();TV.user={layer:VIEW.layer,speed};setTimeout(otherFetch,4000);
  if(!LIVE.ok){speed=1;playing=true}if(!AU.ready)auInit();tvWake();sync()}
 function tvStop(){if(!TV.on)return;TV.on=false;TV.ride=null;tvRideCard();document.body.classList.remove('tv');$('#tv').hidden=true;follow=null;if(SV.on)setView(false);VIEW.layer=TV.user.layer;if(TV.replay||!LIVE.follow){speed=TV.user.speed}TV.replay=false;
  if(TV.lock){try{TV.lock.release()}catch(e){}TV.lock=null}if(document.body.classList.contains('fs'))toggleFS();sync()}

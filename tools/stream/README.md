@@ -73,6 +73,12 @@ VM. At 1280×720 (`WIDTH=1280`, `HEIGHT=720`, `VIDEO_BITRATE=2500k`) it needs ab
 The site folder is mounted read-only, so after `git pull` a restart is enough. You only need `--build` again if the
 Dockerfile or `stream.sh` changes. The container starts again after the server reboots (`restart: unless-stopped`).
 
+## Both resorts
+
+TV mode follows the sun. When Walt Disney World's parks close and Disneyland is still open (it's 3 hours behind), it moves over to
+Disneyland, and it comes back when Walt Disney World opens in the morning. The board also has a "Meanwhile at …" card with the other
+resort's time, hours, next big show and top waits. To keep the stream on one resort, add `&stay` to the address.
+
 ## Settings (`.env`)
 
 | Setting | Meaning |

@@ -487,6 +487,15 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   view for a parade only while `paradeStreetItems()` has floats on Main Street (the parade starts in Frontierland, about 8 minutes away), and
   tvTick leaves that shot (`par`) once the last float has gone by. Until then it follows the parade on the map.
 
+- Both resorts on one stream (owner, 26 Nov: "Let's do 1 for now. Add 5 as well", from a brainstorm: 1 = follow the sun, 5 = a
+  "Meanwhile at" card). `OTHER` in tv.js holds the other resort's page, time zone and ThemeParks.wiki park ids. `otherFetch` gets its
+  /live feeds every 5 minutes (schedules hourly), only while TV mode is on. `schedOpen(scheds,ms)` says whether any OPERATING / TICKETED_EVENT /
+  EXTRA_HOURS window is on, from 45 min before to 30 min after; both pages judge themselves (`selfScheds`, the parks in TV mode's choice)
+  and the other resort (`otherScope`) with it, so they never bounce. `tvRoamTick` (every 15 s, 90 s after TV mode starts, never during a
+  show or a Watch hold): here closed and there open → caption "… is closed · over to …" for 6 s, then the other page with the same
+  query (tv added if missing). Off with `?stay` or Sound & settings → TV mode checkbox (`mk-tvroam`). `#tvOther` (top of #tvSide) shows
+  the other resort's local time, Open till / Opens, its next headline show (`OTHER.shows` regex) and top 3 waits (1 on phones).
+
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each

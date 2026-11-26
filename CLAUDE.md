@@ -438,6 +438,14 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `NOMUSIC`) makes `setVol` silence every music player; MUSIC=off is the default because of Content ID. Not run here (no Docker on the Mac).
   Also fixed: `?tv` never started TV mode once scripts loaded after the load event (tv.js now checks document.readyState).
 
+- Ride audio has the floor (owner, 26 Nov: "When a ride audio or something like that is playing it should mute all other audio"):
+  `RIDEF` (var, eased in rideTick toward the ride's closeness while its track is actually audible: not paused, no show, not ?nomusic)
+  and `rideFocus()` = min(1, RIDEF*1.6). `setVol` multiplies every player except the ride player (`a._ride`) by 1-rideFocus, and
+  rideTick sets the effects/ambience master `AU.m` to master*(1-rideFocus). Shows still silence ride audio as before.
+  A ride's track needs closeness > .3 to play (about 85 units at full zoom); monorail/Skyliner keep .02. Was .02 for all, so Rise of
+  the Resistance played over Galaxy's Edge's music whenever the map looked at the land (owner: "The star wars land area music seems
+  to almost always just play the rise ride audio").
+
 ## Ideas not done yet
 - Sync the monorail's onboard audio (`ride-monorail.mp3`) to each train's place on the track: needs the owner to say
   which line the recording is and give rough timestamps for each station announcement; then jump the audio at each

@@ -35,8 +35,9 @@ async function auInit(){if(AU.ctx){AU.ctx.resume();return}if(AU.loading)return;A
  if(AU.failed.length)toast(AU.failed.length===SOUND_FILES.length?(location.protocol==='file:'?'Sounds can’t load from a file opened directly. Run a local web server (see README).':'Sound files not found in the audio/ folder.'):`${AU.failed.length} sound effect(s) couldn’t load (${AU.failed.join(', ')}). Reload the page to try again.`)}
 /* Set a music player's volume. iPhones and iPads ignore the volume of web audio players (they play at full volume or not
    at all), so where possible each player is routed through the page's own sound mixer and its level set there instead. */
+var RIDEF=0; /* how fully a ride's own track has the floor, 0..1 (rideTick) */
 const NOMUSIC=/[?&]nomusic\b/.test(location.search); /* ?nomusic: every music player silent (soundtracks, area loops, ride audio), the recorded sound effects still play; for a public stream (Disney's music would be caught by YouTube's Content ID) */
-function setVol(a,v){v=isFinite(v)?Math.max(0,Math.min(1,v)):0;if(NOMUSIC)v=0;if(DL&&typeof clFocus==='function'&&a!==CLN.a.audio)v*=1-clFocus(); /* the Cars Land neon lighting: while it is on and the map is watching it, every other music player is silent */if(AU.ctx&&!a._nog){if(!a._g){try{const s=AU.ctx.createMediaElementSource(a);a._g=AU.ctx.createGain();s.connect(a._g).connect(AU.ctx.destination);a.volume=1}catch(e){a._nog=1}}
+function setVol(a,v){v=isFinite(v)?Math.max(0,Math.min(1,v)):0;if(NOMUSIC)v=0;if(DL&&typeof clFocus==='function'&&a!==CLN.a.audio)v*=1-clFocus();if(RIDEF&&!a._ride)v*=1-rideFocus(); /* a ride's own track playing: every other music player silent */ /* the Cars Land neon lighting: while it is on and the map is watching it, every other music player is silent */if(AU.ctx&&!a._nog){if(!a._g){try{const s=AU.ctx.createMediaElementSource(a);a._g=AU.ctx.createGain();s.connect(a._g).connect(AU.ctx.destination);a.volume=1}catch(e){a._nog=1}}
   if(a._g){a._g.gain.value=v;return} /* (callers already ease the level over time) */}a.volume=v}
 function applyVol(){if(!AU.ctx)return;AU.m.gain.value=AU.mute?0:AU.v.master;for(const k of['crowd','amb','trans','show'])AU.g[k].gain.value=AU.v[k]}
 function play(n,v,dst,at,rate){const b=AU.buf[n];if(!b||!AU.ready||!(v>=.004&&isFinite(v)))return;const c=AU.ctx,s=c.createBufferSource(),g=c.createGain();s.buffer=b;
@@ -208,7 +209,10 @@ function rideTargets(){const t={};for(const n in RIDEAUD)t[RIDEAUD[n]]=0;t.monor
   t[k]=Math.max(t[k],v);quiet.delete(k)}
  /* only one ride (or the monorail) is heard at a time: the one you're closest to, or tapped. Neighbouring rides
     (Haunted Mansion and small world are next door to each other) would otherwise play over each other */
- let top=null;for(const k in t)if(t[k]>.02&&(!top||t[k]>t[top]))top=k;for(const k in t)if(k!==top)t[k]=0;
+ let top=null;for(const k in t)if(t[k]>(k==='monorail'||k==='skyliner'?.02:.3)&&(!top||t[k]>t[top]))top=k;for(const k in t)if(k!==top)t[k]=0;
+ /* a ride's track only takes over when you're really over the ride (closeness .3: about 85 units at full zoom), not from the
+    middle of its land: Rise of the Resistance, Galaxy's Edge's only ride with audio, was otherwise playing over the land's music
+    whenever the map looked at Batuu (owner, 26 Nov 2026) */
  /* a closed ride nearer the middle of the screen than the one playing wins the spot with silence, rather than letting its neighbour's track play over it */
  if(top&&top!=='monorail')for(const a of AT){const k=rideAt(a);if(!k||!quiet.has(k)||k===top)continue;const A=AT.find(b=>rideAt(b)===top);if(A&&Math.hypot(cam.x-a.x,cam.y-a.y)<Math.hypot(cam.x-A.x,cam.y-A.y)){t[top]=0;break}}
  return t}
@@ -233,7 +237,7 @@ async function streamUrl(path){if(AUDKEEP.on){if(AUDKEEP.mem[path])return AUDKEE
   if(r.status===206){STREAMS[path]=1;try{r.body&&r.body.cancel()}catch(e){}return path}if(r.ok)return URL.createObjectURL(await r.blob())}catch(e){}return null}
 const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
 RA.pos={};RA.url={};RA.tmp={};RA.cur=null;RA.lvl=0;RA.loading=null;
-function rideEl(){if(!RA.one){const a=RA.one=new Audio();a.loop=true;a.preload='auto'}return RA.one}
+function rideEl(){if(!RA.one){const a=RA.one=new Audio();a._ride=1;a.loop=true;a.preload='auto'}return RA.one}
 function unlockRide(){const a=rideEl();if(RA.cur||RA.unlocked)return;try{a.src=SILENT;const p=a.play();if(p&&p.then)p.then(()=>{RA.unlocked=true;if(!RA.cur)a.pause()}).catch(()=>{})}catch(e){}}
 async function rideUrl(k){if(RA.url[k])return RA.url[k];const u=await streamUrl('audio/ride-'+k+'.mp3');
  if(u){RA.url[k]=u;if(u.startsWith('blob:'))RA.tmp[k]=1}else{const b=await rideSaved(k);if(b){RA.url[k]=URL.createObjectURL(b);RA.tmp[k]=1}else RA.bad[k]=1}return RA.url[k]}
@@ -252,5 +256,11 @@ function rideTick(){if(!AU.ready)return;const t=rideTargets(),show=showOn(),
    a.addEventListener('loadedmetadata',()=>{if(RA.cur!==k)return;a.currentTime=rideSkip(k,fresh&&isFinite(a.duration)?Math.random()*a.duration:RA.pos[k]||0,a.duration);a.play().catch(()=>{})},{once:true})})}
  else if(RA.cur&&RA.cur===top){RA.lvl+=(t[top]*base-RA.lvl)*(top==='monorail'?.15:.06);if(a.paused&&a.readyState>0)a.play().catch(()=>{});RA.heard[top]=Date.now()}
  if(RA.cur)setVol(a,RA.lvl);
- rideLevel+=((top?t[top]:0)-rideLevel)*.06} /* how much the land music should step aside */
+ rideLevel+=((top?t[top]:0)-rideLevel)*.06;
+ {const audible=!NOMUSIC&&RA.cur&&RA.cur===top&&!a.paused&&base>0;RIDEF+=((audible?t[top]:0)-RIDEF)*.08;if(RIDEF<.003)RIDEF=0; /* how fully the ride's track has the floor (eased) */
+  if(AU.ctx&&AU.m)AU.m.gain.value=(AU.mute?0:AU.v.master)*(1-rideFocus())}} /* the sound effects and ambience step aside too */
+/* While a ride's track (or the monorail's onboard audio) is playing, it is the only thing heard: area music, shows, ambience and
+   sound effects fade out with it and come back as it fades (owner, 26 Nov 2026: "When a ride audio or something like that is
+   playing it should mute all other audio"). Not with ?nomusic, where the ride track itself is silent. */
+function rideFocus(){return Math.min(1,RIDEF*1.6)} /* how much the land music should step aside */
 setInterval(()=>{if(!document.hidden)rideTick()},120);

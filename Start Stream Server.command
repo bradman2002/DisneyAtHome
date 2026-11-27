@@ -28,6 +28,14 @@ if ! lsof -i :8000 >/dev/null 2>&1; then
   SERVER=$!
   trap 'kill $SERVER 2>/dev/null' EXIT
 fi
+# MediaMTX needs 1935 (from OBS) and 8888 (to the Apple TV): say which app has one, if any
+for P in 1935 8888; do
+  WHO=$(lsof -nP -iTCP:$P -sTCP:LISTEN 2>/dev/null | awk 'NR==2{print $1" (process "$2")"}')
+  if [ -n "$WHO" ]; then
+    echo "Port $P is already in use by $WHO. Quit that app (or an earlier stream server window) and try again."
+    read -n 1 -s -r -p "Press any key to close."; exit 1
+  fi
+done
 caffeinate -dis -w $$ &          # keep the Mac awake while the stream server runs
 
 NAME="$(scutil --get LocalHostName 2>/dev/null || hostname -s).local"

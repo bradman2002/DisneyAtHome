@@ -114,8 +114,7 @@ stay on and awake while you watch.
 - **YouTube at the same time:** OBS's Stream setting can point at only one place. The free **Multiple RTMP Outputs**
   plugin for OBS adds `rtmp://localhost/disney` as a second target.
 - **Delay:** the picture runs about 5–10 seconds behind the Mac. That doesn't matter for a park that runs by itself.
-- **Other players:** the same stream also opens as `rtsp://Mac-mini.local:8554/disney`, and in Safari or Infuse on
-  iPhone and iPad at the `http://…/index.m3u8` address.
+- **Other players:** the same `http://…/index.m3u8` address also opens in Safari or Infuse on iPhone and iPad.
 - **Away from home:** install **Tailscale** (free) on the Mac and on your iPhone, iPad or Apple TV, then use the Mac's
   Tailscale name or address in place of `Mac-mini.local`. It stays private to your own devices.
 - **VLC says it can't open it:** check that OBS says it's streaming, that the stream server window is still open,

@@ -2,10 +2,8 @@
 # OBS sends to rtmp://localhost/disney; the Apple TV plays the same stream back over Wi-Fi.
 logLevel: info
 rtmp: yes
-rtsp: yes
-# RTSP's UDP ports default to 8000/8001, which clash with the site's own web server on 8000: move them out of the way
-rtpAddress: :18000
-rtcpAddress: :18001
+# RTSP is off: the Apple TV uses HLS, and RTSP's ports (8554, plus UDP 8000/8001) are often already taken on a Mac
+rtsp: no
 # plain HLS (MPEG-TS segments): the kind VLC and Apple's own player both open most reliably
 hls: yes
 hlsVariant: mpegts

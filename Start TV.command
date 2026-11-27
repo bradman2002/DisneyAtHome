@@ -5,7 +5,7 @@
 cd "$(dirname "$0")"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 PORT=8000
-while lsof -i :$PORT >/dev/null 2>&1; do PORT=$((PORT+1)); done
+while lsof -nP -iTCP:$PORT -sTCP:LISTEN >/dev/null 2>&1; do PORT=$((PORT+1)); done
 URL="http://localhost:$PORT/?tv&v=$(date +%s)"
 
 # the same tiny web server as Start Simulator.command (tools/serve.py), in the background

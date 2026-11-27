@@ -48,6 +48,12 @@ function tvEvent(){const mk=tvIn('mk'),f=fireEv();if(mk&&f&&f.ph==='live')return
 /* Tinker Bell is about to fly or flying (owner, 26 Nov 2026: "Make sure when tink flys it focuses on magic kingdom", "mainstreet view"):
    from 10 s before her flight to 4 s after, in Happily Ever After at Walt Disney World, with Magic Kingdom in TV mode's choice */
 function tvTink(){if(DL||!tvIn('mk')||typeof TINK==='undefined'||FW.v!=='hea')return false;const st=showClock();return st!==null&&st>=TINK.t0-10&&st<=TINK.t0+TINK.dur+4}
+/* Closed parks are left out of the rotation (owner, 26 Nov 2026: "When a park is closed dont go to that park in tv mode"). A park shot
+   is a map shot on the wait-times layer, or the Main Street view; resorts, lakes, Disney Springs, the monorail and the ferry always go.
+   A park counts as open from 15 minutes before it opens to 30 minutes after it closes, while the last guests walk out. */
+function tvShotPark(s){if(s.k==='street')return 0;if(s.k!=='map'||s.layer!=='wait')return-1;if(s.a!=null){const a=AT.find(x=>x.i===s.a);if(a)return a.pk||0}return tvParkAt(s.x,s.y)}
+function tvParkOpen(pk){return T>=pOpen(pk)*3600-900&&T<=pClose(pk)*3600+1800}
+function tvShotOpen(s){const pk=tvShotPark(s);return pk<0||tvParkOpen(pk)}
 function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;let s;
  const lumS=()=>TV.alt%2?{k:'map',n:'Luminous · World Showcase Lagoon',x:EVPOS.lum[0],y:EVPOS.lum[1]-30,m:2.1,dur:45,layer:'shows'}:{k:'map',n:'Luminous: The Symphony of Us · EPCOT',x:EVPOS.lum[0],y:EVPOS.lum[1]-50,m:1.35,dur:50,layer:'shows'};
  const fmS=()=>{const G=fmGeo();return TV.alt%2?{k:'map',n:DL?'Fantasmic! · Rivers of America':'Fantasmic! · Hollywood Hills Amphitheater',x:G.lc[0],y:G.lc[1]-30,m:2.1,dur:45,layer:'shows'}:{k:'map',n:DL?'Fantasmic! · Disneyland':'Fantasmic! · Hollywood Studios',x:G.lc[0],y:G.lc[1]-25,m:3.2,dur:50,layer:'shows'}};
@@ -70,7 +76,7 @@ function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;
  else if(key==='kiss')s=TV.alt%2?{k:'map',n:'Kiss Goodnight',x:P_.castle[0],y:P_.castle[1]-20,m:2.2,dur:40,layer:'shows'}:{k:'street',n:'Kiss Goodnight',dur:50};
  else if(key.startsWith('parade')){const n=parOf(key.slice(7)).n+' Parade';s=TV.alt%2&&!DL&&paradeStreetItems().length?{k:'street',n,dur:45,par:1}:{k:'follow',n,f:{k:'parade'},m:2.7,dur:45,layer:'wait'}} /* the street view only once floats are on Main Street (the parade starts in Frontierland) */
  else if(key==='ewp'&&TV.alt%2===0)s={k:'follow',n:'Electrical Water Pageant',f:{k:'w'},m:2.5,dur:60,layer:'shows'};
- else{const L=TV.list||(TV.list=tvShots());TV.i=(TV.i+1)%L.length;s=L[TV.i]}
+ else{const L=TV.list||(TV.list=tvShots());for(let n=0;n<L.length;n++){TV.i=(TV.i+1)%L.length;if(tvShotOpen(L[TV.i]))break}s=L[TV.i]} /* skip shots of a park that's closed (if every one is, show it anyway) */
  TV.shot=s;TV.until=performance.now()+s.dur*1000;sel=null;follow=null;if(sheet)closeSheet();
  if(s.k==='street'){if(!SV.on)setView(true)}else{if(SV.on)setView(false);VIEW.layer=s.layer||'transport';
   if(s.k==='mono'){let i=MONO.findIndex(m=>m.st==='run');if(i<0)i=0;i=(i+Math.floor(Math.random()*MONO.length))%MONO.length;follow={k:'m',i};s.n='Monorail '+MONO[i].nm+' · '+MLINE[MONO[i].l].n+' line';cam.tm=2.3}
@@ -104,9 +110,11 @@ function tvTick(rdt){const now=performance.now();if(now-(TV.rcAt||0)>1000){TV.rc
 /* which park the camera is over (owner, 26 Nov 2026: "For the wait times display I only want the times displayed for the park it is currently in.
    If it is not a park then just all of them"): the park of the land under the middle of the screen, or of a land within 120 units (the
    hub, walkways between lands); -1 over the resorts, lakes and roads */
-function tvCamPark(){if(SV.on)return 0;let best=-1,bd=DL?40:120; /* Disneyland's parks sit close together: the Esplanade between them is neither */for(const k in OSM.lands){const L=OSM.lands[k];if(!L||L.length<3)continue;
-  if(ptIn(cam.x,cam.y,L))return parkOf(k);for(let i=0;i<L.length;i++){const a=L[i],b=L[(i+1)%L.length],dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy||1,u=Math.max(0,Math.min(1,((cam.x-a[0])*dx+(cam.y-a[1])*dy)/l2)),d=Math.hypot(cam.x-a[0]-dx*u,cam.y-a[1]-dy*u);if(d<bd){bd=d;best=parkOf(k)}}}
- if(best<0&&!DL){const R=[[EPR,1],[typeof HSR!=='undefined'&&HSR,2],[typeof AKR!=='undefined'&&AKR,3]];for(const[r,p]of R)if(r&&cam.x>r[0]&&cam.x<r[2]&&cam.y>r[1]&&cam.y<r[3])return p} /* over a park's own area (EPCOT's lagoon, say); not Magic Kingdom's, which takes in the resorts round the lagoon */
+function tvCamPark(){return SV.on?0:tvParkAt(cam.x,cam.y)}
+/* which park a map point is in (or next to): 0..3, or -1 for none */
+function tvParkAt(px,py){let best=-1,bd=DL?40:120; /* Disneyland's parks sit close together: the Esplanade between them is neither */for(const k in OSM.lands){const L=OSM.lands[k];if(!L||L.length<3)continue;
+  if(ptIn(px,py,L))return parkOf(k);for(let i=0;i<L.length;i++){const a=L[i],b=L[(i+1)%L.length],dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy||1,u=Math.max(0,Math.min(1,((px-a[0])*dx+(py-a[1])*dy)/l2)),d=Math.hypot(px-a[0]-dx*u,py-a[1]-dy*u);if(d<bd){bd=d;best=parkOf(k)}}}
+ if(best<0&&!DL){const R=[[EPR,1],[typeof HSR!=='undefined'&&HSR,2],[typeof AKR!=='undefined'&&AKR,3]];for(const[r,p]of R)if(r&&px>r[0]&&px<r[2]&&py>r[1]&&py<r[3])return p} /* over a park's own area (EPCOT's lagoon, say); not Magic Kingdom's, which takes in the resorts round the lagoon */
  return best}
 function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
  $('#tvTime').textContent=fmt(T);$('#tvDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});

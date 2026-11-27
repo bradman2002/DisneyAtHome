@@ -23,7 +23,7 @@ fi
 [ -z "$MTX" ] && MTX="$BIN"
 
 # the site's own web server on port 8000 for OBS's browser source, unless something is already serving it
-if ! lsof -i :8000 >/dev/null 2>&1; then
+if ! lsof -nP -iTCP:8000 -sTCP:LISTEN >/dev/null 2>&1; then
   python3 tools/serve.py 8000 >/dev/null 2>&1 &
   SERVER=$!
   trap 'kill $SERVER 2>/dev/null' EXIT

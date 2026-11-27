@@ -372,7 +372,7 @@ function seek(t,force){BGSEEK=null;t=Math.max(0,Math.min(86399,t));if(!CATCHUP)S
    the target, which keeps moving with the clock. Sounds and shows stay quiet (FF) until it's there. Small jumps just seek. */
 let BGSEEK=null;
 function seekLater(t){t=Math.max(0,Math.min(86399,t));if(t<T-1)reset(Math.min(7*3600,t));if(t-T<=900){seek(t,false);return}
- SEEKGEN++;BGSEEK={to:t};FF=true;if(t-T>3600&&typeof toast==='function')toast('Catching up to '+(typeof LIVE!=='undefined'&&LIVE.follow?'the current time':hm24(t))+'…')}
+ SEEKGEN++;BGSEEK={to:t,from:T,at:performance.now()};FF=true} /* the map is covered meanwhile (catchCover in render.js) */
 function bgSeekTick(ms){if(!BGSEEK)return false;const end=performance.now()+ms;FF=true;while(T<BGSEEK.to&&performance.now()<end)step(Math.min(10,BGSEEK.to-T));
  if(T>=BGSEEK.to-.001){BGSEEK=null;FF=false;SEEKGEN++}lighting();return true}
 function lighting(){const h=T/3600,ev=Math.max(0,Math.min(1,(h-sunset+.25)/1.2)),mo=Math.max(0,Math.min(1,(sunrise+.6-h)/1));nf=h>12?ev:mo;

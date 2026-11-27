@@ -54,9 +54,17 @@ function sseNight(now,a,z){const S=SSE_AT;if(!S||a<.05)return;const{x,yc,R}=S;if
  c.globalAlpha=1}
 const SSE_GLOW=(()=>{const g=document.createElement('canvas');g.width=g.height=32;const x=g.getContext('2d'),r=x.createRadialGradient(16,16,0,16,16,16);r.addColorStop(0,'rgba(235,240,255,.9)');r.addColorStop(.3,'rgba(190,210,255,.3)');r.addColorStop(1,'rgba(160,190,255,0)');x.fillStyle=r;x.fillRect(0,0,32,32);return g})();
 /* ---------- frame ---------- */
+/* Hide the catch-up time-lapse (owner, 26 Nov 2026: "can you hide it until it catches up?"): while a big forward jump runs (BGSEEK) a
+   card covers the map with how far it has got; once the card is fully up the map isn't drawn at all, so the catch-up gets the time. */
+function catchCover(){const el=$('#catchup');if(!el)return false;const B=BGSEEK,span=B?B.to-B.from:0,on=!!B&&span>900&&(span>3600||performance.now()-B.at>250);
+ if(on){if(!el.classList.contains('on')){el.hidden=false;void el.offsetWidth;el.classList.add('on');el._at=performance.now()}
+  const p=Math.max(0,Math.min(1,(T-B.from)/Math.max(1,span))),m=(typeof LIVE!=='undefined'&&LIVE.follow?'Catching up to the live park':'Moving the clock to '+fmt(B.to))+'…';
+  if(el._m!==m){el._m=m;$('#catchMsg').textContent=m}$('#catchBar').style.width=(p*100).toFixed(1)+'%';$('#catchPct').textContent=Math.round(p*100)+'%';return performance.now()-el._at>500}
+ if(el.classList.contains('on')){el.classList.remove('on');setTimeout(()=>{if(!el.classList.contains('on'))el.hidden=true},500)}return false}
 function frame(rdt){
- if(BGSEEK){BGSEEK.to=Math.min(86399,BGSEEK.to+rdt*speed);bgSeekTick(30)}else if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
+ if(BGSEEK){BGSEEK.to=Math.min(86399,BGSEEK.to+rdt*speed);bgSeekTick(catchCover()?55:30)}else if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
+ if(catchCover()){BUB=[];return} /* covered: nothing to draw */
  paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();if(DL){wocSync();clSync()}tolSync();
  if(typeof RIDE!=='undefined'&&RIDE.on){rideFrame(rdt);BUB=[];return} /* riding in a monorail's front cab (ride.js) */
  if(SV.on){drawStreet(rdt);BUB=[];return}

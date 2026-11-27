@@ -501,6 +501,11 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   the time of day in the time panel (tooltip with conditions and wind), `#tvWx` on TV mode's clock, and the other resort's in the "Meanwhile at"
   card. "Weather: Open-Meteo" is added to the map credit line while shown; keep it.
 
+- Catch-up hidden (owner, 26 Nov: "Let's just leave it as it is, but can you hide it until it catches up?"; going live still restarts the day from
+  7 am): `catchCover()` (render.js) shows `#catchup` (the loading screen's look, "Catching up to the live park…", a progress bar from
+  `BGSEEK.from` to `.to`) over the map for any seekLater jump over 15 min (at once if over an hour, after 250 ms otherwise). Once it's fully up,
+  frame() skips drawing and bgSeekTick gets 55 ms a frame instead of 30. The old "Catching up…" toast is gone.
+
 ## Ideas not done yet
 - YouTube chat commands (owner, 26 Nov 2026: tabled). Plan if picked up: a script on the Mac mini reads live chat (`pytchat`, or the official
   API at about one read per 45 s on the free quota), posts commands to `tools/serve.py` (/cmd), the TV page polls it locally; !parade/!fireworks

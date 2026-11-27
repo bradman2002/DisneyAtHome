@@ -146,3 +146,5 @@ body.riding #bar,body.riding #nav{display:none}body.riding #app{grid-template-ro
 #views,#time{margin-left:var(--sl)}#time{max-width:calc(100% - 24px - var(--sl) - var(--sr))}
 #fsBar,#osmc{margin-right:var(--sr)}
 #sbL,#sbR{position:fixed;top:0;bottom:0;pointer-events:none;z-index:40;background:rgba(15,25,45,.55)}#sbL{left:0;width:var(--sl)}#sbR{right:0;width:var(--sr)}
+#catchup{position:absolute;inset:0;z-index:6;display:grid;place-items:center;background:linear-gradient(160deg,#dfeef7,#f4f6fa 55%,#e7f2e2);opacity:0;transition:opacity .45s;pointer-events:none}#catchup.on{opacity:1;pointer-events:auto}
+#catchMsg{font-size:14px;color:var(--mu);font-weight:600;margin-top:10px}.catchTrack{width:220px;height:6px;border-radius:3px;background:rgba(30,50,90,.12);margin:12px auto 6px;overflow:hidden}#catchBar{height:100%;width:0;background:#2b5bd7;border-radius:3px;transition:width .2s}#catchPct{font-size:12px;color:var(--mu);font-variant-numeric:tabular-nums}

@@ -3,6 +3,9 @@
 logLevel: info
 rtmp: yes
 rtsp: yes
+# RTSP's UDP ports default to 8000/8001, which clash with the site's own web server on 8000: move them out of the way
+rtpAddress: :18000
+rtcpAddress: :18001
 # plain HLS (MPEG-TS segments): the kind VLC and Apple's own player both open most reliably
 hls: yes
 hlsVariant: mpegts

@@ -528,6 +528,14 @@ The end goal is a background display: TV mode runs the whole thing unattended on
 - Fireworks lights down (owner, 26 Nov: "dim the lights during fireworks, especially on mainstreet"): `fwDim()` (street.js, 0..1, 15 s down
   at the start, 20 s up at the end). Map: night glow ×(1-.3 dim), and Main Street's land outline (with the hub) is multiplied darker
   (to 45%) after the castle uplight, so the castle keeps its light. Street view: glow ×(1-.8 dim) plus a dark multiply.
+- Tinker Bell in TV mode (owner, 26 Nov: "Make sure when tink flys it focuses on magic kingdom", "mainstreet view"): `tvTink()` (tv.js) is true
+  from 10 s before her flight (TINK.t0 into Happily Ever After) to 4 s after, at WDW with Magic Kingdom in TV mode's choice; tvNext then picks the
+  Main Street view (`tink` shot, TINK.dur+16 s) over any cut to Luminous/Fantasmic!, and tvTick cuts to it from whatever shot is on.
+- TV board waits follow the camera (owner, 26 Nov: "For the wait times display I only want the times displayed for the park it is currently in.
+  If it is not a park then just all of them like it is now"): with TV park 'all', `tvCamPark()` (tv.js) = park of the land under the camera or
+  within 120 units (40 at Disneyland, so the Esplanade counts as neither), else (WDW only) EPR/HSR/AKR's box, else -1 = all parks; the Main
+  Street view is 0. The list, the "closed or down" count, the guest count and the heading ("Wait times · EPCOT", `#tvWaitH`) follow it; the
+  list restarts at page 1 when the park changes. A chosen TV park still wins.
 - Every other street-view balloon is a Mickey balloon (owner, 26 Nov: "make the people with balloons carrying mickey shaped balloons as well").
 
 ## Ideas not done yet

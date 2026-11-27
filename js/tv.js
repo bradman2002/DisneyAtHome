@@ -45,11 +45,15 @@ function tvShotsDL(land,place,tag,ride){const L=k=>LANDS[k]&&land(k),D=(o,n,m)=>
 // what, if anything, is on right now that the camera should be watching
 function tvEvent(){const mk=tvIn('mk'),f=fireEv();if(mk&&f&&f.ph==='live')return'fire';if(DL){if(mk&&fmLive())return'fmic';if(tvIn('ep')&&wocLive())return'woc';if(tvIn('ep')&&clLive())return'cl'}if(tvIn('ep')&&lumLive())return'lum';if(tvIn('hs')&&fmLive())return'fmic';const bird=()=>!DL&&tvIn('ak')&&typeof birdTV==='function'&&birdTV()?'bird':'';if(!mk)return bird();
  for(const id of['welcome','flag','kiss']){const e=EV.find(x=>x.id===id);if(e&&e.on!==false&&e.ph==='live')return id}const P=liveParade();if(P&&paradeUnits().length)return'parade:'+P.id;if(ewpShow())return'ewp';if(geyserNow()>.5&&!TV.replay)return'geyser';return bird()}
+/* Tinker Bell is about to fly or flying (owner, 26 Nov 2026: "Make sure when tink flys it focuses on magic kingdom", "mainstreet view"):
+   from 10 s before her flight to 4 s after, in Happily Ever After at Walt Disney World, with Magic Kingdom in TV mode's choice */
+function tvTink(){if(DL||!tvIn('mk')||typeof TINK==='undefined'||FW.v!=='hea')return false;const st=showClock();return st!==null&&st>=TINK.t0-10&&st<=TINK.t0+TINK.dur+4}
 function tvNext(){const key=tvEvent();TV.alt=key===TV.key?TV.alt+1:0;TV.key=key;let s;
  const lumS=()=>TV.alt%2?{k:'map',n:'Luminous · World Showcase Lagoon',x:EVPOS.lum[0],y:EVPOS.lum[1]-30,m:2.1,dur:45,layer:'shows'}:{k:'map',n:'Luminous: The Symphony of Us · EPCOT',x:EVPOS.lum[0],y:EVPOS.lum[1]-50,m:1.35,dur:50,layer:'shows'};
  const fmS=()=>{const G=fmGeo();return TV.alt%2?{k:'map',n:DL?'Fantasmic! · Rivers of America':'Fantasmic! · Hollywood Hills Amphitheater',x:G.lc[0],y:G.lc[1]-30,m:2.1,dur:45,layer:'shows'}:{k:'map',n:DL?'Fantasmic! · Disneyland':'Fantasmic! · Hollywood Studios',x:G.lc[0],y:G.lc[1]-25,m:3.2,dur:50,layer:'shows'}};
  const wocS=()=>{const G=wocGeo();return TV.alt%2?{k:'map',n:'World of Color · Paradise Bay',x:G.c[0],y:G.c[1]-25,m:2,dur:45,layer:'shows'}:{k:'map',n:'World of Color · California Adventure',x:G.c[0],y:G.c[1]-10,m:3,dur:50,layer:'shows'}};
- if(DL&&(key==='fmic'||key==='fire')&&tvIn('ep')&&wocLive()&&TV.alt%3===2)s=wocS(); /* Disneyland's two water shows (and the fireworks) at once: now and then cut across the Esplanade */
+ if(key==='fire'&&tvTink())s={k:'street',n:EV.find(e=>e.id==='fire').n.replace(' (fireworks)',''),dur:TINK.dur+16,tink:1}; /* Tinker Bell's flight: always the Main Street view */
+ else if(DL&&(key==='fmic'||key==='fire')&&tvIn('ep')&&wocLive()&&TV.alt%3===2)s=wocS(); /* Disneyland's two water shows (and the fireworks) at once: now and then cut across the Esplanade */
  else if(DL&&key==='woc')s=wocS();
  else if(DL&&key==='cl'){clBuildings();s=TV.alt%2?{k:'map',n:'Cars Land neon lighting · Radiator Springs',x:CLN.ctr[0],y:CLN.ctr[1]-6,m:3.6,dur:40,layer:'shows'}:{k:'map',n:'Cars Land neon lighting',x:CLN.ctr[0],y:CLN.ctr[1]-15,m:2.4,dur:45,layer:'shows'}}
  else if(DL&&key==='fire'&&tvIn('mk')&&fmLive()&&TV.alt%3===1)s=fmS();
@@ -94,16 +98,24 @@ function tvTick(rdt){const now=performance.now();if(now-(TV.rcAt||0)>1000){TV.rc
   else{if(LIVE.follow)liveUnfollow();TV.replay=true}}
  if(!TV.held&&(TV.replay||!LIVE.ok)){const lo=(OPEN-.5)*3600,hi=(CLOSE+.45)*3600;if(T<lo||T>hi){LIVE.inTick=true;seek(lo,true);LIVE.inTick=false}
   playing=true;const show=!!tvEvent()||(()=>{const f=fireEv();return f&&f.ph==='gather'&&f.key-T<40})();const sp=show?1:30;if(speed!==sp){speed=sp;sync()}} // time-lapse, but every show plays at its real speed
- if(!TV.shot||now>TV.until||tvEvent()!==TV.key||TV.shot.par&&!paradeStreetItems().length)tvNext(); /* and leave it once the last float has gone by */
+ if(!TV.shot||now>TV.until||tvEvent()!==TV.key||TV.shot.par&&!paradeStreetItems().length||tvTink()&&!TV.shot.tink)tvNext(); /* cut to Main Street for Tinker Bell, whatever is on */ /* and leave it once the last float has gone by */
  const s=TV.shot;if(s.k==='map'&&s.vx){cam.tx+=s.vx*rdt;cam.ty+=s.vy*rdt} /* a slow pan only: a slow zoom re-scales the whole map a hair every frame, which shimmers */
  if(now-TV.uiAt>500){TV.uiAt=now;tvBoard(now)}if(now-(TV.roamAt||0)>15e3){TV.roamAt=now;tvRoamTick();tvOther()}}
+/* which park the camera is over (owner, 26 Nov 2026: "For the wait times display I only want the times displayed for the park it is currently in.
+   If it is not a park then just all of them"): the park of the land under the middle of the screen, or of a land within 120 units (the
+   hub, walkways between lands); -1 over the resorts, lakes and roads */
+function tvCamPark(){if(SV.on)return 0;let best=-1,bd=DL?40:120; /* Disneyland's parks sit close together: the Esplanade between them is neither */for(const k in OSM.lands){const L=OSM.lands[k];if(!L||L.length<3)continue;
+  if(ptIn(cam.x,cam.y,L))return parkOf(k);for(let i=0;i<L.length;i++){const a=L[i],b=L[(i+1)%L.length],dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy||1,u=Math.max(0,Math.min(1,((cam.x-a[0])*dx+(cam.y-a[1])*dy)/l2)),d=Math.hypot(cam.x-a[0]-dx*u,cam.y-a[1]-dy*u);if(d<bd){bd=d;best=parkOf(k)}}}
+ if(best<0&&!DL){const R=[[EPR,1],[typeof HSR!=='undefined'&&HSR,2],[typeof AKR!=='undefined'&&AKR,3]];for(const[r,p]of R)if(r&&cam.x>r[0]&&cam.x<r[2]&&cam.y>r[1]&&cam.y<r[3])return p} /* over a park's own area (EPCOT's lagoon, say); not Magic Kingdom's, which takes in the resorts round the lagoon */
+ return best}
 function tvBoard(now){const c=parkClock(),d=new Date(dateStr+'T12:00:00');
  $('#tvTime').textContent=fmt(T);$('#tvDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
  $('#tvNote').textContent=TV.held?'Showing it now · back to live time after':TV.replay?'Park closed · replaying the day':LIVENOW?'Live from '+(TV.park==='all'?RESORT_NAME:TVPARKS[TV.park]):LIVE.follow?'Live time · simulated waits':'Simulated';$('#tv').classList.toggle('live',LIVENOW);
- const run=AT.filter(a=>{if(TV.park!=='all'&&(a.pk||0)!==TVPK[TV.park])return false;const st=aStat(a);return st==='Operating'||st==='Last riders'}).sort((a,b)=>b.wt-a.wt),off=AT.filter(a=>TV.park==='all'||(a.pk||0)===TVPK[TV.park]).length-run.length,per=innerWidth<=760||innerHeight<=500?4:7,pages=Math.max(1,Math.ceil(run.length/per));
+ const cp=TV.park==='all'?tvCamPark():TVPK[TV.park],inP=a=>cp<0||(a.pk||0)===cp;if(cp!==TV.cp){TV.cp=cp;TV.page=0;TV.pageAt=now} /* a new park starts at its longest waits */{const h=$('#tvWaitH');if(h){const t=cp<0?'Wait times':'Wait times · '+PARK_NAMES[cp];if(h.textContent!==t)h.textContent=t}}
+ const run=AT.filter(a=>{if(!inP(a))return false;const st=aStat(a);return st==='Operating'||st==='Last riders'}).sort((a,b)=>b.wt-a.wt),off=AT.filter(inP).length-run.length,per=innerWidth<=760||innerHeight<=500?4:7,pages=Math.max(1,Math.ceil(run.length/per));
  if(now-TV.pageAt>9000){TV.pageAt=now;TV.page=(TV.page+1)%pages}if(TV.page>=pages)TV.page=0;
  $('#tvList').innerHTML=run.length?run.slice(TV.page*per,TV.page*per+per).map(a=>`<div class="tr"><span>${esc(a.n)}</span><b class="${wc(a.wt)}">${a.wt}<small>min</small></b></div>`).join(''):'<div class="tr"><span>The park is closed</span></div>';
- $('#tvFoot').textContent=(run.length?`${run.length} rides running${off?' · '+off+' closed or down':''} · ${TV.page+1}/${pages} · `:'')+`~${((TV.park==='all'?guests.length:guests.reduce((n,g)=>n+((g.pk||0)===TVPK[TV.park]),0))*K).toLocaleString()} guests in the park${TV.park==='all'?'s':''}`;
+ $('#tvFoot').textContent=(run.length?`${run.length} rides running${off?' · '+off+' closed or down':''} · ${TV.page+1}/${pages} · `:'')+`~${((cp<0?guests.length:guests.reduce((n,g)=>n+((g.pk||0)===cp),0))*K).toLocaleString()} guests in the park${cp<0?'s':''}`;
  const up=[];for(const e of EV){if(e.on===false||!tvIn(['mk','ep','hs','ak'][e.pk||0]))continue;const n=e.ph==='live'?T:e.t.find(t=>t>T);if(n!==undefined)up.push([n,e.n.replace(' (fireworks)','').replace(' (placeholder)',''),e.ph==='live'])}
  if(DL&&tvIn('ep')&&typeof clStart==='function'){const s0=clStart();if(clLive())up.push([T,'Cars Land neon lighting',true]);else if(T<s0)up.push([s0,'Cars Land neon lighting',false])} /* not an EV event, so added here */
  if(!DL&&OSM.ak&&tvIn('ak')&&typeof birdNext==='function'){if(birdLive())up.push([T,'Feathered Friends in Flight!',true]);else{const n=birdNext();if(n!==undefined&&n<ACLOSE*3600)up.push([n,'Feathered Friends in Flight!',false])}} /* not an EV event either */

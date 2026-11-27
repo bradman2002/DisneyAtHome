@@ -506,6 +506,15 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   `BGSEEK.from` to `.to`) over the map for any seekLater jump over 15 min (at once if over an hour, after 250 ms otherwise). Once it's fully up,
   frame() skips drawing and bgSeekTick gets 55 ms a frame instead of 30. The old "Catching up…" toast is gone.
 
+- Feathered Friends in Flight! (owner, 26 Nov: "can you add the bird release show to animal kingdom"): `js/birdshow.js` (BOOT_JS after treeoflife.js).
+  The Caravan Stage is OSM way 295918978 (no name, old_name Flights of Wonder), so sim.js adds `POS['Caravan Stage']` by hand (centre
+  2263.5-2210+OSM.dx, 7287.1; nd = nearest walk node) and an attraction row (as, 10–17) so guests fill the seats. Times: `LIVE.shows.bird`
+  from the AK feed while Live, else 10:45, 11:45, 13:45, 14:45, 15:45; 25 min each (`BIRD.D`). `BIRD_ACTS`: hawk, kookaburra, seriema
+  (on the ground), owl, crowned crane, vulture skimming the seats, then 10 macaws released to circle out and back; drawn 2.3x in drawLive
+  (`birdDrawAll`), u = stage toward its walkway node. A clock function like Tree of Life (no EV). TV mode ('bird', AK in its choice) cuts to
+  the first 4 minutes and the release only (`birdTV`); the board's Coming up lists it. Optional owner soundtrack audio/feathered-friends.mp3
+  (git-ignored) plays near the stage in time (`birdSync`, counts in showOn).
+
 ## Ideas not done yet
 - YouTube chat commands (owner, 26 Nov 2026: tabled). Plan if picked up: a script on the Mac mini reads live chat (`pytchat`, or the official
   API at about one read per 45 s on the free quota), posts commands to `tools/serve.py` (/cmd), the TV page polls it locally; !parade/!fireworks

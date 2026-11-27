@@ -39,6 +39,7 @@ function liveApply(live,c,ep,hs,ak){const by={};for(const x of[...(live.liveData
  LIVE.shows={};for(const[,id]of LIVE_SHOWS)LIVE.shows[id]=[...(times[id]||[])].sort((a,b)=>a-b);
  {const lt=new Set();for(const x of(ep&&ep.liveData)||[])if(x.entityType==='SHOW'&&/luminous/i.test(x.name))for(const s of x.showtimes||[]){const v=isoSec(s.startTime,c.date);if(v!==null&&v<86400-20*60)lt.add(v)}if(ep)LIVE.shows.lum=[...lt].sort((a,b)=>a-b)} /* EPCOT's Luminous, from its own feed */
  {const ft=new Set();for(const x of(hs&&hs.liveData)||[])if(x.entityType==='SHOW'&&/^fantasmic/i.test(x.name))for(const s of x.showtimes||[]){const v=isoSec(s.startTime,c.date);if(v!==null&&v<86400-30*60)ft.add(v)}if(hs)LIVE.shows.fmic=[...ft].sort((a,b)=>a-b)} /* and Hollywood Studios' Fantasmic! */
+ if(ak){const bt=new Set();for(const x of ak.liveData||[])if(x.entityType==='SHOW'&&/feathered friends|flights of wonder/i.test(x.name))for(const s of x.showtimes||[]){const v=isoSec(s.startTime,c.date);if(v!==null)bt.add(v)}LIVE.shows.bird=[...bt].sort((a,b)=>a-b)} /* Animal Kingdom's bird show (birdshow.js) */
  if(DL&&ep){const wt=new Set();for(const x of ep.liveData||[])if(x.entityType==='SHOW'&&/world of color/i.test(x.name))for(const s of x.showtimes||[]){const v=isoSec(s.startTime,c.date);if(v!==null&&v<86400-20*60)wt.add(v)}LIVE.shows.woc=[...wt].sort((a,b)=>a-b)} /* California Adventure's World of Color, from its own feed */
  if(LIVE.follow)liveSchedule(true)}
 // put today's real hours and show times into the simulation (on), or give back the built-in ones (off)

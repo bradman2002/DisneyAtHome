@@ -65,7 +65,7 @@ function frame(rdt){
  if(BGSEEK){BGSEEK.to=Math.min(86399,BGSEEK.to+rdt*speed);bgSeekTick(catchCover()?55:30)}else if(playing){let rem=rdt*speed,n=0;while(rem>1e-6&&n<14){const d=Math.min(rem,10);step(d);rem-=d;n++}}
  if(typeof TV!=='undefined'&&TV.on)tvTick(rdt);liveTick();lighting();
  if(catchCover()){BUB=[];return} /* covered: nothing to draw */
- paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();if(DL){wocSync();clSync()}tolSync();
+ paradeSync();pageantSync();welcomeSync();anthemSync();kissSync();lumSync();fmSync();if(DL){wocSync();clSync()}tolSync();if(typeof birdSync==='function')birdSync();
  if(typeof RIDE!=='undefined'&&RIDE.on){rideFrame(rdt);BUB=[];return} /* riding in a monorail's front cab (ride.js) */
  if(SV.on){drawStreet(rdt);BUB=[];return}
  {const k=typeof TV!=='undefined'&&TV.on?.035:.18;cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;cam.m+=(cam.tm-cam.m)*k; /* TV mode glides between shots */
@@ -299,7 +299,7 @@ function drawSkyliner(glow){if(!SKYP.length||!skyOpen()||(glow&&nf<.35))return;c
    c.fillStyle='rgba(30,40,40,.16)';c.fillRect(x-1.2,y-.4,3.4,1.2);c.strokeStyle='#5d636b';c.lineWidth=.35;c.beginPath();c.moveTo(x,yy);c.lineTo(x,yy+1.6);c.stroke();
    c.fillStyle='#f6f6f2';c.beginPath();c.roundRect(x-1.9,yy+1.5,3.8,3.4,.9);c.fill();c.fillStyle=SKYCOL[k%SKYCOL.length];c.fillRect(x-1.9,yy+3.7,3.8,.9);
    c.fillStyle=lit?'#ffe6a0':'#3d4a5c';c.fillRect(x-1.4,yy+2.1,2.8,1.1)}}}
-function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600;drawSafariAnimals();drawSafari();
+function drawLive(now){const t=now/1000,h=T/3600,open=T>=OPEN*3600&&T<CLOSE*3600;drawSafariAnimals();drawSafari();if(typeof birdDrawAll==='function')birdDrawAll(now);
  // spinning rides
  for(const a of SPIN){const run=aStat(a)==='Operating'&&a.ri.length>0,ang=run?t*1.4:0;for(let i=0;i<8;i++){const q=ang+i/8*6.283,x=a.x+Math.cos(q)*12,y=a.y+Math.sin(q)*5.5-(run?4:0);
    cx.fillStyle=['#ff6b8a','#ffd34d','#4ecdc4','#7b6cff'][i%4];cx.beginPath();cx.ellipse(x,y,2.3,1.6,0,0,7);cx.fill()}

@@ -54,7 +54,7 @@ function lvl(k,v,tc){const l=AU.L[k];if(!isFinite(v))v=0;if(l)l.g.gain.setTarget
 /* Is a show's music playing where you can hear it? Then the park's own sound (land music, ride audio, nature and the
    general crowd) fades right out and leaves the show alone. The water pageant and Luminous only count when the map is
    near them. */
-function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||(typeof fmPlaying==='function'&&fmPlaying()&&fmNear()>.1)||(typeof wocPlaying==='function'&&wocPlaying()&&wocNear()>.1)||(typeof clPlaying==='function'&&clPlaying()&&clNear()>.1)||(typeof tolPlaying==='function'&&tolPlaying()&&tolNear()>.1)||
+function showOn(){return(HEA.ready&&!HEA.audio.paused)||PARADES.some(P=>parPlaying(P.id))||(typeof ewpPlaying==='function'&&ewpPlaying()&&ewpNear()>.1)||(typeof lumPlaying==='function'&&lumPlaying()&&lumNear()>.1)||(typeof fmPlaying==='function'&&fmPlaying()&&fmNear()>.1)||(typeof birdPlaying==='function'&&birdPlaying()&&birdNear()>.1)||(typeof wocPlaying==='function'&&wocPlaying()&&wocNear()>.1)||(typeof clPlaying==='function'&&clPlaying()&&clNear()>.1)||(typeof tolPlaying==='function'&&tolPlaying()&&tolNear()>.1)||
  (typeof welcPlaying==='function'&&welcPlaying())||(typeof anthemPlaying==='function'&&anthemPlaying())||(typeof kissPlaying==='function'&&kissPlaying())}
 function auTick(){if(!AU.ready||FF)return;
  // a large jump in simulated time means a seek or a fast speed: resync state without firing stale one-shots

@@ -1,0 +1,14 @@
+# MediaMTX settings for watching DisneyAtHome on an Apple TV (started by "Start Stream Server.command").
+# OBS sends to rtmp://localhost/disney; the Apple TV plays the same stream back over Wi-Fi.
+logLevel: info
+rtmp: yes
+rtsp: yes
+# plain HLS (MPEG-TS segments): the kind VLC and Apple's own player both open most reliably
+hls: yes
+hlsVariant: mpegts
+hlsSegmentDuration: 2s
+hlsAlwaysRemux: yes
+webrtc: no
+srt: no
+paths:
+  all_others:

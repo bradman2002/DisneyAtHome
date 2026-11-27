@@ -79,6 +79,49 @@ TV mode follows the sun. When Walt Disney World's parks close and Disneyland is 
 Disneyland, and it comes back when Walt Disney World opens in the morning. The board also has a "Meanwhile at …" card with the other
 resort's time, hours, next big show and top waits. To keep the stream on one resort, add `&stay` to the address.
 
+## Watching on Apple TV from a Mac
+
+You don't need the Ubuntu server or YouTube for this. A Mac runs a private stream server, OBS sends it the site,
+and the Apple TV plays it in VLC. Everything stays on your home network, so the music can stay on. The Mac must
+stay on and awake while you watch.
+
+**One-time setup**
+
+1. **On the Mac, copy the music in.** The Disney tracks aren't in GitHub, so copy your `audio/` files into the
+   site's `audio/` folder on this Mac.
+2. **Start the stream server.** Double-click **Start Stream Server.command** in the site folder. The first time:
+   - it downloads MediaMTX, a small free stream server, from its GitHub page (or uses `brew install mediamtx` if you have it);
+   - if macOS says it can't check the file, right-click the `.command`, choose **Open**, then **Open**;
+   - when macOS asks whether `mediamtx` may accept incoming connections, click **Allow**.
+
+   It also starts the site's web server on port 8000 if nothing is serving it yet, and keeps the Mac awake. The
+   window shows the address for the Apple TV. Leave the window open.
+3. **Set up OBS.**
+   - **Scene:** add a **Browser** source with URL `http://localhost:8000/index.html?tv`, width 1920, height 1080,
+     and tick **Control audio via OBS**. Stretch it to fill the canvas.
+   - **Settings → Video:** base and output resolution 1920×1080 (or 1280×720 for less load), 30 fps.
+   - **Settings → Output:** set Output Mode to **Advanced**. On the Streaming tab pick the **Apple VT H264 Hardware**
+     encoder, bitrate **6000 Kbps**, and **Keyframe Interval 2 s**. Under Audio, a bitrate of 160 is plenty.
+   - **Settings → Stream:** Service **Custom…**, Server `rtmp://localhost/disney`, Stream Key left empty.
+   - Click **Start Streaming**.
+4. **On the Apple TV:** install **VLC** from the App Store. Choose **Network Stream** and enter the address the
+   window shows, for example `http://Mac-mini.local:8888/disney/index.m3u8`. VLC remembers it under **Recent**.
+
+**Every day:** double-click **Start Stream Server.command**, click **Start Streaming** in OBS, open it in VLC.
+
+**Good to know**
+
+- **YouTube at the same time:** OBS's Stream setting can point at only one place. The free **Multiple RTMP Outputs**
+  plugin for OBS adds `rtmp://localhost/disney` as a second target.
+- **Delay:** the picture runs about 5–10 seconds behind the Mac. That doesn't matter for a park that runs by itself.
+- **Other players:** the same stream also opens as `rtsp://Mac-mini.local:8554/disney`, and in Safari or Infuse on
+  iPhone and iPad at the `http://…/index.m3u8` address.
+- **Away from home:** install **Tailscale** (free) on the Mac and on your iPhone, iPad or Apple TV, then use the Mac's
+  Tailscale name or address in place of `Mac-mini.local`. It stays private to your own devices.
+- **VLC says it can't open it:** check that OBS says it's streaming, that the stream server window is still open,
+  and that macOS's firewall allows `mediamtx`. If the `.local` name fails, use the address in the window's
+  "or by address" line.
+
 ## Settings (`.env`)
 
 | Setting | Meaning |

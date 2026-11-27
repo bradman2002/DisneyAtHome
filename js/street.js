@@ -305,7 +305,7 @@ const envAt=st=>CHOREO.env[Math.max(0,Math.min(CHOREO.env.length-1,Math.floor(st
 function heaSync(){fwAuto();const ev=fireEv(),st=showClock(),a=HEA.audio,live=ev&&ev.ph==='live';
  if(live&&HEA.liveKey!==ev.key){HEA.liveKey=ev.key;if(HEA.ready&&HEA.auto&&speed!==1&&!FF){speed=1;sync();toast(fwName()+' is starting — speed set to 1× so the soundtrack stays in sync')}}
  const want=live&&HEA.ready&&playing&&speed===1&&!FF&&st!==null&&st<a.duration-.5;
- if(want){setVol(a,(AU.mute?0:AU.v.master)*1.1*(1-.85*(typeof ewpNear==='function'&&ewpPlaying()?ewpNear():0))*(1-(typeof lumNear==='function'&&lumPlaying()?lumNear():0)));/* quieter when the map is out at the water pageant */if(a.paused){a.currentTime=Math.max(0,st);a.play().catch(()=>{HEA.blocked=true;svBadge()})}
+ if(want){setVol(a,(AU.mute?0:AU.v.master)*1.1*(1-.85*(typeof ewpNear==='function'&&ewpPlaying()?ewpNear():0))*heaAway());/* quieter when the map is out at the water pageant */if(a.paused){a.currentTime=Math.max(0,st);a.play().catch(()=>{HEA.blocked=true;svBadge()})}
   else syncTrack(HEA,a,a.currentTime-st,()=>{a.currentTime=Math.max(0,st)})} // the soundtrack is the master clock
  else if(!a.paused){a.pause()}}
 function hsl(h,s,l,a){return`hsla(${h},${s}%,${l}%,${a})`}
@@ -444,3 +444,10 @@ function loadTrack(audio,path){streamUrl(path).then(u=>{audio.src=u||path;audio.
 function heaInit(){if(DL)return; /* Happily Ever After is Magic Kingdom's */HEA.name=HEA_FILE;HEA.src='folder';loadTrack(HEA.audio,HEA_FILE);
  HEA.audio.addEventListener('error',()=>{if(HEA.src==='folder'){HEA.src='none';HEA.name='';HEA.ready=false;svBadge();heaLoadSaved()}})}
 heaInit();
+
+/* how much of the fireworks music to keep where the map is looking (owner, 26 Nov 2026: TV mode cut from the fireworks to Fantasmic! and the
+   fireworks music stayed): another show playing near the camera takes over (Luminous, Fantasmic!, World of Color, the Cars Land lighting),
+   and at Walt Disney World it fades with distance from the castle, to a whisper over the other parks */
+function heaAway(){const other=Math.max(typeof lumNear==='function'&&lumPlaying()?lumNear():0,typeof fmNear==='function'&&fmPlaying()?fmNear():0,
+  DL&&typeof wocNear==='function'&&wocPlaying()?wocNear():0,DL&&typeof clNear==='function'&&clPlaying()?clNear():0);
+ const far=DL||SV.on?1:Math.min(1,prox(P_.castle[0],P_.castle[1],1800)*1.25);return(1-other)*far}

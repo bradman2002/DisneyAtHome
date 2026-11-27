@@ -515,6 +515,15 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   the first 4 minutes and the release only (`birdTV`); the board's Coming up lists it. Optional owner soundtrack audio/feathered-friends.mp3
   (git-ignored) plays near the stage in time (`birdSync`, counts in showOn).
 
+- 26 Nov, four fixes: (1) Animal Kingdom audio (owner's files, git-ignored): ride-safari, ride-fop, ride-everest in `RIDEAUD`, and
+  audio/area-pandora.mp3 = `AREA.pa`, fading in over 50 units at Pandora's land outline (`landW(L,f)` in audio.js) against area-ak.
+  (2) Safari animals wander (owner: "all the animals are grouped on top of each other"): each has up to 6 grazing spots inside its herd's
+  area (R 14 lions/cheetahs, 11–16 in water, 28, 36 elephants/giraffes), walked at .18–.6 units/s with pauses; `safPos(a)` is a pure function
+  of the clock; drawn sorted by y each frame. (3) Night lights through buildings: `extrude` first clears the building's whole silhouette from
+  the glow canvas (destination-out), so lit windows and lamps behind a building no longer shine through it (`o.keepGlow` skips it).
+  (4) Fireworks music (owner: TV cut to Fantasmic! and the fireworks audio stayed): `heaAway()` (street.js) = (1 - nearest other playing show's
+  near: Luminous, Fantasmic!, World of Color, Cars Land) × at WDW min(1, prox(castle,1800)×1.25), about 3% over the other parks.
+
 ## Ideas not done yet
 - YouTube chat commands (owner, 26 Nov 2026: tabled). Plan if picked up: a script on the Mac mini reads live chat (`pytchat`, or the official
   API at about one read per 45 s on the free quota), posts commands to `tools/serve.py` (/cmd), the TV page polls it locally; !parade/!fireworks

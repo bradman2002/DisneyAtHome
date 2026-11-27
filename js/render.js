@@ -231,9 +231,18 @@ const SAFAN=(()=>{if(!SAFP||SAFP.L<50)return[];let sd=7;const rnd=()=>(sd=(sd*16
    s=rnd()<.5?1:-1,o=(wet?6:16)+rnd()*(wet?45:20),px=x-Math.sin(an)*o*s,py=y+Math.cos(an)*o*s;
    if(clear(px,py)&&(wet?kind(px,py)==='w':tr>50||kind(px,py)===''))hx=px,hy=py}
   if(hx===null)continue;
-  for(let i=0;i<n;i++)for(let tr=0;tr<12;tr++){const a=rnd()*6.283,r=rnd()*(k==='flamingo'?7:9),x=hx+Math.cos(a)*r,y=hy+Math.sin(a)*r*.6,w=kind(x,y)==='w';
-   if(wet===w&&clear(x,y)){out.push({k,x,y,ph:rnd()*99,sp:.5+rnd()});break}}}
- return out.sort((a,b)=>a.y-b.y)})();
+  /* each animal wanders its herd's area (owner, 26 Nov 2026: "all the animals are grouped on top of each other. I want them to walk around
+     their area"): a loop of up to 6 grazing spots, walked slowly with a pause at each; a pure function of the clock (safPos) */
+  const R=k==='lion'||k==='cheetah'?14:wet?(k==='flamingo'?11:16):k==='elephant'||k==='giraffe'?36:28,slow=k==='lion'||k==='cheetah'||k==='croc'||k==='hippo';
+  for(let i=0;i<n;i++){const wp=[];for(let tr=0;tr<80&&wp.length<6;tr++){const a=rnd()*6.283,r=Math.sqrt(rnd())*R,x=hx+Math.cos(a)*r,y=hy+Math.sin(a)*r*.75,w=kind(x,y)==='w';
+    if(wet===w&&clear(x,y)&&wp.every(q=>Math.hypot(q[0]-x,q[1]-y)>4))wp.push([x,y])}
+   if(!wp.length)continue;const v=(slow?.18:.35)+rnd()*.25,P=wp.map(()=>(slow?90:20)+rnd()*(slow?240:70)),L=wp.map((q,j)=>{const z=wp[(j+1)%wp.length];return Math.hypot(z[0]-q[0],z[1]-q[1])}),
+    C=P.reduce((x,y)=>x+y,0)+L.reduce((x,y)=>x+y,0)/v;out.push({k,wp,P,L,v,C,ph:rnd()*C,g:rnd()*99})}}
+ return out})();
+/* where a safari animal is now: [x, y, facing, walking] */
+function safPos(a){let t=((T+a.ph)%a.C+a.C)%a.C;const n=a.wp.length;
+ for(let i=0;i<n;i++){const p=a.wp[i],q=a.wp[(i+1)%n],pv=a.wp[(i+n-1)%n];if(t<a.P[i])return[p[0],p[1],p[0]>=pv[0]?1:-1,false];t-=a.P[i];const w=a.L[i]/a.v;
+  if(t<w){const u=w?t/w:0;return[p[0]+(q[0]-p[0])*u,p[1]+(q[1]-p[1])*u,q[0]>=p[0]?1:-1,true]}t-=w}return[a.wp[0][0],a.wp[0][1],1,false]}
 function safAnimal(c,k,g){const E=(x,y,rx,ry,col)=>{c.fillStyle=col;c.beginPath();c.ellipse(x,y,rx,ry,0,0,6.283);c.fill()},
   L=(x0,y0,x1,y1,w,col)=>{c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(x0,y0);c.lineTo(x1,y1);c.stroke()};c.lineCap='round';
  if(k==='giraffe'){const s='#d9a441';for(const lx of[-2,-1.2,1.4,2.2])L(lx,-4.4,lx,0,.55,s);E(0,-5,3,1.5,s);L(2.2,-5.6,4.2,-11.5+g,1.1,s);
@@ -254,10 +263,10 @@ function safAnimal(c,k,g){const E=(x,y,rx,ry,col)=>{c.fillStyle=col;c.beginPath(
  else if(k==='flamingo'){L(0,-1.6,0,0,.18,'#e07a8a');E(0,-2,.8,.5,'#f08a9a');L(.6,-2.2,.9,-3.4+g*.5,.2,'#f08a9a');E(1.1,-3.4+g*.5,.3,.2,'#f08a9a')}
  else if(k==='hippo'){E(0,-.6,2.6,1.1,'#6e6266');E(2.4,-.7,1.1,.8,'#7a6c70');E(2.8,-1.3,.25,.2,'#3a3236');c.fillStyle='rgba(120,170,190,.85)';c.fillRect(-3,-.2,6.6,.8)}
  else if(k==='croc'){E(0,-.3,3,.5,'#55603a');L(2.6,-.3,4.8,-.2,.6,'#55603a');L(-2.6,-.3,-4.6,0,.5,'#55603a')}}
-function drawSafariAnimals(){if(!SAFAN.length)return;const z=zf(),hw=cw/2/z+30,hh=ch/2/z+30,c=cx,sc=1.5;
- for(const a of SAFAN){if(Math.abs(a.x-cam.x)>hw||Math.abs(a.y-cam.y)>hh)continue;
-  const tt=T/(30/a.sp)+a.ph,mv=a.k==='lion'||a.k==='cheetah'||a.k==='croc'||a.k==='hippo'?.4:2.2,x=a.x+Math.sin(tt)*mv,y=a.y+Math.sin(tt*.7)*mv*.4,
-   f=Math.cos(tt)>=0?1:-1,g=Math.max(0,Math.sin(tt*2.3+a.ph))*(a.k==='giraffe'?4:2.2);
+function drawSafariAnimals(){if(!SAFAN.length)return;const z=zf(),hw=cw/2/z+30,hh=ch/2/z+30,c=cx,sc=1.5,vis=[];
+ for(const a of SAFAN){const p=safPos(a);if(Math.abs(p[0]-cam.x)<hw&&Math.abs(p[1]-cam.y)<hh)vis.push([a,p])}vis.sort((u,w)=>u[1][1]-w[1][1]);
+ for(const[a,[x,y,f,walk]]of vis){
+  const g=walk?Math.abs(Math.sin(T*2.2+a.g))*.5:Math.max(0,Math.sin(T/9+a.g))*(a.k==='giraffe'?4:2.2); /* walking: a little nod; standing: head down to graze now and then */
   c.save();c.translate(x,y);c.scale(sc*f,sc);if(a.k!=='hippo'&&a.k!=='croc'){c.fillStyle='rgba(30,30,20,.22)';c.beginPath();c.ellipse(0,0,2.6,.7,0,0,6.283);c.fill()}safAnimal(c,a.k,g);c.restore()}}
 /* the Friendship boats pass under the bridges: every walkway, road or bridge deck the boats' routes cross (away from their
    docks) is worked out once and repainted over the boats, matching the map's own colours */

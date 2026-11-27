@@ -199,7 +199,11 @@ function bbox(p){let a=1e9,b=1e9,c=-1e9,d=-1e9;for(const[x,y]of p){if(x<a)a=x;if
 function pathOf(c,p,close){c.beginPath();p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(close)c.closePath()}
 function areaPath(c,a){c.beginPath();for(const ring of[a.o,...(a.i||[])]){ring.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath()}}
 /* oblique extrusion of a real building footprint: roof lifted by its height, south-facing walls visible */
-function extrude(c,e,poly,hh,wall,roof,o){o=o||{};const n=poly.length;let A=0;for(let i=0;i<n;i++){const p=poly[i],q=poly[(i+1)%n];A+=p[0]*q[1]-q[0]*p[1]}const sgn=A>0?1:-1;
+function extrude(c,e,poly,hh,wall,roof,o){o=o||{};const n=poly.length;
+ /* the building hides the night lights of whatever is behind it (owner, 26 Nov 2026: "There are multiple buildings in magic kingdom where
+    lights are shown through them at night"): the glow layer is its own canvas, so clear this building's whole silhouette from it first */
+ if(e&&!o.keepGlow){e.save();e.globalCompositeOperation='destination-out';e.fillStyle='#000';const sub=P=>{e.beginPath();P.forEach(([x,y],i)=>i?e.lineTo(x,y):e.moveTo(x,y));e.closePath();e.fill()};
+  sub(poly);sub(poly.map(([x,y])=>[x,y-hh]));for(let i=0;i<n;i++){const p=poly[i],q=poly[(i+1)%n];sub([p,q,[q[0],q[1]-hh],[p[0],p[1]-hh]])}e.restore()}let A=0;for(let i=0;i<n;i++){const p=poly[i],q=poly[(i+1)%n];A+=p[0]*q[1]-q[0]*p[1]}const sgn=A>0?1:-1;
  const walls=[];for(let i=0;i<n;i++){const p=poly[i],q=poly[(i+1)%n],dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1,nx=dy/L*sgn,ny=-dx/L*sgn;if(ny>0.02)walls.push([p,q,nx,ny,L])}
  walls.sort((u,v)=>Math.max(u[0][1],u[1][1])-Math.max(v[0][1],v[1][1]));
  for(const[p,q,nx,ny,L]of walls){const sh=.06-nx*.22-(1-ny)*.08;poly4(c,[p,q,[q[0],q[1]-hh],[p[0],p[1]-hh]],tone(wall,sh));

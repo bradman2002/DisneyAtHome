@@ -95,7 +95,9 @@ function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(
    The files are long (25 to 60 minutes) and simply loop; each keeps its place while it is silent. A missing file is
    skipped. */
 const AREA={ms:'audio/area-ms.mp3',adv:'audio/area-adv.mp3',fr:'audio/area-fr.mp3',lib:'audio/area-lib.mp3',fan:'audio/area-fan.mp3',tom:'audio/area-tom.mp3',ep:'audio/area-ep.mp3',hs:'audio/area-hs.mp3',ak:'audio/area-ak.mp3'}; /* ep: EPCOT, heard anywhere over EPCOT; hs: Hollywood Studios (the Hollywood Boulevard loop for now), heard anywhere over that park; ak: Animal Kingdom (the Tree of Life loop), heard anywhere over it during its own hours */
-AREA.gx='audio/area-gx.mp3'; /* Galaxy's Edge, at both resorts */
+AREA.gx='audio/area-gx.mp3';
+if(!DL)AREA.pa='audio/area-pandora.mp3'; /* Pandora's own ambience (owner, 26 Nov 2026), fading in at the land's edge over Animal Kingdom's loop */
+function landW(L,f){if(!L)return 0;if(ptIn(cam.x,cam.y,L))return 1;let m=1e9;for(let i=0;i<L.length;i++){const a=L[i],b=L[(i+1)%L.length],dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy||1,u=Math.max(0,Math.min(1,((cam.x-a[0])*dx+(cam.y-a[1])*dy)/l2));m=Math.min(m,Math.hypot(cam.x-a[0]-dx*u,cam.y-a[1]-dy*u))}return Math.max(0,1-m/(f||45))} /* 1 inside land outline L, fading to 0 f units outside it */ /* Galaxy's Edge, at both resorts */
 AREA.resort='audio/area-resort.mp3'; /* resort background music for the wide views (owner, 26 Nov 2026: "When the tv mode is doing the resort pano, I still want music"), see areaTargets */
 if(DL){AREA.dca='audio/area-dca.mp3';AREA.cl='audio/route-66.mp3'} /* California Adventure: the owner's Buena Vista Street loop, for the whole park for now */
 /* Disneyland's lands play the Magic Kingdom loop that fits: the same-named lands their own, New Orleans Square Liberty Square's
@@ -115,7 +117,7 @@ function areaTargets(){const t=parkAreaTargets();let s=0;for(const k in t)if(k!=
 function nearPark(){const R=[[typeof MKR!=='undefined'&&MKR,'ms'],[typeof EPR!=='undefined'&&EPR,DL?'dca':'ep'],[typeof HSR!=='undefined'&&HSR,'hs'],[typeof AKR!=='undefined'&&AKR,'ak']];let b=null,bd=1e18;
  for(const[Rg,k]of R){if(!Rg||!AREA[k])continue;const x=(Rg[0]+Rg[2])/2,y=(Rg[1]+Rg[3])/2,d=Math.hypot(cam.x-x,cam.y-y);if(d<bd){bd=d;b=k}}return b}
 function parkAreaTargets(){const t={};for(const k in AREA)t[k]=0;
- if(typeof AKR!=='undefined'&&AKR&&!SV.on&&cam.x>AKR[0]-250&&cam.x<AKR[2]+250&&cam.y>AKR[1]-250&&cam.y<AKR[3]+250){if(T>=AOPEN*3600-1800&&T<=ACLOSE*3600+900)t.ak=Math.max(0,Math.min(1,(cam.m-.3)/.45));return t} /* over Animal Kingdom: one loop for the whole park, on its own hours (it closes earlier) */
+ if(typeof AKR!=='undefined'&&AKR&&!SV.on&&cam.x>AKR[0]-250&&cam.x<AKR[2]+250&&cam.y>AKR[1]-250&&cam.y<AKR[3]+250){if(T>=AOPEN*3600-1800&&T<=ACLOSE*3600+900){const z=Math.max(0,Math.min(1,(cam.m-.3)/.45)),w=AREA.pa&&!AM.bad.pa?landW(OSM.lands.pa,50):0;t.pa=z*w;t.ak=z*(1-w)}return t} /* over Animal Kingdom: one loop for the whole park, on its own hours (it closes earlier) */
  if(DL&&OSM.dca&&ptIn(cam.x,cam.y,OSM.dca)){if(!SV.on&&T>=EOPEN*3600-1800&&T<=ECLOSE*3600+900){const z=Math.max(0,Math.min(1,(cam.m-.3)/.45)),L=OSM.lands.cl;let w=0;
    if(L){if(ptIn(cam.x,cam.y,L))w=1;else{let m=1e9;for(let i=0;i<L.length;i++){const a=L[i],b=L[(i+1)%L.length],dx=b[0]-a[0],dy=b[1]-a[1],l2=dx*dx+dy*dy||1,u=Math.max(0,Math.min(1,((cam.x-a[0])*dx+(cam.y-a[1])*dy)/l2));m=Math.min(m,Math.hypot(cam.x-a[0]-dx*u,cam.y-a[1]-dy*u))}w=Math.max(0,1-m/45)}}
    t.cl=z*w;t.dca=z*(1-w)}return t} /* over California Adventure: its one loop, on its own hours; Cars Land plays its own songs, fading in at its edge */
@@ -196,7 +198,7 @@ function soundAuto(){auInit();setTimeout(soundHint,1500);
    minutes, when it jumps to a random spot, so you drop in partway through as if walking up to the ride. To add a ride, put its file in audio/ and add a line to RIDEAUD. */
 const RIDEAUD={'The Haunted Mansion':'mansion','Pirates of the Caribbean':'pirates','"it\'s a small world"':'smallworld','Space Mountain':'spacemtn','Tomorrowland Transit Authority PeopleMover':'peoplemover','Living with the Land':'lwtl',"Soarin' Around The World":'soarin',
  'The Twilight Zone Tower of Terror':'tot','Star Wars: Rise of the Resistance':'rotr',"Mickey and Minnie's Runaway Railway":'railway','Star Tours: The Adventures Continue':'startours',
- 'Indiana Jones Epic Stunt Spectacular!':'indy',"Jim Henson's Muppet*Vision 3-D":'muppets',
+ 'Indiana Jones Epic Stunt Spectacular!':'indy','Kilimanjaro Safaris':'safari','Avatar Flight of Passage':'fop','Expedition Everest: Legend of the Forbidden Mountain':'everest',"Jim Henson's Muppet*Vision 3-D":'muppets',
  'Spaceship Earth':'spaceship','Guardians Of The Galaxy: Cosmic Rewind':'cosmic','Test Track':'testtrack','Mission: SPACE':'missionspace','Remy’s Ratatouille Adventure':'remy',
  'Gran Fiesta Tour Starring The Three Caballeros':'fiesta','The Seas with Nemo & Friends':'seas','Rock ’n’ Roller Coaster Starring The Muppets':'rnrc','TRON Lightcycle / Run':'tron','Jungle Cruise':'jungle',"Buzz Lightyear's Space Ranger Spin":'buzz'};
 if(DL)Object.assign(RIDEAUD,{'"It\'s a Small World"':'smallworld',"Soarin' Around the World":'soarin'}); /* Disneyland's versions of the same rides (spelled differently in its map data) share the recordings */

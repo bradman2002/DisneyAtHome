@@ -244,7 +244,7 @@ function drawGuests(c){const now=performance.now()/1000,list=[],clear=paradeBusy
   if(!g){c.save();c.translate(p[0],p[1]);c.scale(.55,1);drawUnit(c,j,k,tt,nf>.35);c.restore();continue}/* heading toward the viewer, so seen narrower */
   const mv=g.st===0,col=SHIRT[(g.col+j)%SHIRT.length];const sh=dk>0?mixC(col,'#141a33',dk):col;
   person(c,p[0],p[1],k,sh,mixC(SKIN[(i+j)%5],'#141a33',dk),HAIR[(i*3+j)%5],now*7+i+j,mv,dk>.3);
-  if((i+j)%23===0&&k>1.5){c.strokeStyle='rgba(255,255,255,.6)';c.lineWidth=.6;c.beginPath();c.moveTo(p[0]+.25*k,p[1]-1.3*k);c.lineTo(p[0]+.45*k,p[1]-2.8*k);c.stroke();c.fillStyle=BALL[(i+j)%5];c.beginPath();c.ellipse(p[0]+.45*k,p[1]-3.1*k,.32*k,.38*k,0,0,7);c.fill()}}}
+  if((i+j)%23===0&&k>1.5){c.strokeStyle='rgba(255,255,255,.6)';c.lineWidth=.6;c.beginPath();c.moveTo(p[0]+.25*k,p[1]-1.3*k);c.lineTo(p[0]+.45*k,p[1]-2.8*k);c.stroke();c.fillStyle=BALL[(i+j)%5];c.beginPath();if((i+j)%2){const bx=p[0]+.45*k,by=p[1]-3.1*k;c.arc(bx,by,.3*k,0,7);c.moveTo(bx-.2*k,by-.33*k);c.arc(bx-.33*k,by-.33*k,.17*k,0,7);c.moveTo(bx+.46*k,by-.33*k);c.arc(bx+.33*k,by-.33*k,.17*k,0,7);c.fill();c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.arc(bx-.1*k,by-.1*k,.08*k,0,7)}else c.ellipse(p[0]+.45*k,p[1]-3.1*k,.32*k,.38*k,0,0,7);c.fill()}}} /* every other balloon is a Mickey balloon (owner, 26 Nov 2026) */
 const mixC=(a,b,t)=>{const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16);const r=(pa>>16)+((pb>>16)-(pa>>16))*t,g=(pa>>8&255)+((pb>>8&255)-(pa>>8&255))*t,bb=(pa&255)+((pb&255)-(pa&255))*t;return`rgb(${r|0},${g|0},${bb|0})`};
 /* horse-drawn streetcar (daytime) */
 function drawStreetcar(c){const h=T/3600;if(h<9||h>14.5||paradeBusy())return;/* streetcars stop running before a parade */const per=420,u=(T%per)/per,dir=u<.5?1:-1,f=u<.5?u*2:(1-u)*2,z=20+f*170,x=dir>0?-.75:.75;
@@ -384,7 +384,7 @@ function burst(r,x,y){const{kind,h,sz,k}=r,R=82*sz*k;const P=HEA.pt,D=P.length>5
  add(0,0,{s:0,li:100,w:6,l:.12,m:.12});
  HEA.smoke.push({x,y,r:R*.6,l:14,m:14});if(HEA.smoke.length>40)HEA.smoke.shift();
  SV.fl=Math.min(1,SV.fl+.35*sz);SV.flH=h;
- const tnow=performance.now();if(AU.ready&&speed<=5&&tnow-(AU.last.fwb||0)>75&&(AU.last.fwb=tnow))play('fw'+(1+(Math.random()*6|0)),Math.min(.9,.25+.35*sz),AU.g.show,.18,.8+Math.random()*.35)}
+ const tnow=performance.now();if(AU.ready&&speed<=5&&tnow-(AU.last.fwb||0)>75&&(AU.last.fwb=tnow)){const hv=heaAway();if(hv>.02)play('fw'+(1+(Math.random()*6|0)),Math.min(.9,.25+.35*sz)*hv,AU.g.show,.18,.8+Math.random()*.35)}}
 /* castle projection: abstract, palette-driven patterns timed to the soundtrack's sections and loudness */
 function drawProjection(c,w,h,st){const sec=heaSection(st),pal=CHOREO.pal[sec],E=envAt(st),t=st;
  c.save();c.globalCompositeOperation='source-atop';const A=.35+.55*E;
@@ -417,7 +417,7 @@ function drawStreet(rdt){if(SV.dirty)buildStatic();buildTint();heaSync();const C
  cx.drawImage(C.frontT,0,0,cw,ch);
  if(SV.flags){const tt=performance.now()/300;for(const[x,y,k,s]of SV.flags){cx.fillStyle=nf>.5?'#5a2a3a':'#d23a4a';cx.beginPath();cx.moveTo(x,y);for(let i=0;i<=6;i++){const u=i/6;cx.lineTo(x-s*u*1.8*k,y+Math.sin(tt+u*4)*.2*k)}for(let i=6;i>=0;i--){const u=i/6;cx.lineTo(x-s*u*1.8*k,y+1.1*k+Math.sin(tt+u*4)*.2*k)}cx.fill()}}
  drawStreetcar(cx);drawGuests(cx);
- if(nf>0){cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf*1.3);cx.drawImage(C.glow,0,0,cw,ch);cx.restore()}
+ {const dm=fwDim();if(nf>0){cx.save();cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,nf*1.3)*(1-.8*dm);cx.drawImage(C.glow,0,0,cw,ch);cx.restore()}if(dm>0){cx.save();cx.globalCompositeOperation='multiply';cx.fillStyle=`rgba(70,80,130,${.4*dm*nf})`;cx.fillRect(0,0,cw,ch);cx.restore()}} /* Main Street goes dark for the fireworks */
  if(SV.fl>0){cx.save();cx.globalCompositeOperation='lighter';cx.fillStyle=hsl(SV.flH,80,60,SV.fl*.08*nf);cx.fillRect(0,0,cw,ch);cx.restore()}
  svOverlay(st)}
 /* on-canvas show banner */
@@ -450,4 +450,8 @@ heaInit();
    and at Walt Disney World it fades with distance from the castle, to a whisper over the other parks */
 function heaAway(){const other=Math.max(typeof lumNear==='function'&&lumPlaying()?lumNear():0,typeof fmNear==='function'&&fmPlaying()?fmNear():0,
   DL&&typeof wocNear==='function'&&wocPlaying()?wocNear():0,DL&&typeof clNear==='function'&&clPlaying()?clNear():0);
- const far=DL||SV.on?1:Math.min(1,prox(P_.castle[0],P_.castle[1],1800)*1.25);return(1-other)*far}
+ const d=Math.hypot(cam.x-P_.castle[0],cam.y-P_.castle[1]),far=DL||SV.on?1:Math.max(0,Math.min(1,1-(d-500)/350));return(1-other)*far} /* owner, 26 Nov 2026: "I only want fireworks audio when you are at magic kingdom": full over the park, gone 850 units from the castle */
+
+/* lights down for the fireworks (owner, 26 Nov 2026: "dim the lights during fireworks, especially on mainstreet"): 0..1, fading down over
+   15 s as the show starts and back up over the last 20 s */
+function fwDim(){const f=fireEv();if(!f||f.ph!=='live'||f.on===false)return 0;const s=T-f.key,L=f.dur*60;return Math.max(0,Math.min(1,s/15,(L-s)/20))}

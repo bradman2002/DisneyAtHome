@@ -72,7 +72,7 @@ function auTick(){if(!AU.ready||FF)return;
  lvl('chimes',LP('fan')*.2*nat);lvl('creek',LP('fan')*.15*nat);lvl('hum',LP('tom')*.38*nat);{let lk=0;for(let i=0;i<=8;i++){const q=FER.at(FER.L*i/8);lk=Math.max(lk,prox(q[0],q[1],260))}lvl('lake',lk*.3*nat)} // anywhere along the lagoon crossing
  let bv=0;for(const b of BUS){const p=busXY(b);bv=Math.max(bv,prox(p[0],p[1],240)*(b.st==='dwell'?.55:1))}lvl('engine',bv*.5,.3);
  if(AU.L.engine)AU.L.engine.s.playbackRate.setTargetAtTime(BUS.some(b=>{const p=busXY(b);return b.st!=='dwell'&&prox(p[0],p[1],240)>.3})?.8:.62,AU.ctx.currentTime,.5);
- const F=EV.find(e=>e.id==='fire');lvl('fwbed',F&&F.ph==='live'&&playing?.55*evP(F,500):0,.4);
+ const F=EV.find(e=>e.id==='fire');lvl('fwbed',F&&F.ph==='live'&&playing?.55*evP(F,500)*heaAway():0,.4);
  if(jump)return;const q=speed<=30;const TR=AU.g.trans,SH=AU.g.show;
  // transport one-shots on state changes
  for(const m of MONO){if(m._ps!==m.st&&q){const mp=monoXY(m),p=prox(mp[0],mp[1],320);if(m.st==='dwell')play('doorsopen',.45*p,TR,.8);else{play('doorsclose',.45*p,TR);play('trainpass',.55*p,TR,1.6)}}m._ps=m.st}
@@ -86,7 +86,7 @@ function auTick(){if(!AU.ready||FF)return;
   if((isParade(ev.id)&&!parPlaying(ev.id)||ev.id==='band'||(ev.id==='flag'&&!anthemPlaying()))&&ev.ph==='live'&&playing&&now-(AU.last['snare'+ev.id]||0)>4200){play('snare',.45*p,SH,0,.97+Math.random()*.06);AU.last['snare'+ev.id]=now}
   if(was==='live'&&ev.ph!=='live')play(ev.id==='fire'?'applause_big':'applause',.8*p,SH)}}
 function fwBurst(){if(!AU.ready||speed>30)return;const now=performance.now();if(now-(AU.last.fw||0)<110)return;AU.last.fw=now;
- const F=EV.find(e=>e.id==='fire');play('fw'+(1+(Math.random()*6|0)),(.35+.4*Math.random())*evP(F,500),AU.g.show,0,.85+Math.random()*.3)}
+ const F=EV.find(e=>e.id==='fire');play('fw'+(1+(Math.random()*6|0)),(.35+.4*Math.random())*evP(F,500)*heaAway(),AU.g.show,0,.85+Math.random()*.3)}
 /* ===== AREA MUSIC =====
    Each land's background music loop (the owner's own copies, in audio/area-*.mp3, never committed). The music follows
    the camera: the land you are looking at plays, neighbouring lands blend in toward their edges, and it fades away as

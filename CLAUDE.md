@@ -522,7 +522,13 @@ The end goal is a background display: TV mode runs the whole thing unattended on
   of the clock; drawn sorted by y each frame. (3) Night lights through buildings: `extrude` first clears the building's whole silhouette from
   the glow canvas (destination-out), so lit windows and lamps behind a building no longer shine through it (`o.keepGlow` skips it).
   (4) Fireworks music (owner: TV cut to Fantasmic! and the fireworks audio stayed): `heaAway()` (street.js) = (1 - nearest other playing show's
-  near: Luminous, Fantasmic!, World of Color, Cars Land) × at WDW min(1, prox(castle,1800)×1.25), about 3% over the other parks.
+  near: Luminous, Fantasmic!, World of Color, Cars Land) × at WDW a distance fade from the castle: full within 500 units (the whole park),
+  silent from 850 (owner, 26 Nov: "I only want fireworks audio when you are at magic kingdom. I dont want to hear it anywhere else"). It
+  also scales the firework bangs (street.js, audio.js) and the fwbed loop. Not applied at Disneyland.
+- Fireworks lights down (owner, 26 Nov: "dim the lights during fireworks, especially on mainstreet"): `fwDim()` (street.js, 0..1, 15 s down
+  at the start, 20 s up at the end). Map: night glow ×(1-.3 dim), and Main Street's land outline (with the hub) is multiplied darker
+  (to 45%) after the castle uplight, so the castle keeps its light. Street view: glow ×(1-.8 dim) plus a dark multiply.
+- Every other street-view balloon is a Mickey balloon (owner, 26 Nov: "make the people with balloons carrying mickey shaped balloons as well").
 
 ## Ideas not done yet
 - YouTube chat commands (owner, 26 Nov 2026: tabled). Plan if picked up: a script on the Mac mini reads live chat (`pytchat`, or the official

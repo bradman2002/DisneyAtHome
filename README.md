@@ -106,6 +106,8 @@ To put it on a TV:
   `python3 -m http.server 8000` in this folder, then on the TV open
   `http://<this computer's name>.local:8000/?tv`. The `?tv` starts TV mode by itself. Browsers only allow
   sound and true full screen after one click or button press on the page.
+- The GitHub Pages copy (`….github.io/DisneyAtHome/`) opens in TV mode by itself, with no `?tv` needed. Add `?map` to
+  the address there for the plain map.
 
 ## Streaming it to YouTube
 
